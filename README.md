@@ -124,10 +124,6 @@ CREATE DATABASE caresync;
 
 For questions or support, please contact: sunilphuyal954@gmail.com
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ---
 
 **Note:** This is a Final Year Project developed to address real-world caregiving challenges. It is not intended for production medical use without proper certification and testing.
