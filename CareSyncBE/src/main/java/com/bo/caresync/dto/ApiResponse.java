@@ -58,6 +58,7 @@ public class ApiResponse {
         this.apiResponseFrom = buildResponseFrom(applicationName);
         this.apiResponseData = data != null ? data : new ResponseData();
     }
+
     private String getCurrentTimestamp() {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         return LocalDateTime.now().format(formatter);
