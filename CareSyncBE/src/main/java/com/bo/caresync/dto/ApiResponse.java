@@ -3,6 +3,7 @@ package com.bo.caresync.dto;
 import com.bo.caresync.enums.AppEnum;
 import com.bo.caresync.enums.ResponseStatus;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -18,13 +19,14 @@ import com.bo.caresync.utils.ApplicationPropertyLoader;
 
 @Getter
 @Setter
+@JsonPropertyOrder({"apiResponseCode", "apiResponseMessage", "apiResponseFrom", "apiResponseTime", "apiResponseData"})
 public class ApiResponse {
 
     private String apiResponseCode;
     private String apiResponseMessage;
+    private String apiResponseFrom;
     @JsonAlias({"apiResponseDateTime", "apiResponseTime"})
     private String apiResponseTime;
-    private String apiResponseFrom;
     private ResponseData apiResponseData;
 
     public ApiResponse() {
