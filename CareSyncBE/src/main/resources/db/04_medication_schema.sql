@@ -6,6 +6,7 @@
 -- ============================================================
 
 SET search_path TO medication;
+CREATE SCHEMA IF NOT EXISTS medication;
 
 -- ============================================================
 -- TABLE: MEDICATIONS
