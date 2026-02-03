@@ -18,4 +18,38 @@ public class AppConstants {
         public static final String ANONYMOUS_USER = "anonymousUser";
     }
 
+    public static class RecordStatus {
+        private RecordStatus() {}
+        public static final String ACTIVE = "Y";
+        public static final String INACTIVE = "N";
+    }
+
+    public static class Role {
+        private Role() {}
+        public static final String ADMIN = "ROLE_ADMIN";
+        public static final String PRIMARY_CAREGIVER = "ROLE_PRIMARY_CAREGIVER";
+        public static final String SECONDARY_CAREGIVER = "ROLE_SECONDARY_CAREGIVER";
+        public static final String HEALTHCARE_PROVIDER = "ROLE_HEALTHCARE_PROVIDER";
+    }
+
+    public static class JwtClaims {
+        private JwtClaims() {}
+
+        public static final String EMAIL = "email";
+        public static final String ROLES = "roles";
+        public static final String TYPE = "type";
+    }
+    public static class TokenType {
+        private TokenType() {}
+
+        public static final String ACCESS = "ACCESS";
+        public static final String REFRESH = "REFRESH";
+    }
+    public static class Http {
+        private Http() {}
+
+        public static final String AUTHORIZATION = "Authorization";
+        public static final String BEARER_PREFIX = "Bearer ";
+    }
+
 }
