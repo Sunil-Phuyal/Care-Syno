@@ -10,7 +10,7 @@ import java.util.Optional;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/3/2026, 6:44 PM,
+ * @since 2/3/2026, 6:34 PM,
  **/
 
 public interface PermissionRepository extends JpaRepository<Permission, Long> {

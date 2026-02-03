@@ -9,7 +9,7 @@ import java.util.Optional;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/3/2026, 6:41 PM,
+ * @since 2/3/2026, 6:21 PM,
  **/
 
 public interface RoleRepository extends JpaRepository<Role,Long> {
