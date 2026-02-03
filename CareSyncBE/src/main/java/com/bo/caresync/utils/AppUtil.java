@@ -1,7 +1,5 @@
 package com.bo.caresync.utils;
 
-import java.util.Optional;
-
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -14,7 +12,6 @@ public class AppUtil {
 
     /**
      * Gets the name of the calling method using StackWalker
-     *
      * @return method name or "UnknownMethod" if not found
      */
     public static String getMethodName() {
