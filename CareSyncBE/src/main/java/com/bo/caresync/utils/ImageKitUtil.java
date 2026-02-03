@@ -56,7 +56,7 @@ public class ImageKitUtil {
         return uploadResult.getUrl();
     }
 
-    public String uploadImage(byte[] fileBytes, String folder, String fileName) throws Exception {
+    public String uploadImage(byte[] fileBytes, String folder, String fileName) {
         if (fileBytes == null || fileBytes.length == 0) {
             return null;
         }
@@ -71,7 +71,7 @@ public class ImageKitUtil {
         return uploadResult.getUrl();
     }
 
-    public void deleteImage(String fileId) throws Exception {
+    public void deleteImage(String fileId) {
         if (fileId != null && !fileId.isEmpty()) {
             imageKit.deleteFile(fileId);
         }
