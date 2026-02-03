@@ -9,7 +9,7 @@ import java.util.List;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/3/2026, 6:46 PM,
+ * @since 2/3/2026, 6:26 PM,
  **/
 public interface RolePermissionRepository extends JpaRepository<RolePermission, Long> {
 
