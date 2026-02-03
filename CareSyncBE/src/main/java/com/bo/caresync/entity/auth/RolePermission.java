@@ -9,12 +9,13 @@ import lombok.Setter;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/3/2026, 3:59 PM,
+ * @since 2/3/2026, 11:19 AM,
  **/
+
 @Getter
 @Setter
 @Entity
-@Table(name = "role_permissions", schema = "caresync")
+@Table(name = "role_permissions", schema = "auth")
 public class RolePermission extends BaseEntity {
 
     @Id
