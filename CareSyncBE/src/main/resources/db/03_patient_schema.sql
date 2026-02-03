@@ -6,6 +6,7 @@
 -- ============================================================
 
 SET search_path TO patient;
+CREATE SCHEMA IF NOT EXISTS patient;
 
 -- ============================================================
 -- TABLE: PATIENTS
@@ -138,8 +139,8 @@ CREATE INDEX IF NOT EXISTS idx_patients_active ON patient.patients(patient_id) W
 CREATE INDEX IF NOT EXISTS idx_pc_lookup ON patient.patient_caregivers(patient_id, caregiver_user_id, record_status);
 CREATE INDEX IF NOT EXISTS idx_pc_caregiver ON patient.patient_caregivers(caregiver_user_id) WHERE record_status = 'Y';
 CREATE INDEX IF NOT EXISTS idx_pcp_lookup ON patient.patient_caregiver_permissions(patient_id, caregiver_user_id, permission_id);
-CREATE INDEX IF NOT EXISTS idx_pcp_active ON patient.patient_caregiver_permissions(patient_id, caregiver_user_id)
-    WHERE record_status = 'Y' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP);
+CREATE INDEX IF NOT EXISTS idx_pcp_active ON patient.patient_caregiver_permissions(patient_id, caregiver_user_id, expires_at)
+    WHERE record_status = 'Y';
 
 -- ============================================================
 -- END OF PATIENT SCHEMA

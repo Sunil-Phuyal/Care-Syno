@@ -7,6 +7,8 @@
 
 SET search_path TO onboarding;
 
+CREATE SCHEMA IF NOT EXISTS onboarding;
+
 -- ============================================================
 -- TABLE: USERS
 -- All registered users in the system
