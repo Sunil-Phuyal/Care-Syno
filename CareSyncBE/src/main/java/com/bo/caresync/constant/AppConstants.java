@@ -52,4 +52,36 @@ public class AppConstants {
         public static final String BEARER_PREFIX = "Bearer ";
     }
 
+    public static class Permission {
+        private Permission() {}
+
+        // Patient permissions
+        public static final String PATIENT_VIEW = "patient.view";
+        public static final String PATIENT_EDIT = "patient.edit";
+        public static final String PATIENT_DELETE = "patient.delete";
+
+        // Medication permissions
+        public static final String MEDICATION_VIEW = "medication.view";
+        public static final String MEDICATION_CREATE_SCHEDULE = "medication.create_schedule";
+        public static final String MEDICATION_EDIT_SCHEDULE = "medication.edit_schedule";
+        public static final String MEDICATION_DELETE_SCHEDULE = "medication.delete_schedule";
+        public static final String MEDICATION_ADMINISTER = "medication.administer";
+        public static final String MEDICATION_ADMINISTER_INJECTION = "medication.administer_injection";
+        public static final String MEDICATION_SKIP = "medication.skip";
+        public static final String MEDICATION_VIEW_HISTORY = "medication.view_history";
+
+        // Caregiver permissions
+        public static final String CAREGIVER_VIEW = "caregiver.view";
+        public static final String CAREGIVER_INVITE = "caregiver.invite";
+        public static final String CAREGIVER_REMOVE = "caregiver.remove";
+        public static final String CAREGIVER_EDIT_PERMISSIONS = "caregiver.edit_permissions";
+
+        // Report permissions
+        public static final String REPORT_VIEW = "report.view";
+        public static final String REPORT_EXPORT = "report.export";
+
+        // Medical permissions
+        public static final String MEDICAL_RECORD_VITALS = "medical.record_vitals";
+    }
+
 }
