@@ -12,10 +12,9 @@ import com.bo.caresync.exceptions.BaseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -40,13 +39,13 @@ public class JwtUtil {
     /** Holds all extracted claims from a validated JWT token */
     public record TokenData(Long userId, String email, List<String> roles, TokenType type) {}
 
-    /** Builds the HMAC256 signing algorithm, enforcing a minimum key length of 32 bytes */
+    /** Builds the HMAC512 signing algorithm with Base64-decoded secret key */
     private Algorithm getSigningAlgorithm() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        if (keyBytes.length < 32) {
+        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        if (keyBytes.length < 64) {
             throw new IllegalStateException(MessageConstants.Jwt.SECRET_TOO_SHORT);
         }
-        return Algorithm.HMAC256(keyBytes);
+        return Algorithm.HMAC512(keyBytes);
     }
 
     /** Generates an access token for the given user */
