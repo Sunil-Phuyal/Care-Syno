@@ -30,6 +30,15 @@ public enum ErrorCode implements IErrorCode {
     USER_NOT_FOUND("USER_001", "User not found"),
     ROLE_NOT_FOUND("USER_002", "Role not found"),
 
+    // Permission Errors (403)
+    PERMISSION_DENIED("PERM_001", "Permission denied"),
+    NO_PATIENT_ACCESS("PERM_002", "No access to this patient"),
+    PERMISSION_NOT_FOUND("PERM_003", "Permission not found"),
+
+    // Patient Errors (404)
+    PATIENT_NOT_FOUND("PAT_001", "Patient not found"),
+    PATIENT_CAREGIVER_NOT_FOUND("PAT_002", "Patient-caregiver relationship not found"),
+
     // General Errors
     INTERNAL_SERVER_ERROR("SYS_001", "Internal server error"),
     VALIDATION_ERROR("SYS_002", "Validation error");

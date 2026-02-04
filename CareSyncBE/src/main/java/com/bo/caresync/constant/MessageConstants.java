@@ -2,7 +2,7 @@ package com.bo.caresync.constant;
 
 /**
  * @author Sunil Phuyal
- * @version v2.0
+ * @version v1.0
  * @project CareSyncBE
  * @since 1/31/2026, 6:13 PM,
  **/
@@ -44,5 +44,14 @@ public class MessageConstants {
         public static final String CLAIM_EMPTY_LIST = "JWT claim '{}' is missing or empty";
         public static final String TOKEN_TYPE_INVALID = "JWT claim 'type' is not a valid TokenType: {}";
         public static final String TOKEN_TYPE_MISMATCH = "Token type mismatch — expected: {}, actual: {}";
+    }
+
+    public static class Permission {
+        private Permission() {}
+        public static final String ACCESS_DENIED = "You don't have permission to perform this action";
+        public static final String NO_PATIENT_ACCESS = "You don't have access to this patient";
+        public static final String PERMISSION_NOT_FOUND = "Permission not found";
+        public static final String PERMISSION_GRANTED = "Permission granted successfully";
+        public static final String PERMISSION_REVOKED = "Permission revoked successfully";
     }
 }
