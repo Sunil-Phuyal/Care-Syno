@@ -28,6 +28,7 @@ public class AuthController extends BaseController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        authService.register(request);
         return successResponse(
                 MessageConstants.Auth.REGISTRATION_SUCCESS, null);
     }
