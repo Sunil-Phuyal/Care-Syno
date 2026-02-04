@@ -3,6 +3,9 @@ package com.bo.caresync.service;
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
 import com.bo.caresync.dto.request.RegisterRequest;
+import com.bo.caresync.dto.request.auth.LoginRequest;
+import com.bo.caresync.dto.request.auth.LoginResponse;
+import com.bo.caresync.dto.request.auth.UserResponse;
 import com.bo.caresync.entity.auth.Role;
 import com.bo.caresync.entity.user.User;
 import com.bo.caresync.entity.user.UserRole;
@@ -12,10 +15,15 @@ import com.bo.caresync.repository.RoleRepository;
 import com.bo.caresync.repository.UserRepository;
 import com.bo.caresync.repository.UserRoleRepository;
 import com.bo.caresync.utils.AppUtil;
+import com.bo.caresync.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Sunil Phuyal
@@ -31,6 +39,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final JwtUtil jwtUtil;
     private final String className = this.getClass().getSimpleName();
 
 
@@ -67,6 +76,79 @@ public class AuthService {
 
         userRoleRepository.save(userRole);
         log.info("{} {} User registered successfully: {}",className, methodName, savedUser.getEmail());
+    }
+
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest request) {
+            String methodName = AppUtil.getMethodName();
+        // Find user by email
+        User user = userRepository.findByEmailAndRecordStatus(
+                request.getEmail(),
+                AppConstants.RecordStatus.ACTIVE
+        ).orElseThrow(() -> {
+            log.warn("{} {} Login failed - user not found: {}",className, methodName, request.getEmail());
+            return new BaseException(ErrorCode.INVALID_CREDENTIALS,
+                    MessageConstants.Auth.INVALID_CREDENTIALS);
+        });
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            log.warn("{} Login failed - invalid password: {}", methodName, request.getEmail());
+            throw new BaseException(ErrorCode.INVALID_CREDENTIALS,
+                    MessageConstants.Auth.INVALID_CREDENTIALS);
+        }
+        // Get user roles
+        List<UserRole> userRoles = userRoleRepository.findByUserIdAndRecordStatus(
+                user.getUserId(),
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        List<String> roleNames = userRoles.stream()
+                .map(ur -> {
+                    Role role = roleRepository.findById(ur.getRoleId())
+                            .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+                    return role.getRoleName();
+                })
+                .collect(Collectors.toList());
+        String token = jwtUtil.generateAccessToken(user.getUserId(), user.getEmail(), roleNames);
+
+        log.info("{} User logged in successfully: {}", methodName, user.getEmail());
+
+        return new LoginResponse(
+                token,
+                user.getUserId(),
+                user.getEmail(),
+                user.getFullName(),
+                roleNames
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(Long userId) {
+        String methodName = "getCurrentUser";
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+
+        List<UserRole> userRoles = userRoleRepository.findByUserIdAndRecordStatus(
+                userId,
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        List<String> roleNames = userRoles.stream()
+                .map(ur -> {
+                    Role role = roleRepository.findById(ur.getRoleId())
+                            .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+                    return role.getRoleName();
+                })
+                .collect(Collectors.toList());
+
+        UserResponse response = new UserResponse();
+        response.setUserId(user.getUserId());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setIsEmailVerified(user.getIsEmailVerified());
+        response.setRoles(roleNames);
+        return response;
     }
 
 
