@@ -2,7 +2,7 @@ package com.bo.caresync.constant;
 
 /**
  * @author Sunil Phuyal
- * @version v2.0
+ * @version v1.0
  * @project CareSyncBE
  * @since 1/31/2026, 6:13 PM,
  **/
