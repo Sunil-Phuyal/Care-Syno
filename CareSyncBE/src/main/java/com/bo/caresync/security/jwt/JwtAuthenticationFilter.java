@@ -1,5 +1,6 @@
 package com.bo.caresync.security.jwt;
 
+import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -10,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -32,17 +32,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader(AppConstants.Http.AUTHORIZATION);
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith(AppConstants.Http.BEARER_PREFIX)) {
             String token = authHeader.substring(7);
-
             try {
                 Long userId = jwtUtil.getUserIdFromToken(token);
                 List<String> roles = jwtUtil.getRolesFromToken(token);
@@ -57,14 +53,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 null,
                                 authorities
                         );
-
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
             } catch (Exception e) {
                 log.error("JWT authentication failed: {}", e.getMessage());
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/4/2026, 3:12 PM,
+ * @since 2/4/2026, 11:12 PM,
  **/
 @Configuration
 public class NoOpUserDetailsService {
