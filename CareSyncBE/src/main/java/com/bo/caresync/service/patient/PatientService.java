@@ -142,6 +142,28 @@ public class PatientService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public void deletePatient(Long patientId) {
+        String methodName = AppUtil.getMethodName();
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.PATIENT_DELETE);
+
+        Patient patient = patientRepository.findByPatientIdAndRecordStatus(
+                        patientId,
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+        // Soft delete
+        patient.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
+        patient.setDeletedBy(loginUserUtil.getCurrentUserEmail());
+        patient.setDeletedAt(java.time.LocalDateTime.now());
+        patientRepository.save(patient);
+
+        log.info("{} Patient soft-deleted: patientId={}", methodName, patientId);
+    }
+
 
 
 
