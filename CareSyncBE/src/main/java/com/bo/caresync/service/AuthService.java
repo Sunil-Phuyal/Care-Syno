@@ -2,10 +2,10 @@ package com.bo.caresync.service;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
-import com.bo.caresync.dto.request.RegisterRequest;
+import com.bo.caresync.dto.request.auth.RegisterRequest;
 import com.bo.caresync.dto.request.auth.LoginRequest;
-import com.bo.caresync.dto.response.LoginResponse;
-import com.bo.caresync.dto.response.UserResponse;
+import com.bo.caresync.dto.response.auth.LoginResponse;
+import com.bo.caresync.dto.response.auth.UserResponse;
 import com.bo.caresync.entity.auth.Role;
 import com.bo.caresync.entity.user.User;
 import com.bo.caresync.entity.user.UserRole;

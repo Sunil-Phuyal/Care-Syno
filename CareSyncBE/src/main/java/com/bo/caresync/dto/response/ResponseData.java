@@ -1,4 +1,4 @@
-package com.bo.caresync.dto;
+package com.bo.caresync.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
