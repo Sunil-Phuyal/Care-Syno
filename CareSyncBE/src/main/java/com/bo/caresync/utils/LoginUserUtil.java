@@ -110,7 +110,7 @@ public class LoginUserUtil {
      * Throws exception if permission denied
      */
     public void requirePermission(Long patientId, String permissionCode) {
-        String methodName = "requirePermission";
+        String methodName = AppUtil.getMethodName();
         Long userId = getCurrentUserId();
 
         // First check patient access
@@ -132,6 +132,8 @@ public class LoginUserUtil {
         log.debug("{} PERMISSION GRANTED: User {} executing {} for patient {}",
                 methodName, userId, permissionCode, patientId);
     }
+
+
 
 
 }

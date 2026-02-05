@@ -2,10 +2,10 @@ package com.bo.caresync.controller;
 
 
 import com.bo.caresync.constant.MessageConstants;
-import com.bo.caresync.dto.request.RegisterRequest;
+import com.bo.caresync.dto.request.auth.RegisterRequest;
 import com.bo.caresync.dto.request.auth.LoginRequest;
-import com.bo.caresync.dto.request.auth.LoginResponse;
-import com.bo.caresync.dto.request.auth.UserResponse;
+import com.bo.caresync.dto.response.auth.LoginResponse;
+import com.bo.caresync.dto.response.auth.UserResponse;
 import com.bo.caresync.service.AuthService;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;

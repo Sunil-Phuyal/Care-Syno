@@ -1,7 +1,7 @@
 package com.bo.caresync.exceptions.base;
 
-import com.bo.caresync.dto.ApiResponse;
-import com.bo.caresync.dto.ResponseData;
+import com.bo.caresync.dto.response.ApiResponse;
+import com.bo.caresync.dto.response.ResponseData;
 import com.bo.caresync.enums.ResponseStatus;
 import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.exceptions.CustomExceptionWithData;
