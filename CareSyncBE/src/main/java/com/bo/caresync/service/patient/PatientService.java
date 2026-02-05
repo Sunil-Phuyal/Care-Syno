@@ -2,6 +2,7 @@ package com.bo.caresync.service.patient;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.dto.request.patient.CreatePatientRequest;
+import com.bo.caresync.dto.response.patient.PatientResponse;
 import com.bo.caresync.entity.auth.Role;
 import com.bo.caresync.entity.patient.Patient;
 import com.bo.caresync.entity.patient.PatientCaregiver;
@@ -39,7 +40,7 @@ public class PatientService {
     private final LoginUserUtil loginUserUtil;
     private final String className = this.getClass().getSimpleName();
 
-
+    @Transactional
     public void createPatient(CreatePatientRequest request) {
         String methodName = AppUtil.getMethodName();
         Long currentUserId = loginUserUtil.getCurrentUserId();
@@ -72,6 +73,47 @@ public class PatientService {
 
         log.info("{} Patient created: patientId={}, createdBy={}",
                 methodName, savedPatient.getPatientId(), currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public PatientResponse getPatient(Long patientId) {
+        String methodName = "getPatient";
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.PATIENT_VIEW);
+
+        Patient patient = patientRepository.findByPatientIdAndRecordStatus(
+                        patientId,
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+        log.info("{} Patient retrieved: patientId={}", methodName, patientId);
+        return toResponse(patient);
+    }
+
+
+
+
+    private PatientResponse toResponse(Patient patient) {
+        PatientResponse response = new PatientResponse();
+        response.setPatientId(patient.getPatientId());
+        response.setFullName(patient.getFullName());
+        response.setDateOfBirth(patient.getDateOfBirth());
+        response.setAge(calculateAge(patient.getDateOfBirth()));
+        response.setGender(patient.getGender());
+        response.setPhoneNumber(patient.getPhoneNumber());
+        response.setAddress(patient.getAddress());
+        response.setEmergencyContactName(patient.getEmergencyContactName());
+        response.setEmergencyContactPhone(patient.getEmergencyContactPhone());
+        response.setProfileImageUrl(patient.getProfileImageUrl());
+        return response;
+    }
+
+    private Integer calculateAge(LocalDate birthDate) {
+        if (birthDate == null) return null;
+            return Period.between(birthDate, LocalDate.now()).getYears();
+
     }
 
 
