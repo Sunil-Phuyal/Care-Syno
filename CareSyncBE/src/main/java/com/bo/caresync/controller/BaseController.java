@@ -1,7 +1,7 @@
 package com.bo.caresync.controller;
 
-import com.bo.caresync.dto.ApiResponse;
-import com.bo.caresync.dto.ResponseData;
+import com.bo.caresync.dto.response.ApiResponse;
+import com.bo.caresync.dto.response.ResponseData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 

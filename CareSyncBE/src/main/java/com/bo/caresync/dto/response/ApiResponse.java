@@ -1,4 +1,4 @@
-package com.bo.caresync.dto;
+package com.bo.caresync.dto.response;
 
 import com.bo.caresync.enums.AppEnum;
 import com.bo.caresync.enums.ResponseStatus;

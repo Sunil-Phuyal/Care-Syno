@@ -1,4 +1,4 @@
-package com.bo.caresync.dto.response;
+package com.bo.caresync.dto.response.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
