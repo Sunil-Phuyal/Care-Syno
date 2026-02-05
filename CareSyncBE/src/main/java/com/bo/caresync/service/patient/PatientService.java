@@ -2,6 +2,7 @@ package com.bo.caresync.service.patient;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.dto.request.patient.CreatePatientRequest;
+import com.bo.caresync.dto.request.patient.UpdatePatientRequest;
 import com.bo.caresync.dto.response.patient.PatientResponse;
 import com.bo.caresync.entity.auth.Role;
 import com.bo.caresync.entity.patient.Patient;
@@ -90,6 +91,55 @@ public class PatientService {
 
         log.info("{} Patient retrieved: patientId={}", methodName, patientId);
         return toResponse(patient);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PatientResponse> getMyPatients() {
+        String methodName = AppUtil.getMethodName();
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        List<Long> patientIds = patientCaregiverRepo.findByCaregiverUserIdAndRecordStatus(
+                        currentUserId, AppConstants.RecordStatus.ACTIVE)
+                .stream()
+                .map(PatientCaregiver::getPatientId)
+                .collect(Collectors.toList());
+
+        List<Patient> patients = patientRepository.findAllById(patientIds);
+
+        log.info("{} Retrieved {} patients for user {}", methodName, patients.size(), currentUserId);
+
+        return patients.stream()
+                .filter(p -> AppConstants.RecordStatus.ACTIVE.equals(p.getRecordStatus()))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PatientResponse updatePatient(Long patientId, UpdatePatientRequest request) {
+        String methodName = AppUtil.getMethodName();
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.PATIENT_EDIT);
+
+        Patient patient = patientRepository.findByPatientIdAndRecordStatus(
+                        patientId,
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+        // Update fields
+        patient.setFullName(request.getFullName());
+        patient.setDateOfBirth(request.getDateOfBirth());
+        patient.setGender(request.getGender());
+        patient.setPhoneNumber(request.getPhoneNumber());
+        patient.setAddress(request.getAddress());
+        patient.setEmergencyContactName(request.getEmergencyContactName());
+        patient.setEmergencyContactPhone(request.getEmergencyContactPhone());
+
+        Patient saved = patientRepository.save(patient);
+
+        log.info("{} Patient updated: patientId={}", methodName, patientId);
+        return toResponse(saved);
     }
 
 
