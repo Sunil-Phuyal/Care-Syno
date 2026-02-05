@@ -41,7 +41,10 @@ public enum ErrorCode implements IErrorCode {
 
     // General Errors
     INTERNAL_SERVER_ERROR("SYS_001", "Internal server error"),
-    VALIDATION_ERROR("SYS_002", "Validation error");
+    VALIDATION_ERROR("SYS_002", "Validation error"),
+
+
+    PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists");
 
     private final String code;
     private final String message;

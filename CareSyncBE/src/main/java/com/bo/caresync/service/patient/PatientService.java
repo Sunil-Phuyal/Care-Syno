@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +46,20 @@ public class PatientService {
     public void createPatient(CreatePatientRequest request) {
         String methodName = AppUtil.getMethodName();
         Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        // Check for existing patient
+        Optional<Patient> existingPatient = patientRepository.findByFullNameAndDateOfBirthAndRecordStatus(
+                request.getFullName(),
+                request.getDateOfBirth(),
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        if (existingPatient.isPresent()) {
+            log.warn("{} Attempt to create duplicate patient: name={}, dob={}, userId={}",
+                    methodName, request.getFullName(), request.getDateOfBirth(), currentUserId);
+            throw new BaseException(ErrorCode.PATIENT_ALREADY_EXISTS);
+        }
+
         // Create patient
         Patient patient = new Patient();
         patient.setFullName(request.getFullName());
