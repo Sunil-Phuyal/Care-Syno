@@ -35,7 +35,7 @@ public class PatientService {
         // Check permission (throws exception if denied)
         loginUserUtil.requirePermission(patientId, AppConstants.Permission.PATIENT_VIEW);
 
-        // Permission granted - proceed with business logic
+        // Permission granted
         Patient patient = patientRepository.findByPatientIdAndRecordStatus(
                         patientId,
                         AppConstants.RecordStatus.ACTIVE
@@ -45,4 +45,8 @@ public class PatientService {
         log.info("{} Patient retrieved: patientId={}", methodName, patientId);
         return patient;
     }
+
+
+
+
 }
