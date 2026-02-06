@@ -71,7 +71,7 @@ public class MedicationService {
 
     @Transactional(readOnly = true)
     public List<MedicationSchedule> getPatientSchedules(Long patientId) {
-        String methodName = "getPatientSchedules";
+        String methodName = AppUtil.getMethodName();
 
         // Check permission
         loginUserUtil.requirePermission(patientId, AppConstants.Permission.MEDICATION_VIEW);
@@ -88,7 +88,7 @@ public class MedicationService {
 
     @Transactional
     public MedicationAdministration logAdministration(LogMedicationRequest request) {
-        String methodName = "logAdministration";
+        String methodName = AppUtil.getMethodName();
         Long currentUserId = loginUserUtil.getCurrentUserId();
 
         // Check permission
@@ -136,7 +136,7 @@ public class MedicationService {
 
     @Transactional(readOnly = true)
     public List<MedicationAdministration> getAdministrationHistory(Long patientId) {
-        String methodName = "getAdministrationHistory";
+        String methodName = AppUtil.getMethodName();
 
         // Check permission
         loginUserUtil.requirePermission(
