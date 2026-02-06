@@ -2,6 +2,7 @@ package com.bo.caresync.service.caregiver;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
+import com.bo.caresync.dto.request.caregiver.GrantPermissionRequest;
 import com.bo.caresync.dto.request.caregiver.InviteCaregiverRequest;
 import com.bo.caresync.dto.request.caregiver.UpdateCaregiverRoleRequest;
 import com.bo.caresync.dto.response.caregiver.CaregiverResponse;
@@ -163,7 +164,7 @@ public class CaregiverService {
     }
     @Transactional
     public CaregiverResponse updateCaregiverRole(UpdateCaregiverRoleRequest request) {
-        String methodName = "updateCaregiverRole";
+        String methodName = AppUtil.getMethodName();
 
         // Check permission
         loginUserUtil.requirePermission(request.getPatientId(),
@@ -186,6 +187,57 @@ public class CaregiverService {
                 methodName, request.getCaregiverUserId(), request.getPatientId(), request.getNewRoleId());
 
         return toCaregiverResponse(user, updated);
+    }
+
+    @Transactional
+    public void grantPermission(GrantPermissionRequest request) {
+        String methodName =AppUtil.getMethodName();
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        // Check permission to edit permissions
+        loginUserUtil.requirePermission(request.getPatientId(),
+                AppConstants.Permission.CAREGIVER_EDIT_PERMISSIONS);
+
+        // Get permission ID
+        Permission permission = permissionRepository.findByPermissionCode(request.getPermissionCode())
+                .orElseThrow(() -> new BaseException(ErrorCode.PERMISSION_NOT_FOUND));
+
+        // Check if override already exists
+        Optional<PatientCaregiverPermission> existing = permissionRepo
+                .findByPatientIdAndCaregiverUserIdAndPermissionIdAndRecordStatus(
+                        request.getPatientId(),
+                        request.getCaregiverUserId(),
+                        permission.getPermissionId(),
+                        AppConstants.RecordStatus.ACTIVE
+                );
+
+        if (existing.isPresent()) {
+            // Update existing
+            PatientCaregiverPermission pcp = existing.get();
+            pcp.setIsGranted(request.getIsGranted());
+            pcp.setExpiresAt(request.getExpiresAt());
+            pcp.setNotes(request.getNotes());
+            permissionRepo.save(pcp);
+        } else {
+            // Create new override
+            PatientCaregiverPermission pcp = new PatientCaregiverPermission();
+            pcp.setPatientId(request.getPatientId());
+            pcp.setCaregiverUserId(request.getCaregiverUserId());
+            pcp.setPermissionId(permission.getPermissionId());
+            pcp.setIsGranted(request.getIsGranted());
+            pcp.setGrantedByUserId(currentUserId);
+            pcp.setExpiresAt(request.getExpiresAt());
+            pcp.setNotes(request.getNotes());
+            pcp.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+
+            permissionRepo.save(pcp);
+        }
+
+        log.info("{} Permission {} for caregiver {} on patient {}",
+                methodName,
+                request.getIsGranted() ? "granted" : "denied",
+                request.getCaregiverUserId(),
+                request.getPatientId());
     }
 
     private CaregiverResponse toCaregiverResponse(User user, PatientCaregiver link) {
