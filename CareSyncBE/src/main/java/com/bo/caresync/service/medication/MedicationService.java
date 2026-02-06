@@ -23,7 +23,7 @@ import java.util.List;
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/6/2026, 3:31 PM,
+ * @since 2/6/2026, 2:31 PM,
  **/
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class MedicationService {
     }
 
     @Transactional
-    public MedicationSchedule createSchedule(CreateMedicationScheduleRequest request) {
+    public void createSchedule(CreateMedicationScheduleRequest request) {
         String methodName = AppUtil.getMethodName();
 
         // Check permission
@@ -62,11 +62,9 @@ public class MedicationService {
         schedule.setStartDate(request.getStartDate());
         schedule.setEndDate(request.getEndDate());
         schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
-        MedicationSchedule saved = scheduleRepo.save(schedule);
+        scheduleRepo.save(schedule);
 
         log.info("{} Medication schedule created: scheduleId={}", methodName, saved.getScheduleId());
-        return saved;
     }
 
     @Transactional(readOnly = true)
