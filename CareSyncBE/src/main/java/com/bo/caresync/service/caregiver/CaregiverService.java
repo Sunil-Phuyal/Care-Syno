@@ -13,6 +13,7 @@ import com.bo.caresync.entity.user.UserRole;
 import com.bo.caresync.enums.ErrorCode;
 import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
+import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,6 +110,27 @@ public class CaregiverService {
                 methodName, caregiver.getUserId(), request.getPatientId());
 
         return toCaregiverResponse(caregiver, link);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CaregiverResponse> getPatientCaregivers(Long patientId) {
+        String methodName = AppUtil.getMethodName();
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.CAREGIVER_VIEW);
+
+        List<PatientCaregiver> caregivers = patientCaregiverRepo.findByPatientIdAndRecordStatus(
+                patientId,
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        return caregivers.stream()
+                .map(pc -> {
+                    User user = userRepo.findById(pc.getCaregiverUserId())
+                            .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+                    return toCaregiverResponse(user, pc);
+                })
+                .collect(Collectors.toList());
     }
 
     private CaregiverResponse toCaregiverResponse(User user, PatientCaregiver link) {

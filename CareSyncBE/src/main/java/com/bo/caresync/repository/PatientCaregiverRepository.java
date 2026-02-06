@@ -30,4 +30,9 @@ public interface PatientCaregiverRepository extends JpaRepository<PatientCaregiv
             Long caregiverUserId,
             String recordStatus
     );
+
+    List<PatientCaregiver> findByPatientIdAndRecordStatus(
+            Long patientId,
+            String recordStatus
+    );
 }
