@@ -3,6 +3,7 @@ package com.bo.caresync.service.report;
 import com.bo.caresync.constant.AppConstants;
 
 import com.bo.caresync.dto.request.report.MedicationAdherenceReport;
+import com.bo.caresync.dto.request.report.PatientSummaryReport;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
 import com.bo.caresync.entity.patient.Patient;
@@ -18,7 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Sunil Phuyal
@@ -89,6 +93,61 @@ public class ReportService {
                 methodName, patientId, report.getAdherencePercentage());
 
         return report;
+    }
+
+    @Transactional(readOnly = true)
+    public PatientSummaryReport getPatientSummary(Long patientId) {
+        String methodName = AppUtil.getMethodName();
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.REPORT_VIEW);
+
+        Patient patient = patientRepo.findByPatientIdAndRecordStatus(
+                        patientId,
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+        // Get active medication schedules
+        List<MedicationSchedule> schedules = scheduleRepo.findByPatientIdAndRecordStatus(
+                patientId,
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        // Get caregivers
+        List<PatientCaregiver> caregiverLinks = patientCaregiverRepo.findByPatientIdAndRecordStatus(
+                patientId,
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        List<String> caregiverNames = caregiverLinks.stream()
+                .map(link -> {
+                    User user = userRepo.findById(link.getCaregiverUserId()).orElse(null);
+                    return user != null ? user.getFullName() : "Unknown";
+                })
+                .collect(Collectors.toList());
+
+        // Calculate adherence
+        MedicationAdherenceReport adherence = getMedicationAdherenceReport(patientId);
+
+        PatientSummaryReport summary = new PatientSummaryReport();
+        summary.setPatientId(patientId);
+        summary.setFullName(patient.getFullName());
+        summary.setAge(calculateAge(patient.getDateOfBirth()));
+        summary.setDateOfBirth(patient.getDateOfBirth());
+        summary.setActiveMedicationCount(schedules.size());
+        summary.setTotalCaregiversCount(caregiverLinks.size());
+        summary.setOverallAdherencePercentage(adherence.getAdherencePercentage());
+        summary.setCaregivers(caregiverNames);
+
+        log.info("{} Summary report generated for patient {}", methodName, patientId);
+
+        return summary;
+    }
+
+    private Integer calculateAge(LocalDate dateOfBirth) {
+        if (dateOfBirth == null) return null;
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 
 
