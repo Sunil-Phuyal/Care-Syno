@@ -1,6 +1,5 @@
 package com.bo.caresync.controller;
 
-
 import com.bo.caresync.constant.MessageConstants;
 import com.bo.caresync.dto.request.auth.RegisterRequest;
 import com.bo.caresync.dto.request.auth.LoginRequest;
