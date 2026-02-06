@@ -3,6 +3,7 @@ package com.bo.caresync.service.caregiver;
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
 import com.bo.caresync.dto.request.caregiver.InviteCaregiverRequest;
+import com.bo.caresync.dto.request.caregiver.UpdateCaregiverRoleRequest;
 import com.bo.caresync.dto.response.caregiver.CaregiverResponse;
 import com.bo.caresync.entity.auth.Permission;
 import com.bo.caresync.entity.auth.Role;
@@ -131,6 +132,60 @@ public class CaregiverService {
                     return toCaregiverResponse(user, pc);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void removeCaregiver(Long patientId, Long caregiverUserId) {
+        String methodName = AppUtil.getMethodName();
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, AppConstants.Permission.CAREGIVER_REMOVE);
+
+        // Cannot remove self
+        if (caregiverUserId.equals(loginUserUtil.getCurrentUserId())) {
+            throw new BaseException(ErrorCode.VALIDATION_ERROR,
+                    MessageConstants.Caregiver.CANNOT_REMOVE_SELF);
+        }
+
+        PatientCaregiver link = patientCaregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
+                        patientId,
+                        caregiverUserId,
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_CAREGIVER_NOT_FOUND));
+
+        // Soft delete
+        link.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
+        patientCaregiverRepo.save(link);
+
+        log.info("{} Caregiver removed: userId={}, patientId={}",
+                methodName, caregiverUserId, patientId);
+    }
+    @Transactional
+    public CaregiverResponse updateCaregiverRole(UpdateCaregiverRoleRequest request) {
+        String methodName = "updateCaregiverRole";
+
+        // Check permission
+        loginUserUtil.requirePermission(request.getPatientId(),
+                AppConstants.Permission.CAREGIVER_EDIT_PERMISSIONS);
+
+        PatientCaregiver link = patientCaregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
+                        request.getPatientId(),
+                        request.getCaregiverUserId(),
+                        AppConstants.RecordStatus.ACTIVE
+                )
+                .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_CAREGIVER_NOT_FOUND));
+
+        link.setRoleId(request.getNewRoleId());
+        PatientCaregiver updated = patientCaregiverRepo.save(link);
+
+        User user = userRepo.findById(request.getCaregiverUserId())
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+
+        log.info("{} Caregiver role updated: userId={}, patientId={}, newRoleId={}",
+                methodName, request.getCaregiverUserId(), request.getPatientId(), request.getNewRoleId());
+
+        return toCaregiverResponse(user, updated);
     }
 
     private CaregiverResponse toCaregiverResponse(User user, PatientCaregiver link) {
