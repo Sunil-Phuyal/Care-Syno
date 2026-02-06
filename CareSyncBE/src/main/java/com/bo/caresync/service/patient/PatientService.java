@@ -55,7 +55,7 @@ public class PatientService {
         );
 
         if (existingPatient.isPresent()) {
-            log.warn("{} Attempt to create duplicate patient: name={}, dob={}, userId={}",
+            log.warn("{}{} Attempt to create duplicate patient: name={}, dob={}, userId={}",className,
                     methodName, request.getFullName(), request.getDateOfBirth(), currentUserId);
             throw new BaseException(ErrorCode.PATIENT_ALREADY_EXISTS);
         }
@@ -74,9 +74,8 @@ public class PatientService {
         Patient savedPatient = patientRepository.save(patient);
 
         Role primaryRole = roleRepository.findByRoleNameAndRecordStatus(
-                AppConstants.Role.PRIMARY_CAREGIVER,
-                AppConstants.RecordStatus.ACTIVE
-        ).orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+                AppConstants.Role.PRIMARY_CAREGIVER, AppConstants.RecordStatus.ACTIVE).orElseThrow(()
+                -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
 
         PatientCaregiver link = new PatientCaregiver();
         link.setPatientId(savedPatient.getPatientId());
@@ -93,7 +92,7 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     public PatientResponse getPatient(Long patientId) {
-        String methodName = "getPatient";
+        String methodName = AppUtil.getMethodName();
 
         // Check permission
         loginUserUtil.requirePermission(patientId, AppConstants.Permission.PATIENT_VIEW);
@@ -202,8 +201,4 @@ public class PatientService {
             return Period.between(birthDate, LocalDate.now()).getYears();
 
     }
-
-
-
-
 }
