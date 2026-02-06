@@ -64,7 +64,7 @@ public class MedicationService {
         schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
         scheduleRepo.save(schedule);
 
-        log.info("{} Medication schedule created: scheduleId={}", methodName, saved.getScheduleId());
+        log.info("{} Medication schedule created: scheduleId={}", methodName,getPatientSchedules(request.getPatientId()));
     }
 
     @Transactional(readOnly = true)
