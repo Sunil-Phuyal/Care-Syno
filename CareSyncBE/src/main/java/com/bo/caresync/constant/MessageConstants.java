@@ -54,4 +54,13 @@ public class MessageConstants {
         public static final String PERMISSION_GRANTED = "Permission granted successfully";
         public static final String PERMISSION_REVOKED = "Permission revoked successfully";
     }
+    public static class Caregiver {
+        private Caregiver() {}
+        public static final String INVITATION_SENT = "Caregiver invitation sent successfully";
+        public static final String CAREGIVER_ADDED = "Caregiver added to care team successfully";
+        public static final String CAREGIVER_REMOVED = "Caregiver removed from care team";
+        public static final String ROLE_UPDATED = "Caregiver role updated successfully";
+        public static final String CANNOT_REMOVE_SELF = "You cannot remove yourself from the care team";
+        public static final String ALREADY_CAREGIVER = "User is already a caregiver for this patient";
+    }
 }
