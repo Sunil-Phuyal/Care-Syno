@@ -6,9 +6,14 @@ import com.bo.caresync.dto.request.medication.LogMedicationRequest;
 import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
-import com.bo.caresync.repository.MedicationAdministrationRepository;
-import com.bo.caresync.repository.MedicationRepository;
-import com.bo.caresync.repository.MedicationScheduleRepository;
+import com.bo.caresync.entity.patient.Patient;
+import com.bo.caresync.entity.patient.PatientCaregiver;
+import com.bo.caresync.entity.user.User;
+import com.bo.caresync.enums.ErrorCode;
+import com.bo.caresync.exceptions.BaseException;
+import com.bo.caresync.repository.*;
+import com.bo.caresync.service.email.EmailService;
+import com.bo.caresync.service.email.EmailTemplateService;
 import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +39,11 @@ public class MedicationService {
     private final MedicationScheduleRepository scheduleRepo;
     private final MedicationAdministrationRepository administrationRepo;
     private final LoginUserUtil loginUserUtil;
+    private final PatientRepository patientRepo;
+    private final PatientCaregiverRepository patientCaregiverRepo;
+    private final UserRepository userRepo;
+    private final EmailService emailService;
+    private final EmailTemplateService emailTemplateService;
 
 
 
@@ -109,7 +119,50 @@ public class MedicationService {
         if (!recentAdministrations.isEmpty()) {
             log.warn("{} Duplicate dose detected within 4 hours for patient {} medication {}",
                     methodName, request.getPatientId(), request.getMedicationId());
-            // Could throw warning exception or just log
+
+            // Send warning email to all caregivers
+            try {
+                MedicationAdministration recent = recentAdministrations.get(0);
+                User previousCaregiver = userRepo.findById(recent.getCaregiverUserId())
+                        .orElse(null);
+                User currentCaregiver = loginUserUtil.getCurrentUser();
+                Patient patient = patientRepo.findById(request.getPatientId())
+                        .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+                Medication medication = medicationRepo.findById(request.getMedicationId())
+                        .orElseThrow(() -> new BaseException(ErrorCode.MEDICATION_NOT_FOUND));
+
+                // Get all caregivers for this patient
+                List<PatientCaregiver> caregivers = patientCaregiverRepo
+                        .findByPatientIdAndRecordStatus(request.getPatientId(), AppConstants.RecordStatus.ACTIVE);
+
+                String[] caregiverEmails = caregivers.stream()
+                        .map(pc -> userRepo.findById(pc.getCaregiverUserId()).orElse(null))
+                        .filter(u -> u != null)
+                        .map(User::getEmail)
+                        .toArray(String[]::new);
+
+                if (caregiverEmails.length > 0) {
+                    String warningBody = emailTemplateService.getDuplicateDoseWarningBody(
+                            currentCaregiver.getFullName(),
+                            patient.getFullName(),
+                            medication.getName(),
+                            recent.getActualTime().toString(),
+                            previousCaregiver != null ? previousCaregiver.getFullName() : "Unknown"
+                    );
+
+                    emailService.sendBulkEmail(
+                            caregiverEmails,
+                            "Duplicate Dose Warning - " + patient.getFullName(),
+                            warningBody
+                    );
+
+                    log.info("{} Duplicate dose warning email sent to {} caregivers",
+                            methodName, caregiverEmails.length);
+                }
+            } catch (Exception e) {
+                log.error("{} Failed to send duplicate dose warning email", methodName, e);
+                // Don't throw exception - the warning email is optional
+            }
         }
 
         MedicationAdministration administration = new MedicationAdministration();

@@ -8,6 +8,7 @@ import com.bo.caresync.dto.request.caregiver.UpdateCaregiverRoleRequest;
 import com.bo.caresync.dto.response.caregiver.CaregiverResponse;
 import com.bo.caresync.entity.auth.Permission;
 import com.bo.caresync.entity.auth.Role;
+import com.bo.caresync.entity.patient.Patient;
 import com.bo.caresync.entity.patient.PatientCaregiver;
 import com.bo.caresync.entity.patient.PatientCaregiverPermission;
 import com.bo.caresync.entity.user.User;
@@ -15,6 +16,8 @@ import com.bo.caresync.entity.user.UserRole;
 import com.bo.caresync.enums.ErrorCode;
 import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
+import com.bo.caresync.service.email.EmailService;
+import com.bo.caresync.service.email.EmailTemplateService;
 import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +50,9 @@ public class CaregiverService {
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
     private final LoginUserUtil loginUserUtil;
+    private final PatientRepository patientRepo;
+    private final EmailService emailService;
+    private final EmailTemplateService  emailTemplateService;
 
     @Transactional
     public CaregiverResponse inviteCaregiver(InviteCaregiverRequest request) {
@@ -72,12 +78,14 @@ public class CaregiverService {
 
         // Create user if doesn't exist
         User caregiver;
+        String tempPassword = null;
+
         if (existingUser.isEmpty()) {
             caregiver = new User();
             caregiver.setEmail(request.getEmail());
             caregiver.setFullName(request.getFullName());
             // Generate temporary password
-            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+            tempPassword = UUID.randomUUID().toString().substring(0, 8);
             caregiver.setPasswordHash(passwordEncoder.encode(tempPassword));
             caregiver.setIsEmailVerified(false);
             caregiver.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
@@ -92,8 +100,6 @@ public class CaregiverService {
             userRoleRepo.save(userRole);
 
             log.info("{} New user created for caregiver: email={}", methodName, request.getEmail());
-
-            // TODO: Send email with temporary password
         } else {
             caregiver = existingUser.get();
         }
@@ -107,6 +113,37 @@ public class CaregiverService {
         link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
 
         patientCaregiverRepo.save(link);
+
+        // Send invitation email for new users
+        if (existingUser.isEmpty() && tempPassword != null) {
+            try {
+                User inviter = loginUserUtil.getCurrentUser();
+                Patient patient = patientRepo.findById(request.getPatientId())
+                        .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+
+                Role role = roleRepo.findById(request.getRoleId())
+                        .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+
+                String emailBody = emailTemplateService.getCaregiverInvitationBody(
+                        inviter.getFullName(),
+                        patient.getFullName(),
+                        request.getEmail(),
+                        tempPassword,
+                        role.getDisplayName()
+                );
+
+                emailService.sendSimpleEmail(
+                        request.getEmail(),
+                        "You've been invited to join a care team on CareSync",
+                        emailBody
+                );
+
+                log.info("{} Invitation email sent to: {}", methodName, request.getEmail());
+            } catch (Exception e) {
+                log.error("{} Failed to send invitation email to: {}", methodName, request.getEmail(), e);
+                // Don't throw exception - the invitation was successful, email is just a notification
+            }
+        }
 
         log.info("{} Caregiver invited: userId={}, patientId={}",
                 methodName, caregiver.getUserId(), request.getPatientId());

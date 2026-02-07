@@ -63,4 +63,14 @@ public class MessageConstants {
         public static final String CANNOT_REMOVE_SELF = "You cannot remove yourself from the care team";
         public static final String ALREADY_CAREGIVER = "User is already a caregiver for this patient";
     }
+
+    public static class Email {
+        private Email() {}
+        public static final String WELCOME_SUBJECT = "Welcome to CareSync!";
+        public static final String INVITATION_SUBJECT = "You've been invited to join a care team";
+        public static final String MEDICATION_LOGGED_SUBJECT = "Medication Administration Alert";
+        public static final String PERMISSION_GRANTED_SUBJECT = "Permission Update";
+        public static final String DUPLICATE_DOSE_SUBJECT = "Duplicate Dose Warning";
+        public static final String PASSWORD_RESET_SUBJECT = "Password Reset Request";
+    }
 }
