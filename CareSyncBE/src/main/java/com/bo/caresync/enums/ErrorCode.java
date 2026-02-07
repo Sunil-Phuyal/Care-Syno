@@ -44,7 +44,9 @@ public enum ErrorCode implements IErrorCode {
     VALIDATION_ERROR("SYS_002", "Validation error"),
 
 
-    PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists");
+    PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists"),
+    // In your ErrorCode enum
+    MEDICATION_NOT_FOUND("404", "Medication not found");
 
     private final String code;
     private final String message;
