@@ -7,7 +7,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: '#e5e7eb', // Add this line (gray-200)
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
