@@ -30,8 +30,9 @@ api.interceptors.request.use(
 // Response interceptor - Handle errors globally
 api.interceptors.response.use(
   (response) => {
-    // Return the data directly
-    return response.data;
+    // IMPORTANT: Return response as-is, not response.data
+    // The API files will handle unwrapping the nested structure
+    return response;
   },
   (error: AxiosError) => {
     // Handle 401 Unauthorized
@@ -39,7 +40,7 @@ api.interceptors.response.use(
       // Clear storage
       storage.clear();
       
-      // Redirect to login (we'll handle this better in Phase 3)
+      // Redirect to login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

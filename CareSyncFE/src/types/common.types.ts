@@ -1,9 +1,15 @@
 // Common types used across the application
 
 export interface ApiResponse<T = any> {
-  responseCode: string;
-  responseMessage: string;
-  data: T;
+  apiResponseCode: string;
+  apiResponseMessage: string;
+  apiResponseFrom: string;
+  apiResponseTime: string;
+  apiResponseData: {
+    responseCode: string;
+    responseMessage: string;
+    responseData: T;
+  };
 }
 
 export interface ApiError {
