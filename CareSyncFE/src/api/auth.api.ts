@@ -1,4 +1,3 @@
-// api/auth.api.ts
 import { api } from '../lib/axios';
 import type { 
   LoginRequest, 
@@ -14,11 +13,11 @@ export const authApi = {
    * POST /api/v1/auth/login
    */
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await api.post<any, ApiResponse<LoginResponse>>(
+    const response = await api.post<ApiResponse<LoginResponse>>(
       '/auth/login',
       credentials
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -26,11 +25,11 @@ export const authApi = {
    * POST /api/v1/auth/register
    */
   register: async (data: RegisterRequest): Promise<User> => {
-    const response = await api.post<any, ApiResponse<User>>(
+    const response = await api.post<ApiResponse<User>>(
       '/auth/register',
       data
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -38,7 +37,7 @@ export const authApi = {
    * GET /api/v1/auth/me
    */
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<any, ApiResponse<User>>('/auth/me');
-    return response.data;
+    const response = await api.get<ApiResponse<User>>('/auth/me');
+    return response.data.apiResponseData.responseData;
   },
 };

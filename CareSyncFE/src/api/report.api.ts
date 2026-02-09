@@ -11,10 +11,10 @@ export const reportApi = {
    * GET /api/v1/reports/adherence/patient/{patientId}
    */
   getAdherenceReport: async (patientId: number): Promise<MedicationAdherenceReport> => {
-    const response = await api.get<any, ApiResponse<MedicationAdherenceReport>>(
+    const response = await api.get<ApiResponse<MedicationAdherenceReport>>(
       `/reports/adherence/patient/${patientId}`
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -22,9 +22,9 @@ export const reportApi = {
    * GET /api/v1/reports/summary/patient/{patientId}
    */
   getPatientSummary: async (patientId: number): Promise<PatientSummaryReport> => {
-    const response = await api.get<any, ApiResponse<PatientSummaryReport>>(
+    const response = await api.get<ApiResponse<PatientSummaryReport>>(
       `/reports/summary/patient/${patientId}`
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 };

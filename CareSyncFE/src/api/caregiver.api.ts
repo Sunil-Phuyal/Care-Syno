@@ -12,10 +12,10 @@ export const caregiverApi = {
    * GET /api/v1/caregivers/patient/{patientId}
    */
   getPatientCaregivers: async (patientId: number): Promise<Caregiver[]> => {
-    const response = await api.get<any, ApiResponse<Caregiver[]>>(
+    const response = await api.get<ApiResponse<Caregiver[]>>(
       `/caregivers/patient/${patientId}`
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -23,11 +23,11 @@ export const caregiverApi = {
    * POST /api/v1/caregivers/invite
    */
   inviteCaregiver: async (data: InviteCaregiverRequest): Promise<Caregiver> => {
-    const response = await api.post<any, ApiResponse<Caregiver>>(
+    const response = await api.post<ApiResponse<Caregiver>>(
       '/caregivers/invite',
       data
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**

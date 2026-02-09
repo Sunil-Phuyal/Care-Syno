@@ -12,8 +12,8 @@ export const patientApi = {
    * GET /api/v1/patients
    */
   getMyPatients: async (): Promise<Patient[]> => {
-    const response = await api.get<any, ApiResponse<Patient[]>>('/patients');
-    return response.data;
+    const response = await api.get<ApiResponse<Patient[]>>('/patients');
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -21,8 +21,8 @@ export const patientApi = {
    * GET /api/v1/patients/{id}
    */
   getPatient: async (id: number): Promise<Patient> => {
-    const response = await api.get<any, ApiResponse<Patient>>(`/patients/${id}`);
-    return response.data;
+    const response = await api.get<ApiResponse<Patient>>(`/patients/${id}`);
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -30,8 +30,8 @@ export const patientApi = {
    * POST /api/v1/patients
    */
   createPatient: async (data: CreatePatientRequest): Promise<Patient> => {
-    const response = await api.post<any, ApiResponse<Patient>>('/patients', data);
-    return response.data;
+    const response = await api.post<ApiResponse<Patient>>('/patients', data);
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -39,8 +39,8 @@ export const patientApi = {
    * PUT /api/v1/patients/{id}
    */
   updatePatient: async (id: number, data: UpdatePatientRequest): Promise<Patient> => {
-    const response = await api.put<any, ApiResponse<Patient>>(`/patients/${id}`, data);
-    return response.data;
+    const response = await api.put<ApiResponse<Patient>>(`/patients/${id}`, data);
+    return response.data.apiResponseData.responseData;
   },
 
   /**

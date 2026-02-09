@@ -14,8 +14,8 @@ export const medicationApi = {
    * GET /api/v1/medications
    */
   getAllMedications: async (): Promise<Medication[]> => {
-    const response = await api.get<any, ApiResponse<Medication[]>>('/medications');
-    return response.data;
+    const response = await api.get<ApiResponse<Medication[]>>('/medications');
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -23,10 +23,10 @@ export const medicationApi = {
    * GET /api/v1/medications/schedules/patient/{patientId}
    */
   getPatientSchedules: async (patientId: number): Promise<MedicationSchedule[]> => {
-    const response = await api.get<any, ApiResponse<MedicationSchedule[]>>(
+    const response = await api.get<ApiResponse<MedicationSchedule[]>>(
       `/medications/schedules/patient/${patientId}`
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -34,11 +34,11 @@ export const medicationApi = {
    * POST /api/v1/medications/schedules
    */
   createSchedule: async (data: CreateScheduleRequest): Promise<MedicationSchedule> => {
-    const response = await api.post<any, ApiResponse<MedicationSchedule>>(
+    const response = await api.post<ApiResponse<MedicationSchedule>>(
       '/medications/schedules',
       data
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -46,11 +46,11 @@ export const medicationApi = {
    * POST /api/v1/medications/administrations
    */
   logAdministration: async (data: LogMedicationRequest): Promise<MedicationAdministration> => {
-    const response = await api.post<any, ApiResponse<MedicationAdministration>>(
+    const response = await api.post<ApiResponse<MedicationAdministration>>(
       '/medications/administrations',
       data
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 
   /**
@@ -58,9 +58,9 @@ export const medicationApi = {
    * GET /api/v1/medications/administrations/patient/{patientId}
    */
   getAdministrationHistory: async (patientId: number): Promise<MedicationAdministration[]> => {
-    const response = await api.get<any, ApiResponse<MedicationAdministration[]>>(
+    const response = await api.get<ApiResponse<MedicationAdministration[]>>(
       `/medications/administrations/patient/${patientId}`
     );
-    return response.data;
+    return response.data.apiResponseData.responseData;
   },
 };
