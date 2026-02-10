@@ -10,6 +10,10 @@ import { PatientList } from './pages/patients/PatientList';
 import { PatientDetail } from './pages/patients/PatientDetail';
 import { CreatePatient } from './pages/patients/CreatePatient';
 import { EditPatient } from './pages/patients/EditPatient';
+import { MedicationList } from './pages/medications/MedicationList';
+import { CreateSchedule } from './pages/medications/CreateSchedule';
+import { LogMedication } from './pages/medications/LogMedication';
+import { MedicationHistory } from './pages/medications/MedicationHistory';
 
 function App() {
   return (
@@ -73,6 +77,42 @@ function App() {
               
               {/* 404 Route */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              {/* Medication Routes */}
+<Route
+  path="/medications"
+  element={
+    <ProtectedRoute>
+      <MedicationList />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/medications/new"
+  element={
+    <ProtectedRoute>
+      <CreateSchedule />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/medications/log"
+  element={
+    <ProtectedRoute>
+      <LogMedication />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/medications/history"
+  element={
+    <ProtectedRoute>
+      <MedicationHistory />
+    </ProtectedRoute>
+  }
+/>
             </Routes>
           </PatientProvider>
         </PermissionProvider>
