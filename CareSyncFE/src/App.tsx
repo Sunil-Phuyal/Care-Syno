@@ -17,6 +17,8 @@ import { MedicationHistory } from './pages/medications/MedicationHistory';
 import { CaregiverList } from './pages/caregivers/CaregiverList';
 import { InviteCaregiver } from './pages/caregivers/InviteCaregiver';
 import { ManagePermissions } from './pages/caregivers/ManagePermissions';
+import { AdherenceReport } from './pages/reports/AdherenceReport';
+import { PatientSummary } from './pages/reports/PatientSummary';
 
 function App() {
   return (
