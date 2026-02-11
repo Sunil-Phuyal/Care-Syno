@@ -145,6 +145,25 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Report Routes */}
+              <Route
+                path="/reports/adherence"
+                element={
+                  <ProtectedRoute>
+                    <AdherenceReport />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/reports/summary"
+                element={
+                  <ProtectedRoute>
+                    <PatientSummary />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </PatientProvider>
         </PermissionProvider>
