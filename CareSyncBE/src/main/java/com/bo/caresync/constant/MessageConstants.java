@@ -19,6 +19,12 @@ public class MessageConstants {
         public static final String ERROR = "Error while getting current auditor: {}";
     }
 
+    public static class Cors {
+        private Cors() {}
+
+        public static final String PRE_FLIGHT_MSG = "Pre-flight CORS request received.";
+    }
+
     public static class Auth {
         private Auth() {}
 
