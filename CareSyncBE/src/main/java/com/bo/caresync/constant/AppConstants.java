@@ -18,6 +18,20 @@ public class AppConstants {
         public static final String ANONYMOUS_USER = "anonymousUser";
     }
 
+    public static class Cors {
+        private Cors() {}
+
+        public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
+        public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
+        public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+        public static final String ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
+        public static final String ACCESS_CONTROL_EXPOSE_HEADERS = "Access-Control-Expose-Headers";
+
+        public static final String ALL = "*";
+        public static final String OPTIONS_METHOD = "OPTIONS";
+        public static final String MAX_AGE_24_HOURS = "86400";
+    }
+
     public static class RecordStatus {
         private RecordStatus() {}
         public static final String ACTIVE = "Y";

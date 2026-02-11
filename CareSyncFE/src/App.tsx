@@ -14,6 +14,11 @@ import { MedicationList } from './pages/medications/MedicationList';
 import { CreateSchedule } from './pages/medications/CreateSchedule';
 import { LogMedication } from './pages/medications/LogMedication';
 import { MedicationHistory } from './pages/medications/MedicationHistory';
+import { CaregiverList } from './pages/caregivers/CaregiverList';
+import { InviteCaregiver } from './pages/caregivers/InviteCaregiver';
+import { ManagePermissions } from './pages/caregivers/ManagePermissions';
+import { AdherenceReport } from './pages/reports/AdherenceReport';
+import { PatientSummary } from './pages/reports/PatientSummary';
 
 function App() {
   return (
@@ -35,7 +40,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+
               <Route
                 path="/patients"
                 element={
@@ -44,7 +49,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+
               <Route
                 path="/patients/new"
                 element={
@@ -53,7 +58,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+
               <Route
                 path="/patients/:id"
                 element={
@@ -62,7 +67,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+
               <Route
                 path="/patients/:id/edit"
                 element={
@@ -74,45 +79,91 @@ function App() {
 
               {/* Default Route */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              
+
               {/* 404 Route */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
               {/* Medication Routes */}
-<Route
-  path="/medications"
-  element={
-    <ProtectedRoute>
-      <MedicationList />
-    </ProtectedRoute>
-  }
-/>
+              <Route
+                path="/medications"
+                element={
+                  <ProtectedRoute>
+                    <MedicationList />
+                  </ProtectedRoute>
+                }
+              />
 
-<Route
-  path="/medications/new"
-  element={
-    <ProtectedRoute>
-      <CreateSchedule />
-    </ProtectedRoute>
-  }
-/>
+              <Route
+                path="/medications/new"
+                element={
+                  <ProtectedRoute>
+                    <CreateSchedule />
+                  </ProtectedRoute>
+                }
+              />
 
-<Route
-  path="/medications/log"
-  element={
-    <ProtectedRoute>
-      <LogMedication />
-    </ProtectedRoute>
-  }
-/>
+              <Route
+                path="/medications/log"
+                element={
+                  <ProtectedRoute>
+                    <LogMedication />
+                  </ProtectedRoute>
+                }
+              />
 
-<Route
-  path="/medications/history"
-  element={
-    <ProtectedRoute>
-      <MedicationHistory />
-    </ProtectedRoute>
-  }
-/>
+              <Route
+                path="/medications/history"
+                element={
+                  <ProtectedRoute>
+                    <MedicationHistory />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Caregiver Routes */}
+              <Route
+                path="/caregivers"
+                element={
+                  <ProtectedRoute>
+                    <CaregiverList />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/caregivers/invite"
+                element={
+                  <ProtectedRoute>
+                    <InviteCaregiver />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/caregivers/:id/permissions"
+                element={
+                  <ProtectedRoute>
+                    <ManagePermissions />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Report Routes */}
+              <Route
+                path="/reports/adherence"
+                element={
+                  <ProtectedRoute>
+                    <AdherenceReport />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/reports/summary"
+                element={
+                  <ProtectedRoute>
+                    <PatientSummary />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </PatientProvider>
         </PermissionProvider>

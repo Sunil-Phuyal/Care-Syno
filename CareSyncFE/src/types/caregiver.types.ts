@@ -17,7 +17,9 @@ export interface Caregiver {
 export interface InviteCaregiverRequest {
   patientId: number;
   email: string;
+  fullName: string;
   roleId: number;
+  relationship?: string;
 }
 
 export interface GrantPermissionRequest {
