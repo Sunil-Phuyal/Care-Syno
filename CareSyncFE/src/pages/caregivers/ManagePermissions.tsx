@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { caregiverApi, permissionApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 import { PERMISSION_CODES } from '../../utils/constants';
 import type { PermissionResponse } from '../../types/permission.types';
 
@@ -9,6 +10,7 @@ export function ManagePermissions() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [caregiverPermissions, setCaregiverPermissions] = useState<PermissionResponse | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
@@ -40,6 +42,7 @@ export function ManagePermissions() {
       );
       setSelectedPermissions(granted);
     } catch (err: any) {
+      showError(err.message || 'Failed to load permissions');
       setError(err.message || 'Failed to load permissions');
     } finally {
       setIsLoading(false);
@@ -75,8 +78,10 @@ export function ManagePermissions() {
         });
       }
 
+      success('Permissions updated successfully!');
       navigate('/caregivers');
     } catch (err: any) {
+      showError(err.message || 'Failed to update permissions');
       setError(err.message || 'Failed to update permissions');
     } finally {
       setIsSaving(false);
