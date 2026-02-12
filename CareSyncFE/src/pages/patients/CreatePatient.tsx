@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patientApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 
 export function CreatePatient() {
   const navigate = useNavigate();
   const { refreshPatients } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -27,8 +29,10 @@ export function CreatePatient() {
     try {
       const patient = await patientApi.createPatient(formData);
       await refreshPatients();
+      success('Patient created successfully!');
       navigate(`/patients/${patient.patientId}`);
     } catch (err: any) {
+      showError(err.message || 'Failed to create patient');
       setError(err.message || 'Failed to create patient');
     } finally {
       setIsLoading(false);
@@ -41,7 +45,7 @@ export function CreatePatient() {
       [e.target.name]: e.target.value,
     });
   };
-
+  
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}

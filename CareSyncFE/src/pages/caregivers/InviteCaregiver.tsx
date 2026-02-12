@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { caregiverApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 import { ROLES } from '../../utils/constants';
 
 export function InviteCaregiver() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -33,8 +35,10 @@ export function InviteCaregiver() {
         relationship: formData.relationship,
       });
 
+      success('Caregiver invitation sent successfully!');
       navigate('/caregivers');
     } catch (err: any) {
+      showError(err.message || 'Failed to invite caregiver');
       setError(err.message || 'Failed to invite caregiver');
     } finally {
       setIsLoading(false);
