@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { medicationApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 import type { Medication, MedicationSchedule } from '../../types/medication.types';
 
 export function LogMedication() {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedPatient } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
@@ -51,6 +53,7 @@ export function LogMedication() {
         }
       }
     } catch (err: any) {
+      showError('Failed to load data');
       setError('Failed to load data');
     }
   };
@@ -75,8 +78,10 @@ export function LogMedication() {
         sideEffects: formData.sideEffects || undefined,
       });
 
+      success('Medication logged successfully!');
       navigate('/medications');
     } catch (err: any) {
+      showError(err.message || 'Failed to log medication');
       setError(err.message || 'Failed to log medication');
     } finally {
       setIsLoading(false);
