@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { medicationApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 import type { Medication } from '../../types/medication.types';
 
 export function CreateSchedule() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [medications, setMedications] = useState<Medication[]>([]);
   const [formData, setFormData] = useState({
@@ -30,6 +32,7 @@ export function CreateSchedule() {
       const data = await medicationApi.getAllMedications();
       setMedications(data);
     } catch (err: any) {
+      showError('Failed to load medications');
       setError('Failed to load medications');
     }
   };
@@ -53,8 +56,10 @@ export function CreateSchedule() {
         endDate: formData.endDate || undefined,
       });
 
+      success('Medication schedule created successfully!');
       navigate('/medications');
     } catch (err: any) {
+      showError(err.message || 'Failed to create schedule');
       setError(err.message || 'Failed to create schedule');
     } finally {
       setIsLoading(false);
