@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { patientApi } from '../../api';
 import { usePatient } from '../../context/PatientContext';
+import { useNotification } from '../../context/NotificationContext';
 import type { Patient } from '../../types/patient.types';
 
 export function EditPatient() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { refreshPatients } = usePatient();
+  const { success, error: showError } = useNotification();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -42,6 +44,7 @@ export function EditPatient() {
         emergencyContactPhone: patient.emergencyContactPhone || '',
       });
     } catch (err: any) {
+      showError(err.message || 'Failed to load patient');
       setError(err.message || 'Failed to load patient');
     } finally {
       setIsLoading(false);
@@ -58,8 +61,10 @@ export function EditPatient() {
     try {
       await patientApi.updatePatient(Number(id), formData);
       await refreshPatients();
+      success('Patient updated successfully!');
       navigate(`/patients/${id}`);
     } catch (err: any) {
+      showError(err.message || 'Failed to update patient');
       setError(err.message || 'Failed to update patient');
     } finally {
       setIsSaving(false);
