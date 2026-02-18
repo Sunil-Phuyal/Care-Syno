@@ -100,13 +100,15 @@ export function StatusBadge({ status }: { status: 'PENDING' | 'ACTIVE' | 'COMPLE
 export function MedicationStatusBadge({ 
   status 
 }: { 
-  status: 'ADMINISTERED' | 'SKIPPED' | 'MISSED' | 'REFUSED' 
+  status: 'ADMINISTERED' | 'SKIPPED' | 'MISSED' | 'REFUSED' | 'PENDING' | 'OVERDUE'
 }) {
   const statusConfig = {
     ADMINISTERED: { variant: 'success' as const, label: 'Administered' },
     SKIPPED: { variant: 'warning' as const, label: 'Skipped' },
     MISSED: { variant: 'error' as const, label: 'Missed' },
     REFUSED: { variant: 'gray' as const, label: 'Refused' },
+    PENDING: { variant: 'warning' as const, label: 'Pending' },
+    OVERDUE: { variant: 'error' as const, label: 'Overdue' },
   };
 
   const config = statusConfig[status];
