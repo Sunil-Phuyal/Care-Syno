@@ -1,9 +1,4 @@
 // src/context/ThemeContext.tsx
-//
-// Simple dark mode:
-// 1. On first load — checks system preference (OS dark/light)
-// 2. User can toggle manually — saves choice to localStorage
-// 3. Next visit — uses their saved choice
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
@@ -14,17 +9,18 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+// Export the context so useTheme.ts can import it directly
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'caresync-theme';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // 1. Check if user already picked a preference
+    // 1. Check saved preference
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
     if (saved === 'light' || saved === 'dark') return saved;
 
-    // 2. Otherwise use system preference
+    // 2. Fall back to system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches
       ? 'dark'
       : 'light';
@@ -41,26 +37,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
-  // Also listen to system preference changes
-  // (e.g. user switches OS theme while app is open)
+  // Listen to OS theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
     const handleChange = (e: MediaQueryListEvent) => {
       // Only auto-switch if user hasn't manually saved a preference
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
+      if (!saved) setTheme(e.matches ? 'dark' : 'light');
     };
-
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
@@ -69,7 +58,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Simple hook to use theme anywhere
+// Also export useTheme here — so both import paths work:
+// import { useTheme } from '../../context/ThemeContext'  ✓
+// import { useTheme } from '../../hooks/useTheme'        ✓
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
