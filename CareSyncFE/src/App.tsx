@@ -1,4 +1,7 @@
+// src/App.tsx
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
 import { PatientProvider } from './context/PatientContext';
@@ -36,60 +39,63 @@ import { PatientSummary } from './pages/reports/PatientSummary';
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <NotificationProvider>
-          <PermissionProvider>
-            <PatientProvider>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+    // ThemeProvider must be outermost — everything inside can use useTheme()
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <NotificationProvider>
+            <PermissionProvider>
+              <PatientProvider>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
 
-                {/* Protected Routes with Layout */}
-                <Route
-                  path="/*"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout>
-                        <Routes>
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          
-                          {/* Patient Routes */}
-                          <Route path="/patients" element={<PatientList />} />
-                          <Route path="/patients/new" element={<CreatePatient />} />
-                          <Route path="/patients/:id" element={<PatientDetail />} />
-                          <Route path="/patients/:id/edit" element={<EditPatient />} />
+                  {/* Protected Routes with Layout */}
+                  <Route
+                    path="/*"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout>
+                          <Routes>
+                            <Route path="/dashboard" element={<Dashboard />} />
 
-                          {/* Medication Routes */}
-                          <Route path="/medications" element={<MedicationList />} />
-                          <Route path="/medications/new" element={<CreateSchedule />} />
-                          <Route path="/medications/log" element={<LogMedication />} />
-                          <Route path="/medications/history" element={<MedicationHistory />} />
+                            {/* Patient Routes */}
+                            <Route path="/patients" element={<PatientList />} />
+                            <Route path="/patients/new" element={<CreatePatient />} />
+                            <Route path="/patients/:id" element={<PatientDetail />} />
+                            <Route path="/patients/:id/edit" element={<EditPatient />} />
 
-                          {/* Caregiver Routes */}
-                          <Route path="/caregivers" element={<CaregiverList />} />
-                          <Route path="/caregivers/invite" element={<InviteCaregiver />} />
-                          <Route path="/caregivers/:id/permissions" element={<ManagePermissions />} />
+                            {/* Medication Routes */}
+                            <Route path="/medications" element={<MedicationList />} />
+                            <Route path="/medications/new" element={<CreateSchedule />} />
+                            <Route path="/medications/log" element={<LogMedication />} />
+                            <Route path="/medications/history" element={<MedicationHistory />} />
 
-                          {/* Report Routes */}
-                          <Route path="/reports/adherence" element={<AdherenceReport />} />
-                          <Route path="/reports/summary" element={<PatientSummary />} />
+                            {/* Caregiver Routes */}
+                            <Route path="/caregivers" element={<CaregiverList />} />
+                            <Route path="/caregivers/invite" element={<InviteCaregiver />} />
+                            <Route path="/caregivers/:id/permissions" element={<ManagePermissions />} />
 
-                          {/* Default Route */}
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                        </Routes>
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </PatientProvider>
-          </PermissionProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </BrowserRouter>
+                            {/* Report Routes */}
+                            <Route path="/reports/adherence" element={<AdherenceReport />} />
+                            <Route path="/reports/summary" element={<PatientSummary />} />
+
+                            {/* Default Route */}
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                          </Routes>
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </PatientProvider>
+            </PermissionProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
