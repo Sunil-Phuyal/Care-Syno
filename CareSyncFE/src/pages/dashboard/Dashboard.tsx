@@ -1,61 +1,23 @@
 // src/pages/dashboard/Dashboard.tsx
-//
-// Sections:
-// 1. Greeting header
-// 2. Today's Medications
-// 3. Today's Schedule
-// 4. Family Status
-// 5. Quick Actions
-// 6. Recent Activity
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { medicationApi } from '../../api/medication.api';
 import { patientApi } from '../../api/patient.api';
+import { activityApi } from '../../api/activity.api';
 import { Spinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { cn } from '../../utils/cn';
+import type { MedicationSchedule } from '../../types/medication.types';
+import type { Patient } from '../../types/patient.types';
+import type { Activity } from '../../api/activity.api';
 
 // ─────────────────────────────────────────
-// TYPES — simple shapes for this page only
+// SMALL COMPONENTS
 // ─────────────────────────────────────────
-interface Medication {
-  id: string;
-  name: string;
-  dosage: string;
-  scheduledTime: string;
-  status: 'overdue' | 'due_soon' | 'upcoming' | 'completed';
-  patientName: string;
-}
 
-interface ScheduleItem {
-  id: string;
-  title: string;
-  time: string;
-  duration: string;
-  type: 'medication' | 'appointment' | 'checkup';
-  status: 'upcoming' | 'completed' | 'overdue';
-}
-
-interface FamilyMember {
-  id: string;
-  name: string;
-  role: string;
-  status: 'active' | 'away' | 'offline';
-  lastActive: string;
-}
-
-interface ActivityItem {
-  id: string;
-  description: string;
-  time: string;
-  type: 'medication' | 'appointment' | 'note' | 'alert';
-}
-
-// ─────────────────────────────────────────
-// STAT CARD — top summary cards
-// ─────────────────────────────────────────
+// Stat card — top summary numbers
 function StatCard({
   label,
   value,
@@ -63,7 +25,7 @@ function StatCard({
   color,
 }: {
   label: string;
-  value: string | number;
+  value: number;
   icon: React.ReactNode;
   color: string;
 }) {
@@ -80,28 +42,7 @@ function StatCard({
   );
 }
 
-// ─────────────────────────────────────────
-// MEDICATION STATUS BADGE
-// ─────────────────────────────────────────
-function MedStatusBadge({ status }: { status: Medication['status'] }) {
-  const styles = {
-    overdue:   'badge badge-error',
-    due_soon:  'badge badge-warning',
-    upcoming:  'badge badge-gray',
-    completed: 'badge badge-success',
-  };
-  const labels = {
-    overdue:   'Overdue',
-    due_soon:  'Due soon',
-    upcoming:  'Upcoming',
-    completed: 'Completed',
-  };
-  return <span className={styles[status]}>{labels[status]}</span>;
-}
-
-// ─────────────────────────────────────────
-// QUICK ACTION BUTTON
-// ─────────────────────────────────────────
+// Quick action button
 function QuickAction({
   label,
   icon,
@@ -117,9 +58,10 @@ function QuickAction({
     <button
       onClick={onClick}
       className="flex flex-col items-center gap-2 p-4 rounded-xl
-                 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-                 hover:border-primary-300 dark:hover:border-primary-600
-                 hover:shadow-md transition-all duration-150 group"
+                 bg-white dark:bg-gray-800
+                 border border-gray-200 dark:border-gray-700
+                 hover:border-primary-300 dark:hover:border-primary-700
+                 hover:shadow-md transition-all duration-150"
     >
       <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', color)}>
         {icon}
@@ -131,60 +73,25 @@ function QuickAction({
   );
 }
 
-// ─────────────────────────────────────────
-// ACTIVITY ICON by type
-// ─────────────────────────────────────────
-function ActivityIcon({ type }: { type: ActivityItem['type'] }) {
-  const styles = {
+// Activity icon by type
+function ActivityIcon({ type }: { type: Activity['type'] }) {
+  const styles: Record<string, string> = {
     medication:  'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400',
     appointment: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
     note:        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
     alert:       'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+    vitals:      'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
   };
-  const icons = {
-    medication: (
+  return (
+    <div className={cn(
+      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+      styles[type] ?? styles.note
+    )}>
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
-    ),
-    appointment: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-    note: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-    ),
-    alert: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  };
-  return (
-    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', styles[type])}>
-      {icons[type]}
     </div>
-  );
-}
-
-// ─────────────────────────────────────────
-// FAMILY STATUS DOT
-// ─────────────────────────────────────────
-function StatusDot({ status }: { status: FamilyMember['status'] }) {
-  const colors = {
-    active:  'bg-green-500',
-    away:    'bg-yellow-400',
-    offline: 'bg-gray-300 dark:bg-gray-600',
-  };
-  return (
-    <span className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', colors[status])} />
   );
 }
 
@@ -195,18 +102,16 @@ export function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Loading + data state
-  const [isLoading, setIsLoading]       = useState(true);
-  const [medications, setMedications]   = useState<Medication[]>([]);
-  const [schedule, setSchedule]         = useState<ScheduleItem[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [error, setError]               = useState('');
+  const [isLoading, setIsLoading]           = useState(true);
+  const [error, setError]                   = useState('');
+  const [schedules, setSchedules]           = useState<MedicationSchedule[]>([]);
+  const [patients, setPatients]             = useState<Patient[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
 
-  // Get first name for greeting
+  // First name for greeting
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
 
-  // Current time greeting
+  // Time-based greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -214,82 +119,43 @@ export function Dashboard() {
     return 'Good evening';
   };
 
-  // Load all dashboard data
+  // Load all data when page opens
   useEffect(() => {
-    const loadData = async () => {
+    const loadDashboard = async () => {
       setIsLoading(true);
       setError('');
       try {
-        // Fetch medications and patients in parallel for speed
-        const [medsResponse, patientsResponse] = await Promise.all([
-          medicationApi.getAllMedications().catch(() => ({ data: [] })),
-          patientApi.getMyPatients().catch(() => ({ data: [] })),
+        // All 3 fetches run at the same time — faster
+        const [schedulesData, patientsData, activityData] = await Promise.all([
+          medicationApi.getAllSchedules().catch(() => []),
+          patientApi.getMyPatients().catch(() => []),
+          activityApi.getRecentActivity().catch(() => []),
         ]);
-
-        // Map medications to our simple shape
-        const meds = (medsResponse?.data ?? []).map((m: any) => ({
-          id: m.id,
-          name: m.medicationName ?? m.name,
-          dosage: m.dosage,
-          scheduledTime: m.scheduledTime ?? m.time,
-          status: m.status ?? 'upcoming',
-          patientName: m.patientName ?? m.patient?.fullName ?? 'Patient',
-        }));
-        setMedications(meds);
-
-        // Build schedule from medications + any appointments
-        const scheduleItems = meds.slice(0, 5).map((m: Medication) => ({
-          id: m.id,
-          title: `${m.name} — ${m.patientName}`,
-          time: m.scheduledTime,
-          duration: '5 min',
-          type: 'medication' as const,
-          status: m.status === 'completed' ? 'completed' as const
-                : m.status === 'overdue'   ? 'overdue' as const
-                : 'upcoming' as const,
-        }));
-        setSchedule(scheduleItems);
-
-        // Family members from patients list
-        const family = (patientsResponse?.data ?? []).slice(0, 4).map((p: any) => ({
-          id: p.id,
-          name: p.fullName ?? p.name,
-          role: p.relationship ?? 'Family Member',
-          status: 'active' as const,
-          lastActive: 'Just now',
-        }));
-        setFamilyMembers(family);
-
-        // Recent activity from meds (last 5)
-        const activity = meds.slice(0, 5).map((m: Medication) => ({
-          id: m.id,
-          description: `${m.name} scheduled for ${m.patientName}`,
-          time: m.scheduledTime,
-          type: 'medication' as const,
-        }));
-        setRecentActivity(activity);
-
-      } catch (err) {
-        setError('Failed to load dashboard data. Please refresh.');
+        setSchedules(schedulesData);
+        setPatients(patientsData);
+        setRecentActivity(activityData);
+      } catch {
+        setError('Could not load dashboard. Please refresh the page.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    loadDashboard();
   }, []);
 
-  // Stats derived from data
-  const totalMeds    = medications.length;
-  const overdueMeds  = medications.filter((m) => m.status === 'overdue').length;
-  const completedMeds = medications.filter((m) => m.status === 'completed').length;
+  // Simple stats from schedules
+  const totalSchedules = schedules.length;
+  const activePatients = patients.length;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <Spinner size="lg" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading dashboard...</p>
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            Loading dashboard...
+          </p>
         </div>
       </div>
     );
@@ -298,7 +164,7 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
 
-      {/* ── GREETING HEADER ── */}
+      {/* ── GREETING ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="page-title">{getGreeting()}, {firstName} 👋</h1>
@@ -330,10 +196,11 @@ export function Dashboard() {
       )}
 
       {/* ── STAT CARDS ── */}
+      {/* 1 col mobile → 2 col tablet → 3 col desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
-          label="Total medications today"
-          value={totalMeds}
+          label="Total medication schedules"
+          value={totalSchedules}
           color="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,19 +210,19 @@ export function Dashboard() {
           }
         />
         <StatCard
-          label="Overdue medications"
-          value={overdueMeds}
-          color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+          label="Active patients"
+          value={activePatients}
+          color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           }
         />
         <StatCard
-          label="Completed today"
-          value={completedMeds}
+          label="Recent activities"
+          value={recentActivity.length}
           color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,15 +233,15 @@ export function Dashboard() {
         />
       </div>
 
-      {/* ── MAIN CONTENT GRID ── */}
-      {/* Mobile: 1 column, Desktop: 2 columns */}
+      {/* ── MAIN GRID ── */}
+      {/* 1 col mobile → 2 col desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* TODAY'S MEDICATIONS */}
+        {/* MEDICATION SCHEDULES */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">
-              Today's Medications
+              Medication Schedules
             </h3>
             <button
               onClick={() => navigate('/medications')}
@@ -384,34 +251,47 @@ export function Dashboard() {
             </button>
           </div>
 
-          {medications.length === 0 ? (
+          {schedules.length === 0 ? (
             <EmptyState
-              title="No medications today"
-              description="All medications have been logged or none are scheduled."
-              action={{ label: 'Add medication', onClick: () => navigate('/medications/create') }}
+              title="No schedules yet"
+              description="Create medication schedules for your patients."
+              action={{ label: 'Add schedule', onClick: () => navigate('/medications/create') }}
             />
           ) : (
             <div className="space-y-3">
-              {medications.slice(0, 5).map((med) => (
-                <div key={med.id}
+              {schedules.slice(0, 5).map((schedule) => (
+                <div
+                  key={schedule.scheduleId}
                   className="flex items-center justify-between gap-3 p-3
-                             bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                             bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">
-                      {med.name}
+                      Medication #{schedule.medicationId}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {med.dosage} · {med.patientName} · {med.scheduledTime}
+                      {schedule.dosage} · {schedule.frequency}
+                      {schedule.timeOfDay ? ` · ${schedule.timeOfDay}` : ''}
                     </p>
                   </div>
-                  <MedStatusBadge status={med.status} />
+                  {/* Status based on dates */}
+                  <span className={cn('badge',
+                    schedule.endDate && new Date(schedule.endDate) < new Date()
+                      ? 'badge-gray'
+                      : 'badge-success'
+                  )}>
+                    {schedule.endDate && new Date(schedule.endDate) < new Date()
+                      ? 'Ended'
+                      : 'Active'
+                    }
+                  </span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* TODAY'S SCHEDULE */}
+        {/* TODAY'S SCHEDULE — time view */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">
@@ -425,21 +305,23 @@ export function Dashboard() {
             </button>
           </div>
 
-          {schedule.length === 0 ? (
+          {schedules.length === 0 ? (
             <EmptyState
-              title="No schedule for today"
-              description="Nothing scheduled yet. Add appointments or medication times."
+              title="Nothing scheduled"
+              description="Add medication schedules to see them here."
             />
           ) : (
             <div className="space-y-3">
-              {schedule.map((item) => (
-                <div key={item.id}
+              {schedules.slice(0, 5).map((schedule) => (
+                <div
+                  key={schedule.scheduleId}
                   className="flex items-center gap-3 p-3
-                             bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  {/* Time block */}
-                  <div className="w-12 text-center flex-shrink-0">
+                             bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
+                  {/* Time */}
+                  <div className="w-16 text-center flex-shrink-0">
                     <p className="text-xs font-semibold text-primary-600 dark:text-primary-400">
-                      {item.time}
+                      {schedule.timeOfDay ?? '—'}
                     </p>
                   </div>
                   {/* Vertical line */}
@@ -447,67 +329,64 @@ export function Dashboard() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">
-                      {item.title}
+                      {schedule.dosage} · {schedule.frequency}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {item.duration}
+                      {schedule.instructions ?? 'No instructions'}
                     </p>
                   </div>
-                  {/* Status dot */}
-                  <div className={cn('w-2 h-2 rounded-full flex-shrink-0',
-                    item.status === 'completed' ? 'bg-green-500'
-                    : item.status === 'overdue' ? 'bg-red-500'
-                    : 'bg-yellow-400'
-                  )} />
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* FAMILY STATUS */}
+        {/* PATIENTS / FAMILY STATUS */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">
               Family Status
             </h3>
             <button
-              onClick={() => navigate('/caregivers')}
+              onClick={() => navigate('/patients')}
               className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline"
             >
               Manage
             </button>
           </div>
 
-          {familyMembers.length === 0 ? (
+          {patients.length === 0 ? (
             <EmptyState
-              title="No family members yet"
-              description="Invite family caregivers to coordinate care together."
-              action={{ label: 'Invite family', onClick: () => navigate('/caregivers/invite') }}
+              title="No patients yet"
+              description="Add your family members to start coordinating care."
+              action={{ label: 'Add patient', onClick: () => navigate('/patients/create') }}
             />
           ) : (
             <div className="space-y-3">
-              {familyMembers.map((member) => (
-                <div key={member.id} className="flex items-center gap-3">
-                  {/* Avatar */}
+              {patients.slice(0, 4).map((patient) => (
+                <div key={patient.patientId} className="flex items-center gap-3">
+                  {/* Avatar with initials */}
                   <div className="w-9 h-9 bg-primary-100 dark:bg-primary-900/40 rounded-full
                                   flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-semibold text-primary-700 dark:text-primary-400">
-                      {member.name.charAt(0).toUpperCase()}
+                      {patient.fullName.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  {/* Name + role */}
+                  {/* Name + age */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">
-                      {member.name}
+                      {patient.fullName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{member.role}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {patient.age ? `Age ${patient.age}` : patient.dateOfBirth}
+                      {patient.gender ? ` · ${patient.gender}` : ''}
+                    </p>
                   </div>
-                  {/* Status */}
+                  {/* Active dot */}
                   <div className="flex items-center gap-1.5">
-                    <StatusDot status={member.status} />
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
                     <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                      {member.lastActive}
+                      Active
                     </span>
                   </div>
                 </div>
@@ -533,11 +412,11 @@ export function Dashboard() {
           {recentActivity.length === 0 ? (
             <EmptyState
               title="No recent activity"
-              description="Activity will show here as you log medications and appointments."
+              description="Activity will appear here as you log medications and appointments."
             />
           ) : (
             <div className="space-y-3">
-              {recentActivity.map((item) => (
+              {recentActivity.slice(0, 5).map((item) => (
                 <div key={item.id} className="flex items-start gap-3">
                   <ActivityIcon type={item.type} />
                   <div className="flex-1 min-w-0">
@@ -545,7 +424,7 @@ export function Dashboard() {
                       {item.description}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      {item.time}
+                      {item.createdAt}
                     </p>
                   </div>
                 </div>
@@ -560,7 +439,9 @@ export function Dashboard() {
         <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50 mb-4">
           Quick Actions
         </h3>
+        {/* 2 col mobile → 3 col tablet → 5 col desktop */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
           <QuickAction
             label="Log Medication"
             color="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
@@ -568,14 +449,15 @@ export function Dashboard() {
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
             }
           />
+
           <QuickAction
-            label="Schedule Appointment"
+            label="Add Schedule"
             color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-            onClick={() => navigate('/schedule')}
+            onClick={() => navigate('/medications/create')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -583,6 +465,7 @@ export function Dashboard() {
               </svg>
             }
           />
+
           <QuickAction
             label="View Reports"
             color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
@@ -594,8 +477,9 @@ export function Dashboard() {
               </svg>
             }
           />
+
           <QuickAction
-            label="Invite Family"
+            label="Invite Caregiver"
             color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
             onClick={() => navigate('/caregivers/invite')}
             icon={
@@ -605,6 +489,7 @@ export function Dashboard() {
               </svg>
             }
           />
+
           <QuickAction
             label="Add Patient"
             color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
