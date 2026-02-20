@@ -1,5 +1,7 @@
+// src/api/medication.api.ts
+
 import { api } from '../lib/axios';
-import type { 
+import type {
   Medication,
   MedicationSchedule,
   CreateScheduleRequest,
@@ -9,12 +11,35 @@ import type {
 import type { ApiResponse } from '../types/common.types';
 
 export const medicationApi = {
+
   /**
    * Get all medications (master list)
    * GET /api/v1/medications
    */
   getAllMedications: async (): Promise<Medication[]> => {
     const response = await api.get<ApiResponse<Medication[]>>('/medications');
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Get today's medication schedules (all patients)
+   * GET /api/v1/medications/schedules/today
+   */
+  getTodaysSchedule: async (): Promise<MedicationSchedule[]> => {
+    const response = await api.get<ApiResponse<MedicationSchedule[]>>(
+      '/medications/schedules/today'
+    );
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Get all medication schedules (all patients)
+   * GET /api/v1/medications/schedules
+   */
+  getAllSchedules: async (): Promise<MedicationSchedule[]> => {
+    const response = await api.get<ApiResponse<MedicationSchedule[]>>(
+      '/medications/schedules'
+    );
     return response.data.apiResponseData.responseData;
   },
 
@@ -42,6 +67,26 @@ export const medicationApi = {
   },
 
   /**
+   * Update a medication schedule
+   * PUT /api/v1/medications/schedules/{id}
+   */
+  updateSchedule: async (id: number, data: Partial<CreateScheduleRequest>): Promise<MedicationSchedule> => {
+    const response = await api.put<ApiResponse<MedicationSchedule>>(
+      `/medications/schedules/${id}`,
+      data
+    );
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Delete a medication schedule
+   * DELETE /api/v1/medications/schedules/{id}
+   */
+  deleteSchedule: async (id: number): Promise<void> => {
+    await api.delete(`/medications/schedules/${id}`);
+  },
+
+  /**
    * Log medication administration
    * POST /api/v1/medications/administrations
    */
@@ -54,12 +99,23 @@ export const medicationApi = {
   },
 
   /**
-   * Get medication administration history
+   * Get medication administration history for a patient
    * GET /api/v1/medications/administrations/patient/{patientId}
    */
   getAdministrationHistory: async (patientId: number): Promise<MedicationAdministration[]> => {
     const response = await api.get<ApiResponse<MedicationAdministration[]>>(
       `/medications/administrations/patient/${patientId}`
+    );
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Get all administration history (all patients)
+   * GET /api/v1/medications/administrations
+   */
+  getAllHistory: async (): Promise<MedicationAdministration[]> => {
+    const response = await api.get<ApiResponse<MedicationAdministration[]>>(
+      '/medications/administrations'
     );
     return response.data.apiResponseData.responseData;
   },
