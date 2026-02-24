@@ -1,155 +1,167 @@
+// src/pages/medications/MedicationHistory.tsx
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { medicationApi } from '../../api';
+import { medicationApi } from '../../api/medication.api';
 import { usePatient } from '../../context/PatientContext';
+import { Spinner } from '../../components/ui/Spinner';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { formatters } from '../../utils/formatters';
+import { cn } from '../../utils/cn';
 import type { MedicationAdministration } from '../../types/medication.types';
 
+// ─── Status badge config ──────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, string> = {
+  ADMINISTERED: 'bg-success-100 text-success-700 dark:bg-success-800 dark:text-success-100',
+  SKIPPED:      'bg-warning-100 text-warning-700 dark:bg-warning-800 dark:text-warning-100',
+  MISSED:       'bg-error-100 text-error-700 dark:bg-error-800 dark:text-error-100',
+  REFUSED:      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={cn('px-2.5 py-1 rounded-full text-xs font-medium', STATUS_STYLES[status] ?? STATUS_STYLES.ADMINISTERED)}>
+      {status}
+    </span>
+  );
+}
+
+// ─── History Record Row ───────────────────────────────────────────────────────
+function HistoryRow({ record }: { record: MedicationAdministration }) {
+  return (
+    <div className="py-4 first:pt-0 last:pb-0">
+      <div className="flex items-start justify-between gap-4 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-50">
+              Medication #{record.medicationId}
+            </h3>
+            <StatusBadge status={record.status} />
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Dosage: <span className="font-medium text-gray-700 dark:text-gray-300">{record.dosageGiven}</span>
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-50">
+            {formatters.datetime(record.actualTime)}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            Caregiver #{record.caregiverUserId}
+          </p>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {record.notes && (
+        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200">{record.notes}</p>
+        </div>
+      )}
+
+      {/* Side effects */}
+      {record.sideEffects && (
+        <div className="mt-2 p-3 bg-warning-50 dark:bg-warning-900 rounded-lg">
+          <p className="text-xs text-warning-700 dark:text-warning-300 mb-1">⚠️ Side Effects</p>
+          <p className="text-sm text-warning-800 dark:text-warning-200">{record.sideEffects}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export function MedicationHistory() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
 
-  const [history, setHistory] = useState<MedicationAdministration[]>([]);
+  const [history, setHistory]     = useState<MedicationAdministration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError]         = useState('');
 
   useEffect(() => {
-    if (selectedPatient) {
-      loadHistory();
-    }
+    if (!selectedPatient) return;
+    const load = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        const data = await medicationApi.getAdministrationHistory(selectedPatient.patientId);
+        setHistory(data);
+      } catch {
+        setError('Failed to load medication history.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, [selectedPatient]);
 
-  const loadHistory = async () => {
-    if (!selectedPatient) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const data = await medicationApi.getAdministrationHistory(selectedPatient.patientId);
-      setHistory(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load medication history');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      ADMINISTERED: 'bg-success-100 text-success-700',
-      SKIPPED: 'bg-warning-100 text-warning-700',
-      MISSED: 'bg-error-100 text-error-700',
-      REFUSED: 'bg-gray-100 text-gray-700',
-    };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || styles.ADMINISTERED}`}>
-        {status}
-      </span>
-    );
-  };
-
+  // No patient selected
   if (!selectedPatient) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="card text-center">
-          <p className="text-gray-600">Please select a patient first</p>
-        </div>
+      <div className="card text-center py-12">
+        <p className="text-4xl mb-3">👤</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Please select a patient first.</p>
+        <button onClick={() => navigate('/patients')} className="btn btn-primary">Go to Patients</button>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading history...</p>
+          <Spinner size="lg" />
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading history...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6">
+
       {/* Header */}
-      <div className="mb-6">
+      <div>
         <button
           onClick={() => navigate('/medications')}
-          className="text-primary-600 hover:text-primary-700 mb-4 inline-flex items-center gap-2"
+          className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400
+                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors"
         >
-          ← Back to Medications
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Medications
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Medication History</h1>
-        <p className="text-gray-600 mt-1">
-          Administration history for {selectedPatient.fullName}
-        </p>
+        <h1 className="page-title">Medication History</h1>
+        <p className="page-subtitle">Administration history for {selectedPatient.fullName}</p>
       </div>
 
-      {/* Error Message */}
+      {/* Error banner */}
       {error && (
-        <div className="mb-6 p-3 bg-error-50 border border-error-200 rounded-lg text-sm text-error-600">
-          {error}
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
+                        border border-red-200 dark:border-red-800 rounded-xl">
+          <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {/* History List */}
+      {/* History list */}
       {history.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">📋</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No medication history</h3>
-          <p className="text-gray-600 mb-6">No medications have been logged yet</p>
-          <button
-            onClick={() => navigate('/medications/log')}
-            className="btn btn-primary"
-          >
-            Log First Medication
-          </button>
-        </div>
+        <EmptyState
+          title="No medication history"
+          description="No medications have been logged yet."
+          action={{ label: 'Log First Medication', onClick: () => navigate('/medications/log') }}
+        />
       ) : (
-        <div className="card">
-          <div className="divide-y">
-            {history.map((record) => (
-              <div key={record.administrationId} className="py-4 first:pt-0 last:pb-0">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">
-                        Medication ID: {record.medicationId}
-                      </h3>
-                      {getStatusBadge(record.status)}
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Dosage: {record.dosageGiven}
-                    </p>
-                  </div>
-                  <div className="text-right text-sm">
-                    <p className="text-gray-900 font-medium">
-                      {formatters.datetime(record.actualTime)}
-                    </p>
-                    <p className="text-gray-500 text-xs">
-                      Caregiver ID: {record.caregiverUserId}
-                    </p>
-                  </div>
-                </div>
-
-                {record.notes && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                    <p className="text-xs text-gray-500 mb-1">Notes:</p>
-                    <p className="text-gray-700">{record.notes}</p>
-                  </div>
-                )}
-
-                {record.sideEffects && (
-                  <div className="mt-2 p-2 bg-warning-50 rounded text-sm">
-                    <p className="text-xs text-warning-700 mb-1">⚠️ Side Effects:</p>
-                    <p className="text-warning-800">{record.sideEffects}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="card divide-y divide-gray-100 dark:divide-gray-700">
+          {history.map((record) => (
+            <HistoryRow key={record.administrationId} record={record} />
+          ))}
         </div>
       )}
     </div>
