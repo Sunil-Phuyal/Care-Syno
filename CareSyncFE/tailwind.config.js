@@ -31,7 +31,7 @@ export default {
           500: '#71717a',   // ← secondary text
           600: '#52525b',   // ← medium text
           700: '#27272a',   // ← inputs, borders
-          800: '#18181b',   // ← cards
+          800: '#1c1c1f',   // ← cards (visibly lighter than bg)
           900: '#09090b',   // ← main background
           950: '#000000',   // ← sidebar (pure black)
         },
