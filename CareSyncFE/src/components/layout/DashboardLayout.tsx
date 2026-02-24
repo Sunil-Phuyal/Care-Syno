@@ -238,7 +238,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <aside className="
         hidden lg:flex flex-col
         fixed top-0 left-0 h-full w-64
-        bg-primary-50 dark:bg-gray-800
+        bg-primary-50 dark:bg-gray-950
         border-r border-primary-100 dark:border-gray-700
         z-30
       ">
@@ -261,7 +261,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Drawer panel */}
       <aside className={cn(
         'fixed top-0 left-0 h-full w-64 z-50 flex flex-col lg:hidden',
-        'bg-primary-50 dark:bg-gray-800',
+        'bg-primary-50 dark:bg-gray-950',
         'border-r border-primary-100 dark:border-gray-700',
         'transition-transform duration-300 ease-in-out',
         isMobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -278,7 +278,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* TOP NAVBAR */}
         <header className="
           sticky top-0 z-20
-          bg-white dark:bg-gray-800
+          bg-white dark:bg-gray-900
           border-b border-gray-200 dark:border-gray-700
           h-16 flex items-center px-4 gap-3
         ">

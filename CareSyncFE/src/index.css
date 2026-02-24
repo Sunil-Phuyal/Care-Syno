@@ -25,11 +25,11 @@
 /* COMPONENTS */
 @layer components {
 
-  /* Card — white in light, near-black in dark with visible border for depth */
+  /* Card — white in light, #1c1c1f in dark — clearly lighter than #09090b background */
   .card {
     @apply bg-white dark:bg-gray-800
            border border-gray-200 dark:border-gray-700
-           rounded-xl p-5 shadow-sm;
+           rounded-xl p-5;
   }
 
   /* Buttons */
