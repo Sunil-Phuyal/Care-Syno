@@ -1,127 +1,143 @@
-import { usePatient } from '../../context/PatientContext';
+// src/pages/patients/PatientList.tsx
+
 import { useNavigate } from 'react-router-dom';
-import { formatters } from '../../utils/formatters';
+import { usePatient } from '../../context/PatientContext';
 import { PermissionGate } from '../../components/common/PermissionGate';
+import { Spinner } from '../../components/ui/Spinner';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { formatters } from '../../utils/formatters';
+import type { Patient } from '../../types/patient.types';
 
+// ─── Patient Card ─────────────────────────────────────────────────────────────
+function PatientCard({ patient, onClick, onEdit }: {
+  patient: Patient;
+  onClick: () => void;
+  onEdit: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="card hover:shadow-md hover:border-primary-200 dark:hover:border-primary-700
+                 transition-all cursor-pointer group"
+    >
+      {/* Avatar + name */}
+      <div className="flex items-start gap-4 mb-4">
+        <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900 rounded-full
+                        flex items-center justify-center flex-shrink-0">
+          <span className="text-2xl">{patient.gender === 'MALE' ? '👴' : '👵'}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50 truncate">
+            {patient.fullName}
+          </h3>
+          {patient.age && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">{patient.age} years old</p>
+          )}
+          {patient.dateOfBirth && (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Born: {formatters.date(patient.dateOfBirth)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Contact info */}
+      <div className="space-y-1.5 text-sm mb-4">
+        {patient.phoneNumber && (
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <span>📞</span>
+            <span>{patient.phoneNumber}</span>
+          </div>
+        )}
+        {patient.emergencyContactName && (
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <span>🚨</span>
+            <span>{patient.emergencyContactName}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex gap-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); onClick(); }}
+          className="btn btn-primary btn-sm flex-1"
+        >
+          View Details
+        </button>
+        <PermissionGate permission="patient.edit">
+          <button
+            onClick={onEdit}
+            className="btn btn-secondary btn-sm"
+          >
+            Edit
+          </button>
+        </PermissionGate>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export function PatientList() {
-  const { myPatients, isLoading, selectPatient } = usePatient();
   const navigate = useNavigate();
+  const { myPatients, isLoading, selectPatient } = usePatient();
 
-  const handlePatientClick = (patient: any) => {
+  const handlePatientClick = (patient: Patient) => {
     selectPatient(patient);
     navigate(`/patients/${patient.patientId}`);
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading patients...</p>
+          <Spinner size="lg" />
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading patients...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="space-y-6">
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Patients</h1>
-          <p className="text-gray-600 mt-1">Manage your patients and their care</p>
+          <h1 className="page-title">My Patients</h1>
+          <p className="page-subtitle">Manage your patients and their care</p>
         </div>
         <PermissionGate permission="patient.view">
           <button
             onClick={() => navigate('/patients/new')}
             className="btn btn-primary"
           >
-            + Add Patient
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Patient
           </button>
         </PermissionGate>
       </div>
 
-      {/* Patient Cards */}
+      {/* Empty state */}
       {myPatients.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">👴</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No patients yet</h3>
-          <p className="text-gray-600 mb-6">Create your first patient to get started</p>
-          <button
-            onClick={() => navigate('/patients/new')}
-            className="btn btn-primary"
-          >
-            Create Patient
-          </button>
-        </div>
+        <EmptyState
+          title="No patients yet"
+          description="Add your first patient to start coordinating their care."
+          action={{ label: 'Add Patient', onClick: () => navigate('/patients/new') }}
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        // Patient grid — 1 col mobile, 2 col tablet, 3 col desktop
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {myPatients.map((patient) => (
-            <div
+            <PatientCard
               key={patient.patientId}
-              className="card hover:shadow-md transition-shadow cursor-pointer"
+              patient={patient}
               onClick={() => handlePatientClick(patient)}
-            >
-              {/* Patient Avatar */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center text-2xl">
-                  {patient.gender === 'MALE' ? '👴' : '👵'}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-gray-900">
-                    {patient.fullName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {patient.age} years old
-                  </p>
-                  {patient.dateOfBirth && (
-                    <p className="text-xs text-gray-500">
-                      Born: {formatters.date(patient.dateOfBirth)}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Patient Info */}
-              <div className="space-y-2 text-sm">
-                {patient.phoneNumber && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span>📞</span>
-                    <span>{patient.phoneNumber}</span>
-                  </div>
-                )}
-                {patient.emergencyContactName && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span>🚨</span>
-                    <span>{patient.emergencyContactName}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="mt-4 pt-4 border-t flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePatientClick(patient);
-                  }}
-                  className="btn btn-primary btn-sm flex-1"
-                >
-                  View Details
-                </button>
-                <PermissionGate permission="patient.edit">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/patients/${patient.patientId}/edit`);
-                    }}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Edit
-                  </button>
-                </PermissionGate>
-              </div>
-            </div>
+              onEdit={(e) => { e.stopPropagation(); navigate(`/patients/${patient.patientId}/edit`); }}
+            />
           ))}
         </div>
       )}
