@@ -30,8 +30,8 @@ export default {
           400: '#a1a1aa',   // ← muted text
           500: '#71717a',   // ← secondary text
           600: '#52525b',   // ← medium text
-          700: '#27272a',   // ← inputs, borders
-          800: '#1c1c1f',   // ← cards (visibly lighter than bg)
+          700: '#2a2a2a',   // ← borders — clearly visible on black
+          800: '#111111',   // ← cards — just enough to separate from bg
           900: '#09090b',   // ← main background
           950: '#000000',   // ← sidebar (pure black)
         },

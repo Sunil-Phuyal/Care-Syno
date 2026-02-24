@@ -59,9 +59,10 @@ function QuickAction({
       onClick={onClick}
       className="flex flex-col items-center gap-2 p-4 rounded-xl
                  bg-white dark:bg-gray-800
-                 border border-gray-200 dark:border-gray-700
-                 hover:border-primary-300 dark:hover:border-primary-700
-                 hover:shadow-md transition-all duration-150"
+                 border border-gray-300 dark:border-gray-600
+                 hover:border-primary-400 dark:hover:border-primary-500
+                 hover:shadow-[0_0_0_1px_theme(colors.primary.500)]
+                 transition-all duration-150"
     >
       <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', color)}>
         {icon}
@@ -76,11 +77,11 @@ function QuickAction({
 // Activity icon by type
 function ActivityIcon({ type }: { type: Activity['type'] }) {
   const styles: Record<string, string> = {
-    medication:  'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400',
-    appointment: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    medication:  'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400',
+    appointment: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400',
     note:        'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
     alert:       'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-    vitals:      'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+    vitals:      'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400',
   };
   return (
     <div className={cn(
@@ -185,7 +186,7 @@ export function Dashboard() {
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
                         border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -201,7 +202,7 @@ export function Dashboard() {
         <StatCard
           label="Total medication schedules"
           value={totalSchedules}
-          color="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+          color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -212,7 +213,7 @@ export function Dashboard() {
         <StatCard
           label="Active patients"
           value={activePatients}
-          color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          color="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -223,7 +224,7 @@ export function Dashboard() {
         <StatCard
           label="Recent activities"
           value={recentActivity.length}
-          color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+          color="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -444,7 +445,7 @@ export function Dashboard() {
 
           <QuickAction
             label="Log Medication"
-            color="bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+            color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
             onClick={() => navigate('/medications/log')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -456,7 +457,7 @@ export function Dashboard() {
 
           <QuickAction
             label="Add Schedule"
-            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+            color="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
             onClick={() => navigate('/medications/create')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,7 +469,7 @@ export function Dashboard() {
 
           <QuickAction
             label="View Reports"
-            color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+            color="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400"
             onClick={() => navigate('/reports')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,7 +481,7 @@ export function Dashboard() {
 
           <QuickAction
             label="Invite Caregiver"
-            color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+            color="bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400"
             onClick={() => navigate('/caregivers/invite')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -492,7 +493,7 @@ export function Dashboard() {
 
           <QuickAction
             label="Add Patient"
-            color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+            color="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400"
             onClick={() => navigate('/patients/create')}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

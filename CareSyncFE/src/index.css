@@ -25,11 +25,13 @@
 /* COMPONENTS */
 @layer components {
 
-  /* Card — white in light, #1c1c1f in dark — clearly lighter than #09090b background */
+  /* Card — white in light, #111111 in dark with a visible border for definition */
   .card {
     @apply bg-white dark:bg-gray-800
            border border-gray-200 dark:border-gray-700
-           rounded-xl p-5;
+           rounded-xl p-5
+           transition-colors duration-150
+           hover:border-primary-300 dark:hover:border-primary-600;
   }
 
   /* Buttons */
