@@ -18,6 +18,24 @@ export default {
           900: '#0A3830',
           950: '#061f1a',
         },
+
+        // Teal-tinted grays — this replaces the default cold grays
+        // Each shade has a subtle teal undertone so dark mode feels
+        // designed for CareSync, not just "generic dark theme"
+        gray: {
+          50:  '#f8fafb',
+          100: '#f0f4f3',
+          200: '#e2eae8',
+          300: '#c4d4d1',
+          400: '#8ba8a5',   // ← muted text, placeholder
+          500: '#5c8480',   // ← secondary text
+          600: '#3d6460',   // ← medium text
+          700: '#1e3533',   // ← inputs, hover states, borders
+          800: '#172120',   // ← cards (clearly lighter than bg)
+          900: '#0d1514',   // ← main page background
+          950: '#080e0d',   // ← sidebar (darkest layer)
+        },
+
         success: {
           50:  '#ECFDF5',
           100: '#D1FAE5',
