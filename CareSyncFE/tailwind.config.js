@@ -19,21 +19,21 @@ export default {
           950: '#061f1a',
         },
 
-        // Teal-tinted grays — this replaces the default cold grays
-        // Each shade has a subtle teal undertone so dark mode feels
-        // designed for CareSync, not just "generic dark theme"
+        // True black grays — like Vercel/GitHub dark mode
+        // Pure blacks and near-blacks with no color tint
+        // Strong contrast between each layer
         gray: {
-          50:  '#f8fafb',
-          100: '#f0f4f3',
-          200: '#e2eae8',
-          300: '#c4d4d1',
-          400: '#8ba8a5',   // ← muted text, placeholder
-          500: '#5c8480',   // ← secondary text
-          600: '#3d6460',   // ← medium text
-          700: '#1e3533',   // ← inputs, hover states, borders
-          800: '#172120',   // ← cards (clearly lighter than bg)
-          900: '#0d1514',   // ← main page background
-          950: '#080e0d',   // ← sidebar (darkest layer)
+          50:  '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d1d5db',
+          400: '#a1a1aa',   // ← muted text
+          500: '#71717a',   // ← secondary text
+          600: '#52525b',   // ← medium text
+          700: '#27272a',   // ← inputs, borders
+          800: '#18181b',   // ← cards
+          900: '#09090b',   // ← main background
+          950: '#000000',   // ← sidebar (pure black)
         },
 
         success: {
@@ -91,10 +91,10 @@ export default {
         '2xl': '1rem',
       },
       boxShadow: {
-        sm:      '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        md:      '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
-        lg:      '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05)',
+        sm:      '0 1px 2px 0 rgb(0 0 0 / 0.3)',
+        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3)',
+        md:      '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
+        lg:      '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3)',
       },
       keyframes: {
         'fade-in':        { '0%': { opacity: '0', transform: 'translateY(8px)' },   '100%': { opacity: '1', transform: 'translateY(0)' } },
