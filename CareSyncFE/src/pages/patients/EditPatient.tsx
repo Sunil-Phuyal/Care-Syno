@@ -1,9 +1,15 @@
+// src/pages/patients/EditPatient.tsx
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { patientApi } from '../../api';
+import { patientApi } from '../../api/patient.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
-import type { Patient } from '../../types/patient.types';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
+import { Textarea } from '../../components/ui/Textarea';
+import { Spinner } from '../../components/ui/Spinner';
 
 export function EditPatient() {
   const { id } = useParams<{ id: string }>();
@@ -11,233 +17,199 @@ export function EditPatient() {
   const { refreshPatients } = usePatient();
   const { success, error: showError } = useNotification();
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    dateOfBirth: '',
-    gender: 'MALE',
-    phoneNumber: '',
-    address: '',
+  const [form, setForm] = useState({
+    fullName:             '',
+    dateOfBirth:          '',
+    gender:               'MALE',
+    phoneNumber:          '',
+    address:              '',
     emergencyContactName: '',
-    emergencyContactPhone: '',
+    emergencyContactPhone:'',
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [isSaving, setIsSaving]   = useState(false);
+  const [error, setError]         = useState('');
 
+  // Load patient data
   useEffect(() => {
-    loadPatient();
+    if (!id) return;
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const patient = await patientApi.getPatient(Number(id));
+        setForm({
+          fullName:             patient.fullName,
+          dateOfBirth:          patient.dateOfBirth,
+          gender:               patient.gender ?? 'MALE',
+          phoneNumber:          patient.phoneNumber ?? '',
+          address:              patient.address ?? '',
+          emergencyContactName: patient.emergencyContactName ?? '',
+          emergencyContactPhone:patient.emergencyContactPhone ?? '',
+        });
+      } catch {
+        setError('Failed to load patient. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    load();
   }, [id]);
 
-  const loadPatient = async () => {
-    if (!id) return;
-
-    setIsLoading(true);
-    try {
-      const patient = await patientApi.getPatient(Number(id));
-      setFormData({
-        fullName: patient.fullName,
-        dateOfBirth: patient.dateOfBirth,
-        gender: patient.gender || 'MALE',
-        phoneNumber: patient.phoneNumber || '',
-        address: patient.address || '',
-        emergencyContactName: patient.emergencyContactName || '',
-        emergencyContactPhone: patient.emergencyContactPhone || '',
-      });
-    } catch (err: any) {
-      showError(err.message || 'Failed to load patient');
-      setError(err.message || 'Failed to load patient');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
-
     setError('');
     setIsSaving(true);
-
     try {
-      await patientApi.updatePatient(Number(id), formData);
+      await patientApi.updatePatient(Number(id), form);
       await refreshPatients();
       success('Patient updated successfully!');
       navigate(`/patients/${id}`);
     } catch (err: any) {
-      showError(err.message || 'Failed to update patient');
-      setError(err.message || 'Failed to update patient');
+      const msg = err.message || 'Failed to update patient';
+      showError(msg);
+      setError(msg);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading patient...</p>
+          <Spinner size="lg" />
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading patient...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-3xl mx-auto space-y-6">
+
       {/* Header */}
-      <div className="mb-6">
+      <div>
         <button
           onClick={() => navigate(`/patients/${id}`)}
-          className="text-primary-600 hover:text-primary-700 mb-4 inline-flex items-center gap-2"
+          className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400
+                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors"
         >
-          ← Back to Patient
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Patient
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Patient</h1>
-        <p className="text-gray-600 mt-1">Update patient information</p>
+        <h1 className="page-title">Edit Patient</h1>
+        <p className="page-subtitle">Update patient information</p>
       </div>
 
-      {/* Error Message */}
+      {/* Error banner */}
       {error && (
-        <div className="mb-6 p-3 bg-error-50 border border-error-200 rounded-lg text-sm text-error-600">
-          {error}
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
+                        border border-red-200 dark:border-red-800 rounded-xl">
+          <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {/* Form - Same as CreatePatient but with Update button */}
-      <form onSubmit={handleSubmit} className="card space-y-6">
-        <div>
-          <label htmlFor="fullName" className="label">
-            Full Name <span className="text-error-500">*</span>
-          </label>
-          <input
-            id="fullName"
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Basic info */}
+        <div className="card space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Basic Information</h3>
+
+          <Input
             name="fullName"
-            type="text"
-            required
-            value={formData.fullName}
+            label="Full Name"
+            value={form.fullName}
             onChange={handleChange}
-            className="input"
+            required
           />
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="dateOfBirth" className="label">
-              Date of Birth <span className="text-error-500">*</span>
-            </label>
-            <input
-              id="dateOfBirth"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
               name="dateOfBirth"
+              label="Date of Birth"
               type="date"
+              value={form.dateOfBirth}
+              onChange={handleChange}
               required
-              value={formData.dateOfBirth}
-              onChange={handleChange}
-              className="input"
             />
-          </div>
-
-          <div>
-            <label htmlFor="gender" className="label">
-              Gender
-            </label>
-            <select
-              id="gender"
+            <Select
               name="gender"
-              value={formData.gender}
+              label="Gender"
+              value={form.gender}
               onChange={handleChange}
-              className="input"
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
               <option value="OTHER">Other</option>
-            </select>
+            </Select>
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="phoneNumber" className="label">
-            Phone Number
-          </label>
-          <input
-            id="phoneNumber"
+          <Input
             name="phoneNumber"
+            label="Phone Number"
             type="tel"
-            value={formData.phoneNumber}
+            value={form.phoneNumber}
             onChange={handleChange}
-            className="input"
           />
-        </div>
 
-        <div>
-          <label htmlFor="address" className="label">
-            Address
-          </label>
-          <textarea
-            id="address"
+          <Textarea
             name="address"
-            value={formData.address}
+            label="Address"
+            value={form.address}
             onChange={handleChange}
-            className="input"
             rows={3}
+            resize="none"
           />
         </div>
 
-        <div className="border-t pt-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Emergency Contact</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="emergencyContactName" className="label">
-                Contact Name
-              </label>
-              <input
-                id="emergencyContactName"
-                name="emergencyContactName"
-                type="text"
-                value={formData.emergencyContactName}
-                onChange={handleChange}
-                className="input"
-              />
-            </div>
+        {/* Emergency contact */}
+        <div className="card space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Emergency Contact</h3>
 
-            <div>
-              <label htmlFor="emergencyContactPhone" className="label">
-                Contact Phone
-              </label>
-              <input
-                id="emergencyContactPhone"
-                name="emergencyContactPhone"
-                type="tel"
-                value={formData.emergencyContactPhone}
-                onChange={handleChange}
-                className="input"
-              />
-            </div>
-          </div>
+          <Input
+            name="emergencyContactName"
+            label="Contact Name"
+            value={form.emergencyContactName}
+            onChange={handleChange}
+          />
+
+          <Input
+            name="emergencyContactPhone"
+            label="Contact Phone"
+            type="tel"
+            value={form.emergencyContactPhone}
+            onChange={handleChange}
+          />
         </div>
 
-        <div className="flex gap-4 pt-6 border-t">
-          <button
+        {/* Form actions */}
+        <div className="flex gap-3">
+          <Button
             type="button"
+            variant="secondary"
+            fullWidth
             onClick={() => navigate(`/patients/${id}`)}
-            className="btn btn-secondary flex-1"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            disabled={isSaving}
-            className="btn btn-primary flex-1"
+            variant="primary"
+            fullWidth
+            isLoading={isSaving}
           >
-            {isSaving ? 'Updating...' : 'Update Patient'}
-          </button>
+            Update Patient
+          </Button>
         </div>
       </form>
     </div>

@@ -18,6 +18,24 @@ export default {
           900: '#0A3830',
           950: '#061f1a',
         },
+
+        // True black grays — like Vercel/GitHub dark mode
+        // Pure blacks and near-blacks with no color tint
+        // Strong contrast between each layer
+        gray: {
+          50:  '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d1d5db',
+          400: '#a1a1aa',   // ← muted text
+          500: '#71717a',   // ← secondary text
+          600: '#52525b',   // ← medium text
+          700: '#2a2a2a',   // ← borders — clearly visible on black
+          800: '#111111',   // ← cards — just enough to separate from bg
+          900: '#09090b',   // ← main background
+          950: '#000000',   // ← sidebar (pure black)
+        },
+
         success: {
           50:  '#ECFDF5',
           100: '#D1FAE5',
@@ -73,10 +91,10 @@ export default {
         '2xl': '1rem',
       },
       boxShadow: {
-        sm:      '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        md:      '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)',
-        lg:      '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05)',
+        sm:      '0 1px 2px 0 rgb(0 0 0 / 0.3)',
+        DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3)',
+        md:      '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
+        lg:      '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3)',
       },
       keyframes: {
         'fade-in':        { '0%': { opacity: '0', transform: 'translateY(8px)' },   '100%': { opacity: '1', transform: 'translateY(0)' } },
