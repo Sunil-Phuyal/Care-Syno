@@ -37,7 +37,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    path: '/activity',
+    path: '/activity-log',
     label: 'Activity Log',
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,6 +91,27 @@ const NAV_ITEMS = [
   },
 ];
 
+// ─── Page info — title + subtitle per route ───────────────────────────────────
+const PAGE_INFO: Record<string, { title: string; subtitle: string }> = {
+  '/dashboard':        { title: 'Family Caregiver',    subtitle: 'Coordinate care for your loved ones' },
+  '/medications':      { title: 'Medications',          subtitle: 'Manage medication schedules' },
+  '/activity-log':     { title: 'Activity Log',         subtitle: 'Full history of care activities' },
+  '/schedule':         { title: 'Schedule',             subtitle: 'Plan and track upcoming events' },
+  '/alerts':           { title: 'Alerts',               subtitle: 'Stay on top of important notices' },
+  '/caregivers':       { title: 'Care Team',            subtitle: 'Manage your family care team' },
+  '/settings':         { title: 'Settings',             subtitle: 'Manage your account & preferences' },
+  '/patients':         { title: 'Patients',             subtitle: 'View and manage your patients' },
+  '/reports':          { title: 'Reports',              subtitle: 'Insights and adherence data' },
+};
+
+function getPageInfo(pathname: string) {
+  // Match longest prefix first
+  const match = Object.keys(PAGE_INFO)
+    .filter((key) => pathname.startsWith(key))
+    .sort((a, b) => b.length - a.length)[0];
+  return PAGE_INFO[match] ?? { title: 'CareSync', subtitle: 'Your care coordination platform' };
+}
+
 // ─────────────────────────────────────────
 // LOGO ICON — teal square matching Figma
 // ─────────────────────────────────────────
@@ -136,19 +157,16 @@ function SidebarContent({ onNavigate }: { onNavigate: (path: string) => void }) 
         </Link>
       </div>
 
-      {/* Profile / description block — matches Figma */}
-      <div className="px-5 py-5 border-b border-primary-100 dark:border-primary-900/40">
+      {/* Page context block — same design as original, dynamic per page */}
+      <div className="px-5 py-5 border-b border-primary-100 dark:border-gray-700">
         <div className="flex flex-col items-center text-center gap-3">
           <LogoIcon size="lg" />
           <div>
             <p className="text-sm font-bold text-gray-900 dark:text-gray-50 leading-tight">
-              Family Caregiver
+              {getPageInfo(location.pathname).title}
             </p>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-50">
-              Dashboard
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-              Coordinate care for your loved ones with our comprehensive platform
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+              {getPageInfo(location.pathname).subtitle}
             </p>
           </div>
         </div>
