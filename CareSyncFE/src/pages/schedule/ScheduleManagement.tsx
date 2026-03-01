@@ -12,10 +12,11 @@ import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '../../co
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
-import { Spinner } from '../../components/ui/Spinner';
+import { SkeletonCard, Skeleton } from '../../components/ui/Skeleton';
 import { medicationApi } from '../../api/medication.api';
 import { cn } from '../../utils/cn';
 import type { MedicationSchedule } from '../../types/medication.types';
+import { Spinner } from '../../components/ui/Spinner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type EventType = 'MEDICATION' | 'APPOINTMENT' | 'CHECKUP' | 'THERAPY';
@@ -84,26 +85,48 @@ function mapScheduleToEvent(s: MedicationSchedule): ScheduleEvent {
 }
 
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
-function CalendarGrid({ markedDays }: { markedDays: Set<number> }) {
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
-  const now = new Date();
-  const daysInMonth    = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const firstDayRaw    = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-  const offset         = firstDayRaw === 0 ? 6 : firstDayRaw - 1;
+function CalendarGrid({
+  markedDays,
+  selectedDay,
+  onSelectDay,
+}: {
+  markedDays: Set<number>;
+  selectedDay: number;
+  onSelectDay: (day: number) => void;
+}) {
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDayRaw = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const offset      = firstDayRaw === 0 ? 6 : firstDayRaw - 1;
+
+  const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+
+  const today = new Date();
+  const isCurrentMonth =
+    currentDate.getMonth() === today.getMonth() &&
+    currentDate.getFullYear() === today.getFullYear();
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>
-          {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </CardTitle>
         <div className="flex gap-1">
-          <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+          <button
+            onClick={prevMonth}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <button className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+          <button
+            onClick={nextMonth}
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -124,14 +147,14 @@ function CalendarGrid({ markedDays }: { markedDays: Set<number> }) {
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: offset }).map((_, i) => <div key={`e-${i}`} />)}
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-            const isToday    = day === now.getDate();
+            const isToday    = isCurrentMonth && day === today.getDate();
             const isSelected = day === selectedDay;
             const hasEvent   = markedDays.has(day);
 
             return (
               <button
                 key={day}
-                onClick={() => setSelectedDay(day)}
+                onClick={() => onSelectDay(day)}
                 className={cn(
                   'relative flex flex-col items-center py-1.5 rounded-lg transition-all text-sm',
                   isToday    && 'bg-primary-500 text-white',
@@ -315,10 +338,11 @@ function EventDetailModal({ event, onClose }: { event: ScheduleEvent; onClose: (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function ScheduleManagement() {
-  const [events, setEvents]             = useState<ScheduleEvent[]>([]);
-  const [isLoading, setIsLoading]       = useState(true);
-  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [events, setEvents]               = useState<ScheduleEvent[]>([]);
+  const [isLoading, setIsLoading]         = useState(true);
+  const [showAddEvent, setShowAddEvent]   = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [selectedDay, setSelectedDay]     = useState(new Date().getDate());
 
   // Load schedules from API and map to events
   useEffect(() => {
@@ -396,7 +420,11 @@ export function ScheduleManagement() {
 
         {/* Calendar */}
         <div>
-          <CalendarGrid markedDays={markedDays} />
+          <CalendarGrid
+          markedDays={markedDays}
+          selectedDay={selectedDay}
+          onSelectDay={setSelectedDay}
+        />
         </div>
 
         {/* Today's schedule */}
