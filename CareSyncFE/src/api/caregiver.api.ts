@@ -1,12 +1,15 @@
+// src/api/caregiver.api.ts
+
 import { api } from '../lib/axios';
-import type { 
+import type { ApiResponse } from '../types/common.types';
+import type {
   Caregiver,
   InviteCaregiverRequest,
-  GrantPermissionRequest
+  GrantPermissionRequest,
 } from '../types/caregiver.types';
-import type { ApiResponse } from '../types/common.types';
 
 export const caregiverApi = {
+
   /**
    * Get all caregivers for a patient
    * GET /api/v1/caregivers/patient/{patientId}
@@ -19,30 +22,31 @@ export const caregiverApi = {
   },
 
   /**
-   * Invite new caregiver
+   * Invite a new caregiver to a patient's care team
    * POST /api/v1/caregivers/invite
    */
-  inviteCaregiver: async (data: InviteCaregiverRequest): Promise<Caregiver> => {
-    const response = await api.post<ApiResponse<Caregiver>>(
-      '/caregivers/invite',
-      data
-    );
-    return response.data.apiResponseData.responseData;
+  inviteCaregiver: async (data: InviteCaregiverRequest): Promise<void> => {
+    await api.post('/caregivers/invite', data);
   },
 
   /**
-   * Remove caregiver from patient
-   * DELETE /api/v1/caregivers/patient/{patientId}/caregiver/{caregiverUserId}
+   * Remove a caregiver from a patient's care team
+   * DELETE /api/v1/caregivers/patient/{patientId}/caregiver/{caregiverId}
    */
   removeCaregiver: async (patientId: number, caregiverUserId: number): Promise<void> => {
     await api.delete(`/caregivers/patient/${patientId}/caregiver/${caregiverUserId}`);
   },
 
   /**
-   * Grant or revoke permission for caregiver
+   * Grant or revoke a specific permission for a caregiver
    * POST /api/v1/caregivers/permissions
    */
   grantPermission: async (data: GrantPermissionRequest): Promise<void> => {
-    await api.post('/caregivers/permissions', data);
+    await api.post('/caregivers/permissions', {
+      patientId:        data.patientId,
+      caregiverUserId:  data.caregiverUserId,
+      permissionCode:   data.permissionCode,
+      isGranted:        data.granted,       
+    });
   },
 };
