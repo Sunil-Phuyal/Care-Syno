@@ -1,32 +1,35 @@
+// src/api/patient.api.ts
+
 import { api } from '../lib/axios';
-import type { 
-  Patient, 
-  CreatePatientRequest, 
-  UpdatePatientRequest
-} from '../types/patient.types';
 import type { ApiResponse } from '../types/common.types';
+import type {
+  Patient,
+  CreatePatientRequest,
+  UpdatePatientRequest,
+} from '../types/patient.types';
 
 export const patientApi = {
+
   /**
-   * Get all patients for current user
-   * GET /api/v1/patients
+   * Get all patients for the logged-in caregiver
+   * GET /api/v1/patients/my-patients
    */
   getMyPatients: async (): Promise<Patient[]> => {
-    const response = await api.get<ApiResponse<Patient[]>>('/patients');
+    const response = await api.get<ApiResponse<Patient[]>>('/patients/my-patients');
     return response.data.apiResponseData.responseData;
   },
 
   /**
-   * Get single patient by ID
-   * GET /api/v1/patients/{id}
+   * Get a single patient by ID
+   * GET /api/v1/patients/{patientId}
    */
-  getPatient: async (id: number): Promise<Patient> => {
-    const response = await api.get<ApiResponse<Patient>>(`/patients/${id}`);
+  getPatient: async (patientId: number): Promise<Patient> => {
+    const response = await api.get<ApiResponse<Patient>>(`/patients/${patientId}`);
     return response.data.apiResponseData.responseData;
   },
 
   /**
-   * Create new patient
+   * Create a new patient
    * POST /api/v1/patients
    */
   createPatient: async (data: CreatePatientRequest): Promise<Patient> => {
@@ -35,19 +38,19 @@ export const patientApi = {
   },
 
   /**
-   * Update existing patient
-   * PUT /api/v1/patients/{id}
+   * Update an existing patient
+   * PUT /api/v1/patients/{patientId}
    */
-  updatePatient: async (id: number, data: UpdatePatientRequest): Promise<Patient> => {
-    const response = await api.put<ApiResponse<Patient>>(`/patients/${id}`, data);
+  updatePatient: async (patientId: number, data: UpdatePatientRequest): Promise<Patient> => {
+    const response = await api.put<ApiResponse<Patient>>(`/patients/${patientId}`, data);
     return response.data.apiResponseData.responseData;
   },
 
   /**
-   * Delete patient (soft delete)
-   * DELETE /api/v1/patients/{id}
+   * Delete a patient (soft delete on backend)
+   * DELETE /api/v1/patients/{patientId}
    */
-  deletePatient: async (id: number): Promise<void> => {
-    await api.delete(`/patients/${id}`);
+  deletePatient: async (patientId: number): Promise<void> => {
+    await api.delete(`/patients/${patientId}`);
   },
 };
