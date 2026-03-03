@@ -1,13 +1,16 @@
+// src/api/report.api.ts
+
 import { api } from '../lib/axios';
-import type { 
-  MedicationAdherenceReport,
-  PatientSummaryReport
-} from '../types/report.types';
 import type { ApiResponse } from '../types/common.types';
+import type {
+  MedicationAdherenceReport,
+  PatientSummaryReport,
+} from '../types/report.types';
 
 export const reportApi = {
+
   /**
-   * Get medication adherence report
+   * Get medication adherence report for a patient (last 30 days)
    * GET /api/v1/reports/adherence/patient/{patientId}
    */
   getAdherenceReport: async (patientId: number): Promise<MedicationAdherenceReport> => {
@@ -18,7 +21,7 @@ export const reportApi = {
   },
 
   /**
-   * Get patient summary report
+   * Get full patient summary report
    * GET /api/v1/reports/summary/patient/{patientId}
    */
   getPatientSummary: async (patientId: number): Promise<PatientSummaryReport> => {
