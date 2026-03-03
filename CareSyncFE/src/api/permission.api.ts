@@ -1,15 +1,18 @@
+// src/api/permission.api.ts
+
 import { api } from '../lib/axios';
-import type { PermissionResponse } from '../types/permission.types';
 import type { ApiResponse } from '../types/common.types';
+import type { PermissionResponse } from '../types/permission.types';
 
 export const permissionApi = {
+
   /**
-   * Get user's permissions for a specific patient
-   * GET /api/v1/permissions/patient/{patientId}
+   * Get all permissions for a caregiver on a patient
+   * GET /api/v1/caregivers/patient/{patientId}/permissions
    */
   getPatientPermissions: async (patientId: number): Promise<PermissionResponse> => {
     const response = await api.get<ApiResponse<PermissionResponse>>(
-      `/permissions/patient/${patientId}`
+      `/caregivers/patient/${patientId}/permissions`
     );
     return response.data.apiResponseData.responseData;
   },
