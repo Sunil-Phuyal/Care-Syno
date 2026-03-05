@@ -2,6 +2,7 @@ package com.bo.caresync.controller;
 
 import com.bo.caresync.dto.request.medication.CreateMedicationScheduleRequest;
 import com.bo.caresync.dto.request.medication.LogMedicationRequest;
+import com.bo.caresync.dto.request.medication.UpcomingMedicationDTO;
 import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
@@ -54,5 +55,10 @@ public class MedicationController extends BaseController {
     public ResponseEntity<?> getAdministrationHistory(@PathVariable Long patientId) {
         List<MedicationAdministration> history = medicationService.getAdministrationHistory(patientId);
         return successResponse("History retrieved successfully", history);
+    }
+    @GetMapping("/upcoming/{patientId}")
+    public ResponseEntity<?> getUpcomingMedications(@PathVariable Long patientId) {
+        List<UpcomingMedicationDTO> upcoming = medicationService.getUpcomingMedications(patientId);
+        return successResponse("Upcoming medications retrieved successfully", upcoming);
     }
 }
