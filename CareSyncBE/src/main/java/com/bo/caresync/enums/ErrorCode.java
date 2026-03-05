@@ -43,6 +43,8 @@ public enum ErrorCode implements IErrorCode {
     INTERNAL_SERVER_ERROR("SYS_001", "Internal server error"),
     VALIDATION_ERROR("SYS_002", "Validation error"),
 
+    INVALID_INPUT("SYS_003", "Invalid input"),
+
 
     PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists"),
     // In your ErrorCode enum

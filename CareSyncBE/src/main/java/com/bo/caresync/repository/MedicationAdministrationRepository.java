@@ -25,4 +25,13 @@ public interface MedicationAdministrationRepository extends JpaRepository<Medica
             LocalDateTime endTime,
             String recordStatus
     );
+    /**
+     * Check if medication was administered within a time window
+     */
+    boolean existsByPatientIdAndScheduleIdAndActualTimeBetween(
+            Long patientId,
+            Long scheduleId,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
 }
