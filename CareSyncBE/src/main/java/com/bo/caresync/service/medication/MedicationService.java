@@ -292,6 +292,159 @@ public class MedicationService {
     }
 
     /**
+     * Update a medication schedule
+     */
+    @Transactional
+    public MedicationScheduleResponse updateSchedule(Long scheduleId, UpdateScheduleRequest request) {
+        String methodName = "updateSchedule";
+
+        log.debug("{} Updating schedule with ID={}", methodName, scheduleId);
+
+        // Get existing schedule
+        MedicationSchedule schedule = scheduleRepo.findById(scheduleId)
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Schedule not found"));
+
+        // Check permission
+        loginUserUtil.requirePermission(schedule.getPatientId(), "medication.edit_schedule");
+
+        // Update fields
+        if (request.getDosage() != null) {
+            schedule.setDosage(request.getDosage());
+        }
+        if (request.getFrequency() != null) {
+            schedule.setFrequency(request.getFrequency());
+        }
+        if (request.getTimeOfDay() != null) {
+            schedule.setTimeOfDay(request.getTimeOfDay());
+        }
+        if (request.getInstructions() != null) {
+            schedule.setInstructions(request.getInstructions());
+        }
+        if (request.getStartDate() != null) {
+            schedule.setStartDate(request.getStartDate());
+        }
+        if (request.getEndDate() != null) {
+            schedule.setEndDate(request.getEndDate());
+        }
+
+        MedicationSchedule updated = scheduleRepo.save(schedule);
+
+        log.info("{} Successfully updated schedule ID={}", methodName, scheduleId);
+
+        return toScheduleResponse(updated);
+    }
+
+    /**
+     * Delete a medication schedule (soft delete)
+     */
+    @Transactional
+    public void deleteSchedule(Long scheduleId) {
+        String methodName = "deleteSchedule";
+
+        log.debug("{} Deleting schedule with ID={}", methodName, scheduleId);
+
+        // Get existing schedule
+        MedicationSchedule schedule = scheduleRepo.findById(scheduleId)
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Schedule not found"));
+
+        // Check permission
+        loginUserUtil.requirePermission(schedule.getPatientId(), "medication.delete_schedule");
+
+        // Soft delete
+        schedule.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
+        schedule.setDeletedBy(loginUserUtil.getCurrentUserEmail());
+        schedule.setDeletedAt(LocalDateTime.now());
+
+        scheduleRepo.save(schedule);
+
+        log.info("{} Successfully deleted schedule ID={}", methodName, scheduleId);
+    }
+
+    /**
+     * Get today's medication schedules for a patient
+     */
+    @Transactional(readOnly = true)
+    public List<TodayScheduleDTO> getTodaySchedules(Long patientId) {
+        String methodName = "getTodaySchedules";
+
+        log.debug("{} Getting today's schedules for patientId={}", methodName, patientId);
+
+        // Check permission
+        loginUserUtil.requirePermission(patientId, "medication.view");
+
+        // Get all active schedules
+        List<MedicationSchedule> schedules = scheduleRepo
+                .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
+
+        List<TodayScheduleDTO> todaySchedules = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        for (MedicationSchedule schedule : schedules) {
+            // Skip if no time specified
+            if (schedule.getTimeOfDay() == null || schedule.getTimeOfDay().isEmpty()) {
+                continue;
+            }
+
+            // Check if schedule is active today
+            LocalDate startDate = LocalDate.parse(schedule.getStartDate());
+            if (startDate.isAfter(today)) {
+                continue; // Hasn't started yet
+            }
+
+            if (schedule.getEndDate() != null) {
+                LocalDate endDate = LocalDate.parse(schedule.getEndDate());
+                if (endDate.isBefore(today)) {
+                    continue; // Already ended
+                }
+            }
+
+            // Parse times
+            String[] times = schedule.getTimeOfDay().split(",");
+
+            for (String timeStr : times) {
+                try {
+                    LocalTime time = parseTime(timeStr.trim());
+                    LocalDateTime scheduledDateTime = today.atTime(time);
+
+                    // Check if already administered
+                    boolean administered = administrationRepo
+                            .existsByPatientIdAndScheduleIdAndActualTimeBetween(
+                                    patientId,
+                                    schedule.getScheduleId(),
+                                    scheduledDateTime.minusMinutes(30),
+                                    scheduledDateTime.plusMinutes(30)
+                            );
+
+                    // Get medication details
+                    Optional<Medication> medication = medicationRepo
+                            .findById(schedule.getMedicationId());
+
+                    todaySchedules.add(TodayScheduleDTO.builder()
+                            .scheduleId(schedule.getScheduleId())
+                            .medicationId(schedule.getMedicationId())
+                            .medicationName(medication.map(Medication::getName).orElse("Unknown"))
+                            .dosage(schedule.getDosage())
+                            .scheduledTime(scheduledDateTime)
+                            .isAdministered(administered)
+                            .isPast(scheduledDateTime.isBefore(LocalDateTime.now()))
+                            .instructions(schedule.getInstructions())
+                            .build());
+
+                } catch (Exception e) {
+                    log.warn("Failed to parse time: {}", timeStr, e);
+                }
+            }
+        }
+
+        // Sort by scheduled time
+        todaySchedules.sort(Comparator.comparing(TodayScheduleDTO::getScheduledTime));
+
+        log.info("{} Found {} schedules for today", methodName, todaySchedules.size());
+
+        return todaySchedules;
+    }
+
+    /**
      * Parse time string like "8:00 AM" or "14:30" to LocalTime
      */
     private LocalTime parseTime(String timeStr) {
