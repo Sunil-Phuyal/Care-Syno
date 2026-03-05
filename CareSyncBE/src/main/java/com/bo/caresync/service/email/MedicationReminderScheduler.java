@@ -42,9 +42,9 @@ public class MedicationReminderScheduler {
     private final Set<String> sentReminders = new HashSet<>();
 
     /**
-//     * Run every 5 minutes: 0 */5
+//     * Run every 5 minutes: 0/5
 //            * At minutes 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-//            *******//
+//            *******/
     @Scheduled(cron = "0 */5 * * * *")
     public void sendMedicationReminders() {
         String methodName = "sendMedicationReminders";
@@ -178,12 +178,12 @@ public class MedicationReminderScheduler {
                 // Send email
                 String subject = String.format("⏰ Medication Reminder: %s - %s",
                         patient.getFullName(),
-                        schedule.getMedicationName());
+                        schedule.getMedicationId());
 
                 String body = emailTemplateService.getMedicationReminderBody(
                         user.getFullName(),
                         patient.getFullName(),
-                        schedule.getMedicationName(),
+                        String.valueOf(schedule.getMedicationId()),
                         schedule.getDosage(),
                         scheduledTime,
                         (int) minutesUntil,
@@ -193,7 +193,7 @@ public class MedicationReminderScheduler {
                 emailService.sendSimpleEmail(user.getEmail(), subject, body);
 
                 log.info("{} Sent reminder to {} for patient {} - medication {}",
-                        methodName, user.getEmail(), patient.getFullName(), schedule.getMedicationName());
+                        methodName, user.getEmail(), patient.getFullName(), schedule.getMedicationId());
 
             } catch (Exception e) {
                 log.error("{} Failed to send reminder to caregiver {}: {}",
