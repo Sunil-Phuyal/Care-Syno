@@ -1,8 +1,6 @@
 package com.bo.caresync.controller;
 
-import com.bo.caresync.dto.request.medication.CreateMedicationScheduleRequest;
-import com.bo.caresync.dto.request.medication.LogMedicationRequest;
-import com.bo.caresync.dto.request.medication.UpcomingMedicationDTO;
+import com.bo.caresync.dto.request.medication.*;
 import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
@@ -60,5 +58,24 @@ public class MedicationController extends BaseController {
     public ResponseEntity<?> getUpcomingMedications(@PathVariable Long patientId) {
         List<UpcomingMedicationDTO> upcoming = medicationService.getUpcomingMedications(patientId);
         return successResponse("Upcoming medications retrieved successfully", upcoming);
+    }
+
+    @PutMapping("/schedules/{id}")
+    public ResponseEntity<?> updateSchedule(@PathVariable Long id,
+                                            @RequestBody UpdateScheduleRequest request) {
+        MedicationScheduleResponse response = medicationService.updateSchedule(id, request);
+        return successResponse("Schedule updated successfully", response);
+    }
+
+    @DeleteMapping("/schedules/{id}")
+    public ResponseEntity<?> deleteSchedule(@PathVariable Long id) {
+        medicationService.deleteSchedule(id);
+        return successResponse("Schedule deleted successfully", null);
+    }
+
+    @GetMapping("/schedules/today")
+    public ResponseEntity<?> getTodaySchedules(@RequestParam Long patientId) {
+        List<TodayScheduleDTO> schedules = medicationService.getTodaySchedules(patientId);
+        return successResponse("Today's schedules retrieved successfully", schedules);
     }
 }

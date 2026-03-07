@@ -3,6 +3,8 @@ package com.bo.caresync.dto.request.medication;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -17,6 +19,6 @@ public class UpdateScheduleRequest {
     private String frequency;
     private String timeOfDay;
     private String instructions;
-    private String startDate;
-    private String endDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
 }
