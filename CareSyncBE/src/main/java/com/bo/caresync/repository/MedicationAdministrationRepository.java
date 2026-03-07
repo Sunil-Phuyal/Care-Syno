@@ -1,6 +1,7 @@
 package com.bo.caresync.repository;
 
 import com.bo.caresync.entity.medication.MedicationAdministration;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -33,5 +34,11 @@ public interface MedicationAdministrationRepository extends JpaRepository<Medica
             Long scheduleId,
             LocalDateTime startTime,
             LocalDateTime endTime
+    );
+
+    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
+            Long patientId,
+            String recordStatus,
+            Pageable pageable
     );
 }
