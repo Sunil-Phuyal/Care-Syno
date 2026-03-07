@@ -1,9 +1,7 @@
 package com.bo.caresync.service.medication;
 
 import com.bo.caresync.constant.AppConstants;
-import com.bo.caresync.dto.request.medication.CreateMedicationScheduleRequest;
-import com.bo.caresync.dto.request.medication.LogMedicationRequest;
-import com.bo.caresync.dto.request.medication.UpcomingMedicationDTO;
+import com.bo.caresync.dto.request.medication.*;
 import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
@@ -21,12 +19,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -51,7 +50,6 @@ public class MedicationService {
     private final EmailTemplateService emailTemplateService;
 
 
-
     @Transactional(readOnly = true)
     public List<Medication> getAllMedications() {
         return medicationRepo.findByRecordStatus(AppConstants.RecordStatus.ACTIVE);
@@ -74,12 +72,12 @@ public class MedicationService {
         schedule.setFrequency(request.getFrequency());
         schedule.setTimeOfDay(request.getTimeOfDay());
         schedule.setInstructions(request.getInstructions());
-        schedule.setStartDate(request.getStartDate());
-        schedule.setEndDate(request.getEndDate());
+        schedule.setStartDate(request.getStartDate());   // assumed LocalDate in both request & entity
+        schedule.setEndDate(request.getEndDate());       // assumed LocalDate in both request & entity
         schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
         scheduleRepo.save(schedule);
 
-        log.info("{} Medication schedule created: scheduleId={}", methodName,getPatientSchedules(request.getPatientId()));
+        log.info("{} Medication schedule created for patientId={}", methodName, request.getPatientId());
     }
 
     @Transactional(readOnly = true)
@@ -307,7 +305,7 @@ public class MedicationService {
         // Check permission
         loginUserUtil.requirePermission(schedule.getPatientId(), "medication.edit_schedule");
 
-        // Update fields
+        // Update fields — entity uses LocalDate, request must also provide LocalDate
         if (request.getDosage() != null) {
             schedule.setDosage(request.getDosage());
         }
@@ -352,8 +350,8 @@ public class MedicationService {
 
         // Soft delete
         schedule.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
-        schedule.setDeletedBy(loginUserUtil.getCurrentUserEmail());
-        schedule.setDeletedAt(LocalDateTime.now());
+        schedule.setModifiedBy(loginUserUtil.getCurrentUserEmail());
+        schedule.setModifiedAt(LocalDateTime.now());
 
         scheduleRepo.save(schedule);
 
@@ -385,14 +383,14 @@ public class MedicationService {
                 continue;
             }
 
-            // Check if schedule is active today
-            LocalDate startDate = LocalDate.parse(schedule.getStartDate());
-            if (startDate.isAfter(today)) {
+            // FIX: entity field is already LocalDate — no need to call LocalDate.parse()
+            LocalDate startDate = schedule.getStartDate();
+            if (startDate != null && startDate.isAfter(today)) {
                 continue; // Hasn't started yet
             }
 
             if (schedule.getEndDate() != null) {
-                LocalDate endDate = LocalDate.parse(schedule.getEndDate());
+                LocalDate endDate = schedule.getEndDate();  // FIX: already LocalDate
                 if (endDate.isBefore(today)) {
                     continue; // Already ended
                 }
@@ -442,6 +440,24 @@ public class MedicationService {
         log.info("{} Found {} schedules for today", methodName, todaySchedules.size());
 
         return todaySchedules;
+    }
+
+    /**
+     * Maps a MedicationSchedule entity to a MedicationScheduleResponse DTO.
+     */
+    private MedicationScheduleResponse toScheduleResponse(MedicationSchedule schedule) {
+        return MedicationScheduleResponse.builder()
+                .scheduleId(schedule.getScheduleId())
+                .patientId(schedule.getPatientId())
+                .medicationId(schedule.getMedicationId())
+                .dosage(schedule.getDosage())
+                .frequency(schedule.getFrequency())
+                .timeOfDay(schedule.getTimeOfDay())
+                .instructions(schedule.getInstructions())
+                .startDate(schedule.getStartDate())
+                .endDate(schedule.getEndDate())
+                .recordStatus(schedule.getRecordStatus())
+                .build();
     }
 
     /**
