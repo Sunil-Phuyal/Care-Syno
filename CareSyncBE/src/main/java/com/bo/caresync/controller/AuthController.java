@@ -1,8 +1,10 @@
 package com.bo.caresync.controller;
 
 import com.bo.caresync.constant.MessageConstants;
+import com.bo.caresync.dto.request.auth.ChangePasswordRequest;
 import com.bo.caresync.dto.request.auth.RegisterRequest;
 import com.bo.caresync.dto.request.auth.LoginRequest;
+import com.bo.caresync.dto.request.auth.UpdateProfileRequest;
 import com.bo.caresync.dto.response.auth.LoginResponse;
 import com.bo.caresync.dto.response.auth.UserResponse;
 import com.bo.caresync.service.AuthService;
@@ -49,5 +51,16 @@ public class AuthController extends BaseController {
                 "User details retrieved successfully",
                 response
         );
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile( @RequestBody UpdateProfileRequest request) {
+        UserResponse response = authService.updateProfile(request);
+        return successResponse("Profile updated successfully", response);
+    }
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword( @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return successResponse("Password changed successfully", null);
     }
 }
