@@ -199,12 +199,12 @@ public class EmailTemplateService {
         body.append("Dear ").append(caregiverName).append(",\n\n");
 
         if (minutesUntilDue > 0) {
-            body.append("⏰ UPCOMING MEDICATION REMINDER\n\n");
+            body.append(" UPCOMING MEDICATION REMINDER\n\n");
             body.append("This is a reminder that ").append(patientName)
                     .append(" has a medication due in ").append(minutesUntilDue)
                     .append(" minutes.\n\n");
         } else {
-            body.append("⚠️ OVERDUE MEDICATION ALERT\n\n");
+            body.append(" OVERDUE MEDICATION ALERT\n\n");
             body.append("This is a reminder that ").append(patientName)
                     .append(" has a medication that is overdue.\n\n");
         }
@@ -230,6 +230,31 @@ public class EmailTemplateService {
         body.append("The CareSync Team\n\n");
         body.append("---\n");
         body.append("This is an automated reminder. Please do not reply to this email.");
+
+        return body.toString();
+    }
+    public String getPasswordChangedBody(String fullName) {
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(fullName).append(",\n\n");
+
+        body.append("PASSWORD CHANGED SUCCESSFULLY\n\n");
+
+        body.append("Your CareSync account password has been changed successfully.\n\n");
+
+        body.append("If you did not make this change, please contact our support team immediately.\n\n");
+
+        body.append("For security:\n");
+        body.append("• Never share your password with anyone\n");
+        body.append("• Use a strong, unique password\n");
+        body.append("• Change your password regularly\n\n");
+
+        body.append("Login at: ").append(frontendUrl).append("/login\n\n");
+
+        body.append("Best regards,\n");
+        body.append("The CareSync Team\n\n");
+        body.append("---\n");
+        body.append("This is an automated notification. Please do not reply to this email.");
 
         return body.toString();
     }
