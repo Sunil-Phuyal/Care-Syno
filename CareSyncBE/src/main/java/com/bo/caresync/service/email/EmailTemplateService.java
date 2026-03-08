@@ -3,6 +3,8 @@ package com.bo.caresync.service.email;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -177,5 +179,83 @@ public class EmailTemplateService {
             Best regards,
             The CareSync Team
             """, fullName, frontendUrl, resetToken);
+    }
+
+    /**
+     * Medication reminder email template
+     */
+    public String getMedicationReminderBody(String caregiverName,
+                                            String patientName,
+                                            String medicationName,
+                                            String dosage,
+                                            LocalDateTime scheduledTime,
+                                            int minutesUntilDue,
+                                            String instructions) {
+
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
+        String timeStr = scheduledTime.format(timeFormatter);
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(caregiverName).append(",\n\n");
+
+        if (minutesUntilDue > 0) {
+            body.append(" UPCOMING MEDICATION REMINDER\n\n");
+            body.append("This is a reminder that ").append(patientName)
+                    .append(" has a medication due in ").append(minutesUntilDue)
+                    .append(" minutes.\n\n");
+        } else {
+            body.append(" OVERDUE MEDICATION ALERT\n\n");
+            body.append("This is a reminder that ").append(patientName)
+                    .append(" has a medication that is overdue.\n\n");
+        }
+
+        body.append("Medication Details:\n");
+        body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        body.append("Patient: ").append(patientName).append("\n");
+        body.append("Medication: ").append(medicationName).append("\n");
+        body.append("Dosage: ").append(dosage).append("\n");
+        body.append("Scheduled Time: ").append(timeStr).append("\n");
+
+        if (instructions != null && !instructions.isEmpty()) {
+            body.append("Instructions: ").append(instructions).append("\n");
+        }
+
+        body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+        body.append("Please ensure the medication is administered as scheduled.\n\n");
+        body.append("Log into CareSync to record the administration:\n");
+        body.append(frontendUrl).append("/medications/log\n\n");
+
+        body.append("Best regards,\n");
+        body.append("The CareSync Team\n\n");
+        body.append("---\n");
+        body.append("This is an automated reminder. Please do not reply to this email.");
+
+        return body.toString();
+    }
+    public String getPasswordChangedBody(String fullName) {
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(fullName).append(",\n\n");
+
+        body.append("PASSWORD CHANGED SUCCESSFULLY\n\n");
+
+        body.append("Your CareSync account password has been changed successfully.\n\n");
+
+        body.append("If you did not make this change, please contact our support team immediately.\n\n");
+
+        body.append("For security:\n");
+        body.append("• Never share your password with anyone\n");
+        body.append("• Use a strong, unique password\n");
+        body.append("• Change your password regularly\n\n");
+
+        body.append("Login at: ").append(frontendUrl).append("/login\n\n");
+
+        body.append("Best regards,\n");
+        body.append("The CareSync Team\n\n");
+        body.append("---\n");
+        body.append("This is an automated notification. Please do not reply to this email.");
+
+        return body.toString();
     }
 }

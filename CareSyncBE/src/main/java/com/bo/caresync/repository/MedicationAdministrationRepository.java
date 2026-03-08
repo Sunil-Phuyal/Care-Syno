@@ -1,6 +1,7 @@
 package com.bo.caresync.repository;
 
 import com.bo.caresync.entity.medication.MedicationAdministration;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -24,5 +25,20 @@ public interface MedicationAdministrationRepository extends JpaRepository<Medica
             LocalDateTime startTime,
             LocalDateTime endTime,
             String recordStatus
+    );
+    /**
+     * Check if medication was administered within a time window
+     */
+    boolean existsByPatientIdAndScheduleIdAndActualTimeBetween(
+            Long patientId,
+            Long scheduleId,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
+
+    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
+            Long patientId,
+            String recordStatus,
+            Pageable pageable
     );
 }
