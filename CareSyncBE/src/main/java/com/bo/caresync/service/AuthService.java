@@ -2,8 +2,10 @@ package com.bo.caresync.service;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
+import com.bo.caresync.dto.request.auth.ChangePasswordRequest;
 import com.bo.caresync.dto.request.auth.RegisterRequest;
 import com.bo.caresync.dto.request.auth.LoginRequest;
+import com.bo.caresync.dto.request.auth.UpdateProfileRequest;
 import com.bo.caresync.dto.response.auth.LoginResponse;
 import com.bo.caresync.dto.response.auth.UserResponse;
 import com.bo.caresync.entity.auth.Role;
@@ -18,6 +20,7 @@ import com.bo.caresync.service.email.EmailService;
 import com.bo.caresync.service.email.EmailTemplateService;
 import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.JwtUtil;
+import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,6 +47,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final LoginUserUtil loginUserUtil;
     private final String className = this.getClass().getSimpleName();
 
 
@@ -140,9 +144,99 @@ public class AuthService {
         );
     }
 
+    /**
+     * Update user profile
+     */
+    @Transactional
+    public UserResponse updateProfile(UpdateProfileRequest request) {
+        String methodName = "updateProfile";
+
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        log.debug("{} Updating profile for userId={}", methodName, currentUserId);
+
+        // Get current user
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND, "User not found"));
+
+        // Update fields
+        user.setFullName(request.getFullName());
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        User updated = userRepository.save(user);
+
+        log.info("{} Successfully updated profile for userId={}", methodName, currentUserId);
+
+        return toUserResponse(updated);
+    }
+
+    private UserResponse toUserResponse(User user) {
+        List<UserRole> userRoles = userRoleRepository.findByUserIdAndRecordStatus(
+                user.getUserId(),
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        List<String> roleNames = userRoles.stream()
+                .map(ur -> {
+                    Role role = roleRepository.findById(ur.getRoleId())
+                            .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+                    return role.getRoleName();
+                })
+                .collect(Collectors.toList());
+
+        UserResponse response = new UserResponse();
+        response.setUserId(user.getUserId());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setIsEmailVerified(user.getIsEmailVerified());
+        response.setRoles(roleNames);
+        return response;
+    }
+
+    /**
+     * Change password
+     */
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        String methodName =AppUtil.getMethodName();
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        log.debug("{} {} Changing password for userId={}",className, methodName, currentUserId);
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BaseException(ErrorCode.INVALID_INPUT, "New passwords do not match");
+        }
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new BaseException(ErrorCode.INVALID_INPUT, "New password must be different from current password");
+        }
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND, "User not found"));
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BaseException(ErrorCode.INVALID_CREDENTIALS, "Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
+        try {
+            emailService.sendSimpleEmail(
+                    user.getEmail(),
+                    "Password Changed - CareSync",
+                    emailTemplateService.getPasswordChangedBody(user.getFullName())
+            );
+        } catch (Exception e) {
+            log.warn("{} Failed to send password change email: {}", methodName, e.getMessage());
+        }
+
+        log.info("{} Successfully changed password for userId={}", methodName, currentUserId);
+    }
+
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser(Long userId) {
-        String methodName = "getCurrentUser";
+        String methodName = AppUtil.getMethodName();
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
