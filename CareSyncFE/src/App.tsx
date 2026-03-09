@@ -23,7 +23,8 @@ import { MedicationHistory } from './pages/medications/MedicationHistory';
 import { CaregiverList } from './pages/caregivers/CaregiverList';
 import { InviteCaregiver } from './pages/caregivers/InviteCaregiver';
 import { ManagePermissions } from './pages/caregivers/ManagePermissions';
-import { AdherenceReport } from './pages/reports/AdherenceReport';
+import { Alerts } from './pages/alerts/Alerts';
+import { NotificationSettings } from './pages/notifications/NotificationSettings';
 import { PatientSummary } from './pages/reports/PatientSummary';
 
 function App() {
@@ -53,11 +54,12 @@ function App() {
                             <Route path="activity-log"               element={<ActivityLog />} />
                             <Route path="schedule"                   element={<ScheduleManagement />} />
 
-                            {/* Alerts — placeholder until alerts page is built */}
-                            <Route path="alerts"                     element={<Dashboard />} />
+                            {/* Alerts */}
+                            <Route path="alerts"                     element={<Alerts />} />
 
                             {/* Settings */}
                             <Route path="settings"                   element={<Settings />} />
+                            <Route path="settings/notifications"     element={<NotificationSettings />} />
 
                             {/* Patients */}
                             <Route path="patients"                   element={<PatientList />} />
