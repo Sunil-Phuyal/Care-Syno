@@ -8,7 +8,6 @@ package com.bo.caresync.constant;
  **/
 public class MessageConstants {
     private MessageConstants() {
-        // Prevent instantiation
     }
 
     public static class Auditor {
