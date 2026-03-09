@@ -109,6 +109,7 @@ export const medicationApi = {
     return response.data.apiResponseData.responseData;
   },
 
+
   /**
    * Get all administration history (all patients)
    * GET /api/v1/medications/administrations
@@ -116,6 +117,16 @@ export const medicationApi = {
   getAllHistory: async (): Promise<MedicationAdministration[]> => {
     const response = await api.get<ApiResponse<MedicationAdministration[]>>(
       '/medications/administrations'
+    );
+    return response.data.apiResponseData.responseData;
+  },
+   /**
+   * Get upcoming medications for notification scheduling
+   * GET /api/v1/medications/upcoming/{patientId}
+   */
+  getUpcomingMedications: async (patientId: number): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(
+      `/medications/upcoming/${patientId}`
     );
     return response.data.apiResponseData.responseData;
   },
