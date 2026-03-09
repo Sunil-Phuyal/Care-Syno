@@ -168,7 +168,7 @@ export function Dashboard() {
       {/* ── GREETING ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="page-title">{getGreeting()}, {firstName} 👋</h1>
+          <h1 className="page-title">{getGreeting()}, {firstName} </h1>
           <p className="page-subtitle">
             Here's what's happening with your care coordination today
           </p>
