@@ -1,5 +1,7 @@
 package com.bo.caresync.dto.response.caregiver;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,13 +13,15 @@ import lombok.Setter;
  **/
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 public class CaregiverResponse {
     private Long userId;
     private String email;
     private String fullName;
     private String phoneNumber;
+    private Long roleId;
     private String roleName;
     private String roleDisplayName;
     private String relationship;
-    private Boolean isActive;
 }
