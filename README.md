@@ -1,8 +1,8 @@
-# CareSync 💊
+# CareSync 
 
 A medication management system built to help families coordinate care for elderly or physically unable loved ones.
 
-## 🎯 Problem Statement
+##  Problem Statement
 
 When multiple family members care for elderly grandparents or individuals who cannot manage medications independently, critical communication gaps can occur:
 
@@ -11,11 +11,11 @@ When multiple family members care for elderly grandparents or individuals who ca
 * **Lack of Coordination**: No central system to track caregiving activities across multiple family members
 * **Communication Barriers**: Family members using different schedules and methods to coordinate care
 
-## 💡 Solution
+##  Solution
 
 CareSync provides a shared caregiving platform that enables family members to coordinate care activities, track medication administration, and prevent dangerous errors through real-time updates and intelligent alerts.
 
-## ✨ Key Features
+##  Key Features
 
 ### For Patients
 - Simple, non-technical interface designed for elderly users
@@ -38,7 +38,7 @@ CareSync provides a shared caregiving platform that enables family members to co
 - Emergency contact quick access
 - Activity audit trail for medical professionals
 
-## 🔧 Tech Stack
+##  Tech Stack
 
 **Backend:**
 - Spring Boot
@@ -49,7 +49,7 @@ CareSync provides a shared caregiving platform that enables family members to co
 - React
 - Tailwind CSS
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Java 17 or higher
@@ -91,7 +91,7 @@ CREATE DATABASE caresync;
 -- Tables will be auto-created on first run
 ```
 
-## 📝 Usage Guide
+##  Usage Guide
 
 ### Setting Up a Patient Profile
 1. Primary caregiver creates an account
@@ -112,7 +112,7 @@ CREATE DATABASE caresync;
 4. System logs the action and notifies all caregivers
 5. Smart alerts prevent duplicate doses
 
-## 🔐 Security
+##  Security
 
 - Encrypted data transmission (HTTPS)
 - Secure authentication with JWT tokens
@@ -120,7 +120,7 @@ CREATE DATABASE caresync;
 - Audit logging for all critical actions
 - Secure password policies
 
-## 📧 Contact
+##  Contact
 
 For questions or support, please contact: sunilphuyal954@gmail.com
 
