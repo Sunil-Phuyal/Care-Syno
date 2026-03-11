@@ -25,38 +25,45 @@ public class CaregiverController extends BaseController {
 
     private final CaregiverService caregiverService;
 
-    @PostMapping("/invite")
-    public ResponseEntity<?> inviteCaregiver(@RequestBody InviteCaregiverRequest request) {
-        CaregiverResponse response = caregiverService.inviteCaregiver(request);
-        return successResponse(MessageConstants.Caregiver.CAREGIVER_ADDED, response);
-    }
-
+    /**
+     * Get all caregivers for a patient
+     * GET /api/v1/caregivers/patient/{patientId}
+     */
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<?> getPatientCaregivers(@PathVariable Long patientId) {
         List<CaregiverResponse> caregivers = caregiverService.getPatientCaregivers(patientId);
         return successResponse("Caregivers retrieved successfully", caregivers);
     }
 
-    @DeleteMapping("/patient/{patientId}/caregiver/{caregiverUserId}")
-    public ResponseEntity<?> removeCaregiver(
-            @PathVariable Long patientId,
-            @PathVariable Long caregiverUserId) {
-        caregiverService.removeCaregiver(patientId, caregiverUserId);
-        return successResponse(MessageConstants.Caregiver.CAREGIVER_REMOVED, null);
+    /**
+     * Invite a caregiver to a patient
+     * POST /api/v1/caregivers/invite
+     */
+    @PostMapping("/invite")
+    public ResponseEntity<?> inviteCaregiver( @RequestBody InviteCaregiverRequest request) {
+        caregiverService.inviteCaregiver(request);
+        return successResponse("Caregiver invited successfully", null);
     }
 
-    @PutMapping("/role")
-    public ResponseEntity<?> updateCaregiverRole(@RequestBody UpdateCaregiverRoleRequest request) {
-        CaregiverResponse response = caregiverService.updateCaregiverRole(request);
-        return successResponse(MessageConstants.Caregiver.ROLE_UPDATED, response);
+    /**
+     * Remove a caregiver from a patient
+     * DELETE /api/v1/caregivers/patient/{patientId}/caregiver/{caregiverId}
+     */
+    @DeleteMapping("/patient/{patientId}/caregiver/{caregiverId}")
+    public ResponseEntity<?> removeCaregiver(@PathVariable Long patientId,
+                                             @PathVariable Long caregiverId) {
+        caregiverService.removeCaregiver(patientId, caregiverId);
+        return successResponse("Caregiver removed successfully", null);
     }
 
+    /**
+     * Grant or revoke a permission override
+     * POST /api/v1/caregivers/permissions
+     */
     @PostMapping("/permissions")
     public ResponseEntity<?> grantPermission(@RequestBody GrantPermissionRequest request) {
         caregiverService.grantPermission(request);
-        String message = request.getIsGranted()
-                ? MessageConstants.Permission.PERMISSION_GRANTED
-                : MessageConstants.Permission.PERMISSION_REVOKED;
-        return successResponse(message, null);
+        return successResponse("Permission updated successfully", null);
     }
+}
 }
