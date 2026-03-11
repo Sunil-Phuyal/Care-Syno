@@ -25,30 +25,18 @@ public class CaregiverController extends BaseController {
 
     private final CaregiverService caregiverService;
 
-    /**
-     * Get all caregivers for a patient
-     * GET /api/v1/caregivers/patient/{patientId}
-     */
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<?> getPatientCaregivers(@PathVariable Long patientId) {
         List<CaregiverResponse> caregivers = caregiverService.getPatientCaregivers(patientId);
         return successResponse("Caregivers retrieved successfully", caregivers);
     }
 
-    /**
-     * Invite a caregiver to a patient
-     * POST /api/v1/caregivers/invite
-     */
     @PostMapping("/invite")
     public ResponseEntity<?> inviteCaregiver( @RequestBody InviteCaregiverRequest request) {
         caregiverService.inviteCaregiver(request);
         return successResponse("Caregiver invited successfully", null);
     }
 
-    /**
-     * Remove a caregiver from a patient
-     * DELETE /api/v1/caregivers/patient/{patientId}/caregiver/{caregiverId}
-     */
     @DeleteMapping("/patient/{patientId}/caregiver/{caregiverId}")
     public ResponseEntity<?> removeCaregiver(@PathVariable Long patientId,
                                              @PathVariable Long caregiverId) {
@@ -56,14 +44,9 @@ public class CaregiverController extends BaseController {
         return successResponse("Caregiver removed successfully", null);
     }
 
-    /**
-     * Grant or revoke a permission override
-     * POST /api/v1/caregivers/permissions
-     */
     @PostMapping("/permissions")
     public ResponseEntity<?> grantPermission(@RequestBody GrantPermissionRequest request) {
         caregiverService.grantPermission(request);
         return successResponse("Permission updated successfully", null);
     }
-}
 }
