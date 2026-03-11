@@ -24,4 +24,5 @@ public class CaregiverResponse {
     private String roleName;
     private String roleDisplayName;
     private String relationship;
+    private Boolean isActive;
 }
