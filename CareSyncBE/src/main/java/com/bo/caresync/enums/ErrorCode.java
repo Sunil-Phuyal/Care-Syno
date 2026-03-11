@@ -47,9 +47,11 @@ public enum ErrorCode implements IErrorCode {
 
     RESOURCE_NOT_FOUND("SYS_004", "Schedule not found"),
 
+    RESOURCE_ALREADY_EXISTS("RES_409", "Resource already exists"),
+    INVALID_OPERATION("OP_400", "Invalid operation"),
+
 
     PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists"),
-    // In your ErrorCode enum
     MEDICATION_NOT_FOUND("404", "Medication not found");
 
     private final String code;

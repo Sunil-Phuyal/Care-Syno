@@ -40,7 +40,7 @@ public class EmailTemplateService {
     }
 
     public String getCaregiverInvitationBody(String inviterName, String patientName,
-                                             String email, String tempPassword, String role) {
+                                             String email, String tempPassword) {
         return String.format("""
             Hello,
             
@@ -63,7 +63,35 @@ public class EmailTemplateService {
             
             Best regards,
             The CareSync Team
-            """, inviterName, patientName, role, email, tempPassword, frontendUrl);
+            """, inviterName, patientName, email, tempPassword, frontendUrl);
+    }
+
+    /**
+     * Caregiver added to existing user email template
+     */
+    public String getCaregiverAddedBody(String caregiverName,
+                                        String inviterName,
+                                        String patientName) {
+
+        StringBuilder body = new StringBuilder();
+        body.append("Dear ").append(caregiverName).append(",\n\n");
+
+        body.append("🤝 ADDED TO CARE TEAM\n\n");
+
+        body.append(inviterName).append(" has added you to the care team for ")
+                .append(patientName).append(".\n\n");
+
+        body.append("You can now access this patient's information and help manage their care.\n\n");
+
+        body.append("Login to CareSync:\n");
+        body.append(frontendUrl).append("/login\n\n");
+
+        body.append("Best regards,\n");
+        body.append("The CareSync Team\n\n");
+        body.append("---\n");
+        body.append("This is an automated notification. Please do not reply to this email.");
+
+        return body.toString();
     }
 
     public String getMedicationLoggedBody(String caregiverName, String patientName,
