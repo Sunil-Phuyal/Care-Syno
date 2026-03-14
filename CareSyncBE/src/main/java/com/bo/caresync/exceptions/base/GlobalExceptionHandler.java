@@ -77,23 +77,31 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<Object> baseException(BaseException exception, HttpServletRequest request) {
-        ApiResponse apiResponse = createApiResponse(exception,new HashMap<>());
         printErrorLog(exception, request);
+        ApiResponse apiResponse = createApiResponse(exception, new HashMap<>());
         return ResponseEntity.ok(apiResponse);
-    }
-
-    private ApiResponse createApiResponse(BaseException baseException, Object data) {
-        ApiResponse apiResponse = new ApiResponse();
-        String errorCode = Integer.toString(baseException.getErrorCode().getHttpStatus());
-        ResponseData responseData = new ResponseData(errorCode, baseException.getMessage(), data);
-        apiResponse.setResponse(errorCode, ResponseStatus.SUCCESS, responseData, applicationName);
-        return apiResponse;
     }
 
     @ExceptionHandler(CustomExceptionWithData.class)
     public ResponseEntity<Object> genericException(CustomExceptionWithData exception, HttpServletRequest request) {
         printErrorLog(exception, request);
-        ApiResponse apiResponse = createApiResponse(exception,exception.getData());
+        ApiResponse apiResponse = createApiResponse(exception, exception.getData());
         return ResponseEntity.ok(apiResponse);
+    }
+
+    private ApiResponse createApiResponse(BaseException baseException, Object data) {
+        ApiResponse apiResponse = new ApiResponse();
+
+        String errorCode = Integer.toString(baseException.getErrorCode().getHttpStatus());
+        String errorMessage = baseException.getMessage() != null
+                ? baseException.getMessage()
+                : baseException.getErrorCode().getMessage();
+        ResponseData responseData = new ResponseData(errorCode, errorMessage, data);
+        apiResponse.setResponse(
+                ResponseStatus.SUCCESS,
+                responseData,
+                applicationName
+        );
+        return apiResponse;
     }
 }

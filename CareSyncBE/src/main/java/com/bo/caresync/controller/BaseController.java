@@ -38,9 +38,4 @@ public class BaseController implements Serializable {
         if(isResponsePrint) log.info("Response From Controller layer is : {} ",apiResponse);
         return ResponseEntity.ok(apiResponse);
     }
-
-
-
-
-
 }
