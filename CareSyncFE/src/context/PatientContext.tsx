@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// src/context/PatientContext.tsx
+
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { patientApi } from '../api';
+import { permissionApi } from '../api';
 import { useAuth } from './AuthContext';
 import type { Patient } from '../types/patient.types';
 
@@ -14,19 +17,22 @@ interface PatientContextType {
 
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
+// Separate permission loader — lives outside context to avoid circular deps
+let _permissionLoader: ((patientId: number) => Promise<void>) | null = null;
+export function _registerPermissionLoader(fn: (patientId: number) => Promise<void>) {
+  _permissionLoader = fn;
+}
+
 interface PatientProviderProps {
   children: ReactNode;
 }
 
 export function PatientProvider({ children }: PatientProviderProps) {
   const { isAuthenticated } = useAuth();
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [myPatients, setMyPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPatient, setSelectedPatient]   = useState<Patient | null>(null);
+  const [myPatients, setMyPatients]             = useState<Patient[]>([]);
+  const [isLoading, setIsLoading]               = useState(false);
 
-  /**
-   * Load user's patients when authenticated
-   */
   useEffect(() => {
     if (isAuthenticated) {
       loadMyPatients();
@@ -36,19 +42,17 @@ export function PatientProvider({ children }: PatientProviderProps) {
     }
   }, [isAuthenticated]);
 
-  /**
-   * Load all patients for current user
-   */
   const loadMyPatients = async () => {
     setIsLoading(true);
-    
     try {
       const patients = await patientApi.getMyPatients();
       setMyPatients(patients);
-      
-      // Auto-select first patient if available
+
       if (patients.length > 0 && !selectedPatient) {
-        setSelectedPatient(patients[0]);
+        const first = patients[0];
+        setSelectedPatient(first);
+        // Load permissions for auto-selected patient
+        loadPermissionsFor(first.patientId);
       }
     } catch (error) {
       console.error('Failed to load patients:', error);
@@ -58,16 +62,22 @@ export function PatientProvider({ children }: PatientProviderProps) {
     }
   };
 
-  /**
-   * Select a patient
-   */
-  const selectPatient = (patient: Patient) => {
-    setSelectedPatient(patient);
+  const loadPermissionsFor = async (patientId: number) => {
+    try {
+      // Use registered loader if available (PermissionContext)
+      if (_permissionLoader) {
+        await _permissionLoader(patientId);
+      }
+    } catch {
+      // Silently fail — permissions will just be empty
+    }
   };
 
-  /**
-   * Refresh patient list (after creating new patient)
-   */
+  const selectPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    loadPermissionsFor(patient.patientId);
+  };
+
   const refreshPatients = async () => {
     await loadMyPatients();
   };
@@ -84,15 +94,10 @@ export function PatientProvider({ children }: PatientProviderProps) {
   return <PatientContext.Provider value={value}>{children}</PatientContext.Provider>;
 }
 
-/**
- * Hook to use patient context
- */
 export function usePatient() {
   const context = useContext(PatientContext);
-  
   if (context === undefined) {
     throw new Error('usePatient must be used within a PatientProvider');
   }
-  
   return context;
 }
