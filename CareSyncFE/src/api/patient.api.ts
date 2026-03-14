@@ -12,10 +12,10 @@ export const patientApi = {
 
   /**
    * Get all patients for the logged-in caregiver
-   * GET /api/v1/patients/my-patients
+   * GET /api/v1/patients
    */
   getMyPatients: async (): Promise<Patient[]> => {
-    const response = await api.get<ApiResponse<Patient[]>>('/patients/my-patients');
+    const response = await api.get<ApiResponse<Patient[]>>('/patients');
     return response.data.apiResponseData.responseData;
   },
 
