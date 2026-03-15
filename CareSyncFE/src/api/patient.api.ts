@@ -29,12 +29,11 @@ export const patientApi = {
   },
 
   /**
-   * Create a new patient
+   * Create a new patient — backend returns void (no patient data)
    * POST /api/v1/patients
    */
-  createPatient: async (data: CreatePatientRequest): Promise<Patient> => {
-    const response = await api.post<ApiResponse<Patient>>('/patients', data);
-    return response.data.apiResponseData.responseData;
+  createPatient: async (data: CreatePatientRequest): Promise<void> => {
+    await api.post('/patients', data);
   },
 
   /**
