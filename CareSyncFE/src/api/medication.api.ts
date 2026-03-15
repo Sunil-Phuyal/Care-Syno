@@ -22,29 +22,19 @@ export const medicationApi = {
   },
 
   /**
-   * Get today's medication schedules (all patients)
-   * GET /api/v1/medications/schedules/today
+   * Get today's medication schedules for a patient
+   * GET /api/v1/medications/schedules/today?patientId={patientId}
    */
-  getTodaysSchedule: async (): Promise<MedicationSchedule[]> => {
+  getTodaysSchedule: async (patientId: number): Promise<MedicationSchedule[]> => {
     const response = await api.get<ApiResponse<MedicationSchedule[]>>(
-      '/medications/schedules/today'
+      '/medications/schedules/today',
+      { params: { patientId } }
     );
     return response.data.apiResponseData.responseData;
   },
 
   /**
-   * Get all medication schedules (all patients)
-   * GET /api/v1/medications/schedules
-   */
-  getAllSchedules: async (): Promise<MedicationSchedule[]> => {
-    const response = await api.get<ApiResponse<MedicationSchedule[]>>(
-      '/medications/schedules'
-    );
-    return response.data.apiResponseData.responseData;
-  },
-
-  /**
-   * Get medication schedules for a patient
+   * Get medication schedules for a specific patient
    * GET /api/v1/medications/schedules/patient/{patientId}
    */
   getPatientSchedules: async (patientId: number): Promise<MedicationSchedule[]> => {
@@ -58,12 +48,8 @@ export const medicationApi = {
    * Create new medication schedule
    * POST /api/v1/medications/schedules
    */
-  createSchedule: async (data: CreateScheduleRequest): Promise<MedicationSchedule> => {
-    const response = await api.post<ApiResponse<MedicationSchedule>>(
-      '/medications/schedules',
-      data
-    );
-    return response.data.apiResponseData.responseData;
+  createSchedule: async (data: CreateScheduleRequest): Promise<void> => {
+    await api.post('/medications/schedules', data);
   },
 
   /**
@@ -110,12 +96,12 @@ export const medicationApi = {
   },
 
   /**
-   * Get all administration history (all patients)
-   * GET /api/v1/medications/administrations
+   * Get upcoming medications for notification scheduling
+   * GET /api/v1/medications/upcoming/{patientId}
    */
-  getAllHistory: async (): Promise<MedicationAdministration[]> => {
-    const response = await api.get<ApiResponse<MedicationAdministration[]>>(
-      '/medications/administrations'
+  getUpcomingMedications: async (patientId: number): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(
+      `/medications/upcoming/${patientId}`
     );
     return response.data.apiResponseData.responseData;
   },

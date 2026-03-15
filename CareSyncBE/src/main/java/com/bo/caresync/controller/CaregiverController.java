@@ -25,38 +25,28 @@ public class CaregiverController extends BaseController {
 
     private final CaregiverService caregiverService;
 
-    @PostMapping("/invite")
-    public ResponseEntity<?> inviteCaregiver(@RequestBody InviteCaregiverRequest request) {
-        CaregiverResponse response = caregiverService.inviteCaregiver(request);
-        return successResponse(MessageConstants.Caregiver.CAREGIVER_ADDED, response);
-    }
-
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<?> getPatientCaregivers(@PathVariable Long patientId) {
         List<CaregiverResponse> caregivers = caregiverService.getPatientCaregivers(patientId);
         return successResponse("Caregivers retrieved successfully", caregivers);
     }
 
-    @DeleteMapping("/patient/{patientId}/caregiver/{caregiverUserId}")
-    public ResponseEntity<?> removeCaregiver(
-            @PathVariable Long patientId,
-            @PathVariable Long caregiverUserId) {
-        caregiverService.removeCaregiver(patientId, caregiverUserId);
-        return successResponse(MessageConstants.Caregiver.CAREGIVER_REMOVED, null);
+    @PostMapping("/invite")
+    public ResponseEntity<?> inviteCaregiver( @RequestBody InviteCaregiverRequest request) {
+        caregiverService.inviteCaregiver(request);
+        return successResponse("Caregiver invited successfully", null);
     }
 
-    @PutMapping("/role")
-    public ResponseEntity<?> updateCaregiverRole(@RequestBody UpdateCaregiverRoleRequest request) {
-        CaregiverResponse response = caregiverService.updateCaregiverRole(request);
-        return successResponse(MessageConstants.Caregiver.ROLE_UPDATED, response);
+    @DeleteMapping("/patient/{patientId}/caregiver/{caregiverId}")
+    public ResponseEntity<?> removeCaregiver(@PathVariable Long patientId,
+                                             @PathVariable Long caregiverId) {
+        caregiverService.removeCaregiver(patientId, caregiverId);
+        return successResponse("Caregiver removed successfully", null);
     }
 
     @PostMapping("/permissions")
     public ResponseEntity<?> grantPermission(@RequestBody GrantPermissionRequest request) {
         caregiverService.grantPermission(request);
-        String message = request.getIsGranted()
-                ? MessageConstants.Permission.PERMISSION_GRANTED
-                : MessageConstants.Permission.PERMISSION_REVOKED;
-        return successResponse(message, null);
+        return successResponse("Permission updated successfully", null);
     }
 }

@@ -12,10 +12,10 @@ export const patientApi = {
 
   /**
    * Get all patients for the logged-in caregiver
-   * GET /api/v1/patients/my-patients
+   * GET /api/v1/patients
    */
   getMyPatients: async (): Promise<Patient[]> => {
-    const response = await api.get<ApiResponse<Patient[]>>('/patients/my-patients');
+    const response = await api.get<ApiResponse<Patient[]>>('/patients');
     return response.data.apiResponseData.responseData;
   },
 
@@ -29,12 +29,11 @@ export const patientApi = {
   },
 
   /**
-   * Create a new patient
+   * Create a new patient — backend returns void (no patient data)
    * POST /api/v1/patients
    */
-  createPatient: async (data: CreatePatientRequest): Promise<Patient> => {
-    const response = await api.post<ApiResponse<Patient>>('/patients', data);
-    return response.data.apiResponseData.responseData;
+  createPatient: async (data: CreatePatientRequest): Promise<void> => {
+    await api.post('/patients', data);
   },
 
   /**

@@ -26,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class CaregiverService {
     private final UserRepository userRepo;
     private final UserRoleRepository userRoleRepo;
     private final RoleRepository roleRepo;
-    private final PatientCaregiverRepository patientCaregiverRepo;
+    private final PatientCaregiverRepository caregiverRepo;
     private final PatientCaregiverPermissionRepository permissionRepo;
     private final PermissionRepository permissionRepository;
     private final PasswordEncoder passwordEncoder;
@@ -53,58 +54,86 @@ public class CaregiverService {
     private final PatientRepository patientRepo;
     private final EmailService emailService;
     private final EmailTemplateService  emailTemplateService;
+    private final String className = this.getClass().getSimpleName();
 
-    @Transactional
-    public CaregiverResponse inviteCaregiver(InviteCaregiverRequest request) {
-        String methodName = "inviteCaregiver";
 
-        // Check permission
-        loginUserUtil.requirePermission(request.getPatientId(), AppConstants.Permission.CAREGIVER_INVITE);
+    @Transactional(readOnly = true)
+    public List<CaregiverResponse> getPatientCaregivers(Long patientId) {
+        String methodName = AppUtil.getMethodName();
 
-        // Check if already caregiver
-        Optional<User> existingUser = userRepo.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            boolean alreadyLinked = patientCaregiverRepo.existsByPatientIdAndCaregiverUserIdAndRecordStatus(
-                    request.getPatientId(),
-                    existingUser.get().getUserId(),
-                    AppConstants.RecordStatus.ACTIVE
-            );
+        log.info("{}{} Getting caregivers for patientId={}",className, methodName, patientId);
+        loginUserUtil.requirePermission(patientId, "caregiver.view");
+        List<PatientCaregiver> caregivers = caregiverRepo
+                .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
+        List<CaregiverResponse> responses = new ArrayList<>();
 
-            if (alreadyLinked) {
-                throw new BaseException(ErrorCode.VALIDATION_ERROR,
-                        MessageConstants.Caregiver.ALREADY_CAREGIVER);
+        for (PatientCaregiver pc : caregivers) {
+            Optional<User> userOpt = userRepo.findById(pc.getCaregiverUserId());
+            if (userOpt.isEmpty()) {
+                continue;
             }
-        }
+            User user = userOpt.get();
+            Optional<Role> roleOpt = roleRepo.findById(pc.getRoleId());
+            String roleName = roleOpt.map(Role::getRoleName).orElse("UNKNOWN");
+            String roleDisplayName = roleOpt.map(Role::getDisplayName).orElse("Unknown");
 
-        // Create user if doesn't exist
+            responses.add(CaregiverResponse.builder()
+                    .userId(user.getUserId())
+                    .email(user.getEmail())
+                    .fullName(user.getFullName())
+                    .phoneNumber(user.getPhoneNumber())
+                    .roleId(pc.getRoleId())
+                    .roleName(roleName)
+                    .roleDisplayName(roleDisplayName)
+                    .relationship(pc.getRelationship())
+                    .build());
+        }
+        log.info("{} {}Found {} caregivers for patient {}",className, methodName, responses.size(), patientId);
+        return responses;
+    }
+
+    public void inviteCaregiver(InviteCaregiverRequest request) {
+        String methodName = AppUtil.getMethodName();
+
+        log.debug("{} Inviting caregiver {} to patient {}",
+                methodName, request.getEmail(), request.getPatientId());
+        loginUserUtil.requirePermission(request.getPatientId(), "caregiver.invite");
+        Optional<User> existingUser = userRepo.findByEmail(request.getEmail());
         User caregiver;
         String tempPassword = null;
 
-        if (existingUser.isEmpty()) {
+        if (existingUser.isPresent()) {
+            caregiver = existingUser.get();
+            log.info("{} User already exists: {}", methodName, request.getEmail());
+
+        } else {
+            tempPassword = UUID.randomUUID().toString();
+
             caregiver = new User();
             caregiver.setEmail(request.getEmail());
             caregiver.setFullName(request.getFullName());
-            // Generate temporary password
-            tempPassword = UUID.randomUUID().toString().substring(0, 8);
             caregiver.setPasswordHash(passwordEncoder.encode(tempPassword));
-            caregiver.setIsEmailVerified(false);
             caregiver.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
 
             caregiver = userRepo.save(caregiver);
 
-            // Assign role to user
+            // Assign USER role
             UserRole userRole = new UserRole();
             userRole.setUserId(caregiver.getUserId());
-            userRole.setRoleId(request.getRoleId());
+            userRole.setRoleId(1L);
             userRole.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
             userRoleRepo.save(userRole);
 
-            log.info("{} New user created for caregiver: email={}", methodName, request.getEmail());
-        } else {
-            caregiver = existingUser.get();
+            log.info("{} Created new user: {}", methodName, request.getEmail());
         }
+        Optional<PatientCaregiver> existingLink = caregiverRepo
+                .findByPatientIdAndCaregiverUserIdAndRecordStatus(request.getPatientId(), caregiver.getUserId(),AppConstants.RecordStatus.ACTIVE);
 
-        // Link caregiver to patient
+        if (existingLink.isPresent() &&
+                existingLink.get().getRecordStatus().equals(AppConstants.RecordStatus.ACTIVE)) {
+            throw new BaseException(ErrorCode.RESOURCE_ALREADY_EXISTS,
+                    "This caregiver is already linked to the patient");
+        }
         PatientCaregiver link = new PatientCaregiver();
         link.setPatientId(request.getPatientId());
         link.setCaregiverUserId(caregiver.getUserId());
@@ -112,65 +141,46 @@ public class CaregiverService {
         link.setRelationship(request.getRelationship());
         link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
 
-        patientCaregiverRepo.save(link);
+        caregiverRepo.save(link);
 
-        // Send invitation email for new users
-        if (existingUser.isEmpty() && tempPassword != null) {
-            try {
-                User inviter = loginUserUtil.getCurrentUser();
-                Patient patient = patientRepo.findById(request.getPatientId())
-                        .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
+        // Send email invitation
+        try {
+            String inviterName = loginUserUtil.getCurrentUser().getFullName();
+            String patientName = "the patient"; // Could fetch from DB
 
-                Role role = roleRepo.findById(request.getRoleId())
-                        .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
+            String subject = "Invitation to CareSync - Care Team";
+            String body;
 
-                String emailBody = emailTemplateService.getCaregiverInvitationBody(
-                        inviter.getFullName(),
-                        patient.getFullName(),
+            if (tempPassword != null) {
+                // New user - send credentials
+                body = emailTemplateService.getCaregiverInvitationBody(
+                        inviterName,
+                        patientName,
                         request.getEmail(),
-                        tempPassword,
-                        role.getDisplayName()
+                        tempPassword
                 );
-
-                emailService.sendSimpleEmail(
-                        request.getEmail(),
-                        "You've been invited to join a care team on CareSync",
-                        emailBody
+            } else {
+                // Existing user - just notify
+                body = emailTemplateService.getCaregiverAddedBody(
+                        caregiver.getFullName(),
+                        inviterName,
+                        patientName
                 );
-
-                log.info("{} Invitation email sent to: {}", methodName, request.getEmail());
-            } catch (Exception e) {
-                log.error("{} Failed to send invitation email to: {}", methodName, request.getEmail(), e);
-                // Don't throw exception - the invitation was successful, email is just a notification
             }
+
+            emailService.sendSimpleEmail(caregiver.getEmail(), subject, body);
+
+        } catch (Exception e) {
+            log.warn("{} Failed to send invitation email: {}", methodName, e.getMessage());
+            // Don't fail the operation if email fails
         }
 
-        log.info("{} Caregiver invited: userId={}, patientId={}",
-                methodName, caregiver.getUserId(), request.getPatientId());
-
-        return toCaregiverResponse(caregiver, link);
+        log.info("{} Successfully invited caregiver {} to patient {}",
+                methodName, request.getEmail(), request.getPatientId());
     }
 
-    @Transactional(readOnly = true)
-    public List<CaregiverResponse> getPatientCaregivers(Long patientId) {
-        String methodName = AppUtil.getMethodName();
 
-        // Check permission
-        loginUserUtil.requirePermission(patientId, AppConstants.Permission.CAREGIVER_VIEW);
 
-        List<PatientCaregiver> caregivers = patientCaregiverRepo.findByPatientIdAndRecordStatus(
-                patientId,
-                AppConstants.RecordStatus.ACTIVE
-        );
-
-        return caregivers.stream()
-                .map(pc -> {
-                    User user = userRepo.findById(pc.getCaregiverUserId())
-                            .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
-                    return toCaregiverResponse(user, pc);
-                })
-                .collect(Collectors.toList());
-    }
 
     @Transactional
     public void removeCaregiver(Long patientId, Long caregiverUserId) {
@@ -185,7 +195,7 @@ public class CaregiverService {
                     MessageConstants.Caregiver.CANNOT_REMOVE_SELF);
         }
 
-        PatientCaregiver link = patientCaregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
+        PatientCaregiver link = caregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
                         patientId,
                         caregiverUserId,
                         AppConstants.RecordStatus.ACTIVE
@@ -194,7 +204,7 @@ public class CaregiverService {
 
         // Soft delete
         link.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
-        patientCaregiverRepo.save(link);
+        caregiverRepo.save(link);
 
         log.info("{} Caregiver removed: userId={}, patientId={}",
                 methodName, caregiverUserId, patientId);
@@ -207,7 +217,7 @@ public class CaregiverService {
         loginUserUtil.requirePermission(request.getPatientId(),
                 AppConstants.Permission.CAREGIVER_EDIT_PERMISSIONS);
 
-        PatientCaregiver link = patientCaregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
+        PatientCaregiver link = caregiverRepo.findByPatientIdAndCaregiverUserIdAndRecordStatus(
                         request.getPatientId(),
                         request.getCaregiverUserId(),
                         AppConstants.RecordStatus.ACTIVE
@@ -215,7 +225,7 @@ public class CaregiverService {
                 .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_CAREGIVER_NOT_FOUND));
 
         link.setRoleId(request.getNewRoleId());
-        PatientCaregiver updated = patientCaregiverRepo.save(link);
+        PatientCaregiver updated = caregiverRepo.save(link);
 
         User user = userRepo.findById(request.getCaregiverUserId())
                 .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
@@ -281,17 +291,17 @@ public class CaregiverService {
         Role role = roleRepo.findById(link.getRoleId())
                 .orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
 
-        CaregiverResponse response = new CaregiverResponse();
-        response.setUserId(user.getUserId());
-        response.setEmail(user.getEmail());
-        response.setFullName(user.getFullName());
-        response.setPhoneNumber(user.getPhoneNumber());
-        response.setRoleName(role.getRoleName());
-        response.setRoleDisplayName(role.getDisplayName());
-        response.setRelationship(link.getRelationship());
-        response.setIsActive(AppConstants.RecordStatus.ACTIVE.equals(link.getRecordStatus()));
-
-        return response;
+        return CaregiverResponse.builder()
+                .userId(user.getUserId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phoneNumber(user.getPhoneNumber())
+                .roleId(link.getRoleId())
+                .roleName(role.getRoleName())
+                .roleDisplayName(role.getDisplayName())
+                .relationship(link.getRelationship())
+                .isActive(AppConstants.RecordStatus.ACTIVE.equals(link.getRecordStatus()))
+                .build();
     }
 
 

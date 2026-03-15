@@ -12,66 +12,61 @@ import lombok.Setter;
  * @since 2/3/2026, 7:32 PM,
  **/
 @Getter
-
 public enum ErrorCode implements IErrorCode {
 
     // Authentication Errors (401)
-    INVALID_CREDENTIALS("AUTH_001", "Invalid email or password"),
-    TOKEN_EXPIRED("AUTH_002", "Authentication token has expired"),
-    TOKEN_INVALID("AUTH_003", "Invalid authentication token"),
-    UNAUTHORIZED("AUTH_004", "Unauthorized access"),
+    INVALID_CREDENTIALS(401, "Invalid email or password"),
+    TOKEN_EXPIRED(401, "Authentication token has expired"),
+    TOKEN_INVALID(401, "Invalid authentication token"),
+    UNAUTHORIZED(401, "Unauthorized access"),
 
     // Registration Errors (400)
-    EMAIL_ALREADY_EXISTS("REG_001", "Email already registered"),
-    INVALID_EMAIL_FORMAT("REG_002", "Invalid email format"),
-    WEAK_PASSWORD("REG_003", "Password does not meet requirements"),
+    EMAIL_ALREADY_EXISTS(400, "Email already registered"),
+    INVALID_EMAIL_FORMAT(400, "Invalid email format"),
+    WEAK_PASSWORD(400, "Password does not meet requirements"),
 
     // User Errors (404)
-    USER_NOT_FOUND("USER_001", "User not found"),
-    ROLE_NOT_FOUND("USER_002", "Role not found"),
+    USER_NOT_FOUND(404, "User not found"),
+    ROLE_NOT_FOUND(404, "Role not found"),
 
     // Permission Errors (403)
-    PERMISSION_DENIED("PERM_001", "Permission denied"),
-    NO_PATIENT_ACCESS("PERM_002", "No access to this patient"),
-    PERMISSION_NOT_FOUND("PERM_003", "Permission not found"),
+    PERMISSION_DENIED(403, "Permission denied"),
+    NO_PATIENT_ACCESS(403, "No access to this patient"),
+    PERMISSION_NOT_FOUND(403, "Permission not found"),
 
     // Patient Errors (404)
-    PATIENT_NOT_FOUND("PAT_001", "Patient not found"),
-    PATIENT_CAREGIVER_NOT_FOUND("PAT_002", "Patient-caregiver relationship not found"),
+    PATIENT_NOT_FOUND(404, "Patient not found"),
+    PATIENT_CAREGIVER_NOT_FOUND(404, "Patient-caregiver relationship not found"),
 
-    // General Errors
-    INTERNAL_SERVER_ERROR("SYS_001", "Internal server error"),
-    VALIDATION_ERROR("SYS_002", "Validation error"),
+    // General / System Errors
+    INTERNAL_SERVER_ERROR(500, "Internal server error"),
+    VALIDATION_ERROR(400, "Validation error"),
+    INVALID_INPUT(400, "Invalid input"),
+    RESOURCE_NOT_FOUND(404, "Resource not found"),
 
-    INVALID_INPUT("SYS_003", "Invalid input"),
+    // Conflict / Operation Errors
+    RESOURCE_ALREADY_EXISTS(409, "Resource already exists"),
+    INVALID_OPERATION(400, "Invalid operation"),
 
-    RESOURCE_NOT_FOUND("SYS_004", "Schedule not found"),
+    // Patient / Medication
+    PATIENT_ALREADY_EXISTS(409, "A patient with this name and date of birth already exists"),
+    MEDICATION_NOT_FOUND(404, "Medication not found");
 
-
-    PATIENT_ALREADY_EXISTS("aaa","A patient with this name and date of birth already exists"),
-    // In your ErrorCode enum
-    MEDICATION_NOT_FOUND("404", "Medication not found");
-
-    private final String code;
+    private final int httpStatus;
     private final String message;
 
-    ErrorCode(String code, String message) {
-        this.code = code;
+    ErrorCode(int httpStatus, String message) {
+        this.httpStatus = httpStatus;
         this.message = message;
     }
 
     @Override
     public int getHttpStatus() {
-        return 0;
+        return httpStatus;
     }
 
-//    @Override
-//    public String getCode() {
-//        return code;
-//    }
-//
-//    @Override
-//    public String getMessage() {
-//        return message;
-//    }
+    @Override
+    public String getMessage() {
+        return message;
+    }
 }

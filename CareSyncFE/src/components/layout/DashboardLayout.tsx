@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationScheduler } from '../../hooks/useNotificationScheduler';
 import { LogoutConfirmDialog } from '../ui/ConfirmDialog';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { cn } from '../../utils/cn';
@@ -233,6 +234,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLogout, setShowLogout]     = useState(false);
+
+  // Schedule medication reminder notifications app-wide
+  useNotificationScheduler();
 
   const handleNavigate = (path: string) => {
     navigate(path);

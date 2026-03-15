@@ -1,3 +1,5 @@
+// src/lib/axios.ts
+
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../utils/constants';
 import { storage } from '../utils/storage';
@@ -8,50 +10,51 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 30000,
 });
 
 // Request interceptor - Add JWT token to every request
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = storage.getToken();
-    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
 // Response interceptor - Handle errors globally
 api.interceptors.response.use(
   (response) => {
-    // IMPORTANT: Return response as-is, not response.data
-    // The API files will handle unwrapping the nested structure
+    // ── Check inner responseCode for all responses ──────────────────────
+    // Backend always returns HTTP 200, even for errors.
+    // The real status lives in apiResponseData.responseCode.
+    const apiData = response.data?.apiResponseData;
+
+    if (apiData && apiData.responseCode !== '200') {
+      // Throw a real Error so every catch block in every API file gets it
+      return Promise.reject(
+        new Error(apiData.responseMessage || 'Request failed')
+      );
+    }
+
     return response;
   },
   (error: AxiosError) => {
-    // Handle 401 Unauthorized
+    // Handle real HTTP errors (network, timeouts, etc.)
     if (error.response?.status === 401) {
-      // Clear storage
       storage.clear();
-      
-      // Redirect to login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
 
-    // Handle 403 Forbidden
     if (error.response?.status === 403) {
       console.error('Permission denied:', error.response.data);
     }
 
-    // Return error in consistent format
     return Promise.reject(error.response?.data || error.message);
   }
 );

@@ -30,7 +30,7 @@ public class ApiResponse {
     private ResponseData apiResponseData;
 
     public ApiResponse() {
-        this.apiResponseCode = AppEnum.SUCCESS_RESPONSE_CODE.staticData;
+        this.apiResponseCode = AppEnum.SUCCESS_RESPONSE_CODE.staticData; // always "200"
         this.apiResponseMessage = ResponseStatus.SUCCESS.toString();
         this.apiResponseTime = getCurrentTimestamp();
         this.apiResponseFrom = buildResponseFrom(null);
@@ -45,16 +45,8 @@ public class ApiResponse {
         this.apiResponseData = new ResponseData();
     }
 
-    public void setResponse(String code, ResponseStatus status, ResponseData data) {
-        this.apiResponseCode = code;
-        this.apiResponseMessage = status.toString();
-        this.apiResponseTime = getCurrentTimestamp();
-        this.apiResponseFrom = buildResponseFrom(null);
-        this.apiResponseData = data != null ? data : new ResponseData();
-    }
-
-    public void setResponse(String code, ResponseStatus status, ResponseData data, String applicationName) {
-        this.apiResponseCode = code;
+    public void setResponse(ResponseStatus status, ResponseData data, String applicationName) {
+        this.apiResponseCode = AppEnum.SUCCESS_RESPONSE_CODE.staticData;
         this.apiResponseMessage = status.toString();
         this.apiResponseTime = getCurrentTimestamp();
         this.apiResponseFrom = buildResponseFrom(applicationName);
@@ -68,9 +60,8 @@ public class ApiResponse {
 
     private String buildResponseFrom(String applicationName) {
         if (applicationName != null && !applicationName.trim().isEmpty()) {
-            return "JAVA : " + applicationName;
+            return AppEnum.RESPONSE_FROM.staticData + " : " + applicationName;
         }
-
         String appNameFromConfig = ApplicationPropertyLoader.getMessageKey("spring.application.name");
         if (appNameFromConfig != null && !appNameFromConfig.trim().isEmpty()) {
             return AppEnum.RESPONSE_FROM.staticData + " : " + appNameFromConfig;
