@@ -131,6 +131,53 @@ CREATE INDEX IF NOT EXISTS idx_ms_patient ON medication.medication_schedules(pat
 CREATE INDEX IF NOT EXISTS idx_ma_patient ON medication.medication_administrations(patient_id, actual_time);
 CREATE INDEX IF NOT EXISTS idx_ma_duplicate_check ON medication.medication_administrations(patient_id, medication_id, actual_time);
 
+-- ============================================
+-- MEDICATION IMAGE INTEGRATION
+-- Add image URL columns to medication tables
+-- ============================================
+
+-- Add prescription and medication photo to schedules
+ALTER TABLE medication.medication_schedules
+    ADD COLUMN prescription_image_url VARCHAR(500),
+ADD COLUMN medication_photo_url VARCHAR(500);
+
+-- Add comment for clarity
+COMMENT ON COLUMN medication.medication_schedules.prescription_image_url
+IS 'URL to doctor prescription image uploaded via /api/v1/uploads/image';
+
+COMMENT ON COLUMN medication.medication_schedules.medication_photo_url
+IS 'URL to actual medication photo (pill/bottle) uploaded via /api/v1/uploads/image';
+
+-- Add proof image to administration logs
+ALTER TABLE medication.medication_administrations
+    ADD COLUMN proof_image_url VARCHAR(500);
+
+COMMENT ON COLUMN medication.medication_administrations.proof_image_url
+IS 'URL to proof photo of taking medication uploaded via /api/v1/uploads/image';
+
+-- Optional: Add image to master medication catalog
+ALTER TABLE medication.medications
+    ADD COLUMN medication_image_url VARCHAR(500);
+
+COMMENT ON COLUMN medication.medications.medication_image_url
+IS 'URL to generic medication image (pill/tablet photo)';
+
+-- Verify columns added
+SELECT
+    table_name,
+    column_name,
+    data_type,
+    character_maximum_length
+FROM information_schema.columns
+WHERE table_schema = 'medication'
+  AND table_name IN (
+                     'medication_schedules',
+                     'medication_administrations',
+                     'medications'
+    )
+  AND column_name LIKE '%image%'
+ORDER BY table_name, ordinal_position;
+
 -- ============================================================
 -- END OF MEDICATION SCHEMA
 -- ============================================================
