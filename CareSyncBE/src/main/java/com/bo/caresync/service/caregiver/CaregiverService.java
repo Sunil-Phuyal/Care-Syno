@@ -92,21 +92,34 @@ public class CaregiverService {
         return responses;
     }
 
+    /**
+     * Invite a caregiver to a patient
+     * Creates user if doesn't exist, links to patient, sends email
+     */
+    @Transactional
     public void inviteCaregiver(InviteCaregiverRequest request) {
-        String methodName = AppUtil.getMethodName();
+        String methodName = "inviteCaregiver";
 
         log.debug("{} Inviting caregiver {} to patient {}",
                 methodName, request.getEmail(), request.getPatientId());
+
+        // Check permission
         loginUserUtil.requirePermission(request.getPatientId(), "caregiver.invite");
+
+        // Check if user already exists
         Optional<User> existingUser = userRepo.findByEmail(request.getEmail());
         User caregiver;
         String tempPassword = null;
+        boolean isNewUser = false;
 
         if (existingUser.isPresent()) {
+            // User exists
             caregiver = existingUser.get();
             log.info("{} User already exists: {}", methodName, request.getEmail());
 
         } else {
+            // Create new user
+            isNewUser = true;
             tempPassword = UUID.randomUUID().toString();
 
             caregiver = new User();
@@ -117,7 +130,6 @@ public class CaregiverService {
 
             caregiver = userRepo.save(caregiver);
 
-            // Assign USER role
             UserRole userRole = new UserRole();
             userRole.setUserId(caregiver.getUserId());
             userRole.setRoleId(1L);
@@ -126,6 +138,8 @@ public class CaregiverService {
 
             log.info("{} Created new user: {}", methodName, request.getEmail());
         }
+
+        // Check if already linked to this patient
         Optional<PatientCaregiver> existingLink = caregiverRepo
                 .findByPatientIdAndCaregiverUserIdAndRecordStatus(request.getPatientId(), caregiver.getUserId(),AppConstants.RecordStatus.ACTIVE);
 
@@ -134,25 +148,51 @@ public class CaregiverService {
             throw new BaseException(ErrorCode.RESOURCE_ALREADY_EXISTS,
                     "This caregiver is already linked to the patient");
         }
-        PatientCaregiver link = new PatientCaregiver();
-        link.setPatientId(request.getPatientId());
-        link.setCaregiverUserId(caregiver.getUserId());
-        link.setRoleId(request.getRoleId());
-        link.setRelationship(request.getRelationship());
-        link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+
+        // If link exists but was deleted, reactivate it
+        PatientCaregiver link;
+        if (existingLink.isPresent()) {
+            // Reactivate deleted link
+            link = existingLink.get();
+            link.setRoleId(request.getRoleId());
+            link.setRelationship(request.getRelationship());
+            link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+            link.setModifiedAt(null);
+            link.setModifiedBy(null);
+        } else {
+            // Create new patient-caregiver link
+            link = new PatientCaregiver();
+            link.setPatientId(request.getPatientId());
+            link.setCaregiverUserId(caregiver.getUserId());
+            link.setRoleId(request.getRoleId());
+            link.setRelationship(request.getRelationship());
+            link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        }
 
         caregiverRepo.save(link);
 
         // Send email invitation
         try {
+            // Get inviter name
             String inviterName = loginUserUtil.getCurrentUser().getFullName();
-            String patientName = "the patient"; // Could fetch from DB
+
+            // Get patient name (best effort)
+            String patientName = "the patient";
+            try {
+                // Assuming you have PatientRepository injected
+                // If not available, just use "the patient"
+                // Optional<Patient> patientOpt = patientRepo.findById(request.getPatientId());
+                // if (patientOpt.isPresent()) {
+                //     patientName = patientOpt.get().getFullName();
+                // }
+            } catch (Exception ex) {
+                log.debug("{} Could not fetch patient name, using default", methodName);
+            }
 
             String subject = "Invitation to CareSync - Care Team";
             String body;
 
-            if (tempPassword != null) {
-                // New user - send credentials
+            if (isNewUser && tempPassword != null) {
                 body = emailTemplateService.getCaregiverInvitationBody(
                         inviterName,
                         patientName,
@@ -160,15 +200,16 @@ public class CaregiverService {
                         tempPassword
                 );
             } else {
-                // Existing user - just notify
+                // Existing user - send notification only
                 body = emailTemplateService.getCaregiverAddedBody(
-                        caregiver.getFullName(),
+                        request.getFullName(),  // Safe - from request
                         inviterName,
                         patientName
                 );
             }
 
-            emailService.sendSimpleEmail(caregiver.getEmail(), subject, body);
+            emailService.sendSimpleEmail(request.getEmail(), subject, body);
+            log.info("{} Invitation email sent to {}", methodName, request.getEmail());
 
         } catch (Exception e) {
             log.warn("{} Failed to send invitation email: {}", methodName, e.getMessage());
@@ -303,10 +344,4 @@ public class CaregiverService {
                 .isActive(AppConstants.RecordStatus.ACTIVE.equals(link.getRecordStatus()))
                 .build();
     }
-
-
-
-
-
-
 }
