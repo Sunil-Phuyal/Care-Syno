@@ -50,6 +50,9 @@ public enum ErrorCode implements IErrorCode {
 
     // Patient / Medication
     PATIENT_ALREADY_EXISTS(409, "A patient with this name and date of birth already exists"),
+    FILE_UPLOAD_FAILED(400, "File upload failed"),
+    FILE_TOO_LARGE(400, "File size exceeds maximum allowed size"),
+    INVALID_FILE_TYPE(400, "Invalid file type"),
     MEDICATION_NOT_FOUND(404, "Medication not found");
 
     private final int httpStatus;
