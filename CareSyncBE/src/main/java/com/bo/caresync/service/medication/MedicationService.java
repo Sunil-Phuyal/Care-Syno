@@ -58,13 +58,10 @@ public class MedicationService {
     @Transactional
     public void createSchedule(CreateMedicationScheduleRequest request) {
         String methodName = AppUtil.getMethodName();
-
-        // Check permission
         loginUserUtil.requirePermission(
                 request.getPatientId(),
                 AppConstants.Permission.MEDICATION_CREATE_SCHEDULE
         );
-
         MedicationSchedule schedule = new MedicationSchedule();
         schedule.setPatientId(request.getPatientId());
         schedule.setMedicationId(request.getMedicationId());
@@ -72,26 +69,22 @@ public class MedicationService {
         schedule.setFrequency(request.getFrequency());
         schedule.setTimeOfDay(request.getTimeOfDay());
         schedule.setInstructions(request.getInstructions());
-        schedule.setStartDate(request.getStartDate());   // assumed LocalDate in both request & entity
-        schedule.setEndDate(request.getEndDate());       // assumed LocalDate in both request & entity
+        schedule.setStartDate(request.getStartDate());
+        schedule.setEndDate(request.getEndDate());
         schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
         scheduleRepo.save(schedule);
-
         log.info("{} Medication schedule created for patientId={}", methodName, request.getPatientId());
     }
 
     @Transactional(readOnly = true)
     public List<MedicationSchedule> getPatientSchedules(Long patientId) {
         String methodName = AppUtil.getMethodName();
-
-        // Check permission
         loginUserUtil.requirePermission(patientId, AppConstants.Permission.MEDICATION_VIEW);
 
         List<MedicationSchedule> schedules = scheduleRepo.findByPatientIdAndRecordStatus(
                 patientId,
                 AppConstants.RecordStatus.ACTIVE
         );
-
         log.info("{} Retrieved {} schedules for patient {}",
                 methodName, schedules.size(), patientId);
         return schedules;
@@ -121,8 +114,6 @@ public class MedicationService {
         if (!recentAdministrations.isEmpty()) {
             log.warn("{} Duplicate dose detected within 4 hours for patient {} medication {}",
                     methodName, request.getPatientId(), request.getMedicationId());
-
-            // Send warning email to all caregivers
             try {
                 MedicationAdministration recent = recentAdministrations.get(0);
                 User previousCaregiver = userRepo.findById(recent.getCaregiverUserId())
@@ -132,8 +123,6 @@ public class MedicationService {
                         .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
                 Medication medication = medicationRepo.findById(request.getMedicationId())
                         .orElseThrow(() -> new BaseException(ErrorCode.MEDICATION_NOT_FOUND));
-
-                // Get all caregivers for this patient
                 List<PatientCaregiver> caregivers = patientCaregiverRepo
                         .findByPatientIdAndRecordStatus(request.getPatientId(), AppConstants.RecordStatus.ACTIVE);
 
@@ -142,7 +131,6 @@ public class MedicationService {
                         .filter(u -> u != null)
                         .map(User::getEmail)
                         .toArray(String[]::new);
-
                 if (caregiverEmails.length > 0) {
                     String warningBody = emailTemplateService.getDuplicateDoseWarningBody(
                             currentCaregiver.getFullName(),
@@ -151,19 +139,16 @@ public class MedicationService {
                             recent.getActualTime().toString(),
                             previousCaregiver != null ? previousCaregiver.getFullName() : "Unknown"
                     );
-
                     emailService.sendBulkEmail(
                             caregiverEmails,
                             "Duplicate Dose Warning - " + patient.getFullName(),
                             warningBody
                     );
-
                     log.info("{} Duplicate dose warning email sent to {} caregivers",
                             methodName, caregiverEmails.length);
                 }
             } catch (Exception e) {
                 log.error("{} Failed to send duplicate dose warning email", methodName, e);
-                // Don't throw exception - the warning email is optional
             }
         }
 
@@ -179,9 +164,7 @@ public class MedicationService {
         administration.setNotes(request.getNotes());
         administration.setSideEffects(request.getSideEffects());
         administration.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
         MedicationAdministration saved = administrationRepo.save(administration);
-
         log.info("{} Medication logged: administrationId={}, caregiverId={}",
                 methodName, saved.getAdministrationId(), currentUserId);
         return saved;
@@ -190,19 +173,15 @@ public class MedicationService {
     @Transactional(readOnly = true)
     public List<MedicationAdministration> getAdministrationHistory(Long patientId) {
         String methodName = AppUtil.getMethodName();
-
-        // Check permission
         loginUserUtil.requirePermission(
                 patientId,
                 AppConstants.Permission.MEDICATION_VIEW_HISTORY
         );
 
         List<MedicationAdministration> history = administrationRepo
-                .findByPatientIdAndRecordStatusOrderByActualTimeDesc(
-                        patientId,
+                .findByPatientIdAndRecordStatusOrderByActualTimeDesc(patientId,
                         AppConstants.RecordStatus.ACTIVE
                 );
-
         log.info("{} Retrieved {} administration records for patient {}",
                 methodName, history.size(), patientId);
         return history;
@@ -213,11 +192,7 @@ public class MedicationService {
         String methodName = "getUpcomingMedications";
 
         log.debug("{} Getting upcoming medications for patientId={}", methodName, patientId);
-
-        // Permission check
         loginUserUtil.requirePermission(patientId, "medication.view");
-
-        // Get all active schedules for patient
         List<MedicationSchedule> schedules = scheduleRepo
                 .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
 
@@ -226,21 +201,15 @@ public class MedicationService {
         LocalDateTime twoHoursLater = now.plusHours(2);
 
         for (MedicationSchedule schedule : schedules) {
-            // Skip if no time specified
             if (schedule.getTimeOfDay() == null || schedule.getTimeOfDay().isEmpty()) {
                 continue;
             }
-
-            // Parse times (e.g., "8:00 AM, 2:00 PM, 8:00 PM")
             String[] times = schedule.getTimeOfDay().split(",");
 
             for (String timeStr : times) {
                 try {
-                    // Parse time
                     LocalTime time = parseTime(timeStr.trim());
                     LocalDateTime scheduledDateTime = LocalDate.now().atTime(time);
-
-                    // If scheduled time is in the past today, skip
                     if (scheduledDateTime.isBefore(now.minusMinutes(30))) {
                         continue;
                     }

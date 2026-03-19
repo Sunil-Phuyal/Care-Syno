@@ -25,33 +25,27 @@ public class MedicationAdministration extends BaseEntity {
     @Column(name = "administration_id")
     private Long administrationId;
 
-    @Column(name = "patient_id")
-    private Long patientId;
-
-    @Column(name = "medication_id")
-    private Long medicationId;
-
-    @Column(name = "schedule_id")
+    @Column(name = "schedule_id", nullable = false)
     private Long scheduleId;
 
-    @Column(name = "caregiver_user_id")
-    private Long caregiverUserId;
+    @Column(name = "patient_id", nullable = false)
+    private Long patientId;
 
-    @Column(name = "scheduled_time")
-    private LocalDateTime scheduledTime;
+    @Column(name = "medication_id", nullable = false)
+    private Long medicationId;
 
-    @Column(name = "actual_time")
-    private LocalDateTime actualTime;
+    @Column(name = "administered_at", nullable = false)
+    private LocalDateTime administeredAt;
 
-    @Column(name = "dosage_given")
-    private String dosageGiven;
+    @Column(name = "administered_by", nullable = false)
+    private Long administeredBy;
 
-    @Column(name = "status")
+    @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Column(name = "notes")
+    @Column(name = "notes", length = 500)
     private String notes;
+    @Column(name = "proof_image_url", length = 500)
+    private String proofImageUrl;
 
-    @Column(name = "side_effects")
-    private String sideEffects;
 }
