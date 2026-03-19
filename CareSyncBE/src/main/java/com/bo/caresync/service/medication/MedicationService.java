@@ -101,7 +101,6 @@ public class MedicationService {
     public MedicationAdministration logAdministration(LogMedicationRequest request) {
         String methodName = AppUtil.getMethodName();
         Long currentUserId = loginUserUtil.getCurrentUserId();
-
         // Check permission
         loginUserUtil.requirePermission(
                 request.getPatientId(),
