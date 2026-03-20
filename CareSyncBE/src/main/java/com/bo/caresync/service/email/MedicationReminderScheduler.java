@@ -1,14 +1,17 @@
 package com.bo.caresync.service.email;
 
+import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationSchedule;
 import com.bo.caresync.entity.patient.Patient;
 import com.bo.caresync.entity.patient.PatientCaregiver;
 import com.bo.caresync.entity.user.User;
 import com.bo.caresync.repository.*;
 import com.bo.caresync.service.permession.PermissionService;
+import com.bo.caresync.utils.AppUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -25,7 +28,7 @@ import java.util.*;
  * @since 3/5/2026, 4:20 PM,
  **/
 @Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
 public class MedicationReminderScheduler {
 
@@ -34,17 +37,17 @@ public class MedicationReminderScheduler {
     private final PatientCaregiverRepository caregiverRepo;
     private final PatientRepository patientRepo;
     private final UserRepository userRepo;
+    private final MedicationRepository medicationRepo;  // ← ADD THIS
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
     private final PermissionService permissionService;
 
-    // Track which reminders we've already sent (to avoid duplicates)
     private final Set<String> sentReminders = new HashSet<>();
 
     /**
-//     * Run every 5 minutes: 0/5
-//            * At minutes 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-//            *******/
+     * Run every 5 minutes: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+     * Checks for medications due in the next 30 minutes
+     */
     @Scheduled(cron = "0 */5 * * * *")
     public void sendMedicationReminders() {
         String methodName = "sendMedicationReminders";
@@ -77,79 +80,54 @@ public class MedicationReminderScheduler {
             log.error("{} Error in medication reminder scheduler: {}", methodName, e.getMessage(), e);
         }
     }
-
-    /**
-     * Process a single medication schedule
-     */
     private int processSchedule(MedicationSchedule schedule, LocalDateTime now, LocalDateTime in30Min) {
-
-        // Skip if no time specified
-        if (schedule.getTimeOfDay() == null || schedule.getTimeOfDay().isEmpty()) {
+        if (schedule.getTimeOfDay() == null) {
             return 0;
         }
 
         int remindersSent = 0;
+        LocalTime time = schedule.getTimeOfDay();
+        LocalDateTime scheduledDateTime = LocalDate.now().atTime(time);
+        if (scheduledDateTime.isBefore(now)) {
+            return 0;
+        }
+        if (scheduledDateTime.isAfter(now) && scheduledDateTime.isBefore(in30Min)) {
+            boolean alreadyAdministered = administrationRepo
+                    .existsByScheduleIdAndAdministeredAtBetween(
+                            schedule.getScheduleId(),
+                            scheduledDateTime.minusMinutes(30),
+                            scheduledDateTime.plusMinutes(30)
+                    );
 
-        // Parse times (e.g., "8:00 AM, 2:00 PM, 8:00 PM")
-        String[] times = schedule.getTimeOfDay().split(",");
+            if (!alreadyAdministered) {
+                String reminderKey = String.format("%d-%s",
+                        schedule.getScheduleId(),
+                        scheduledDateTime.toString());
 
-        for (String timeStr : times) {
-            try {
-                LocalTime time = parseTime(timeStr.trim());
-                LocalDateTime scheduledDateTime = LocalDate.now().atTime(time);
-
-                // Skip if in the past
-                if (scheduledDateTime.isBefore(now)) {
-                    continue;
+                if (!sentReminders.contains(reminderKey)) {
+                    sendReminderEmails(schedule, scheduledDateTime);
+                    sentReminders.add(reminderKey);
+                    remindersSent++;
                 }
-
-                // Check if due in next 30 minutes
-                if (scheduledDateTime.isAfter(now) && scheduledDateTime.isBefore(in30Min)) {
-
-                    // Check if already administered
-                    boolean alreadyAdministered = administrationRepo
-                            .existsByPatientIdAndScheduleIdAndActualTimeBetween(
-                                    schedule.getPatientId(),
-                                    schedule.getScheduleId(),
-                                    scheduledDateTime.minusMinutes(30),
-                                    scheduledDateTime.plusMinutes(30)
-                            );
-
-                    if (!alreadyAdministered) {
-                        // Check if we already sent reminder for this
-                        String reminderKey = String.format("%d-%s",
-                                schedule.getScheduleId(),
-                                scheduledDateTime.toString());
-
-                        if (!sentReminders.contains(reminderKey)) {
-                            sendReminderEmails(schedule, scheduledDateTime);
-                            sentReminders.add(reminderKey);
-                            remindersSent++;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Failed to parse time: {}", timeStr, e);
             }
         }
 
         return remindersSent;
     }
-
-    /**
-     * Send reminder emails to all authorized caregivers
-     */
     private void sendReminderEmails(MedicationSchedule schedule, LocalDateTime scheduledTime) {
-        String methodName = "sendReminderEmails";
-
-        // Get patient
+        String methodName = AppUtil.getMethodName();
         Optional<Patient> patientOpt = patientRepo.findById(schedule.getPatientId());
         if (patientOpt.isEmpty()) {
+            log.warn("{} Patient not found: {}", methodName, schedule.getPatientId());
             return;
         }
         Patient patient = patientOpt.get();
-
-        // Get all caregivers for this patient
+        Optional<Medication> medicationOpt = medicationRepo.findById(schedule.getMedicationId());
+        if (medicationOpt.isEmpty()) {
+            log.warn("{} Medication not found: {}", methodName, schedule.getMedicationId());
+            return;
+        }
+        Medication medication = medicationOpt.get();
         List<PatientCaregiver> caregivers = caregiverRepo
                 .findByPatientIdAndRecordStatus(schedule.getPatientId(), "Y");
 
@@ -157,7 +135,6 @@ public class MedicationReminderScheduler {
 
         for (PatientCaregiver caregiver : caregivers) {
             try {
-                // Check if caregiver has permission to administer medications
                 boolean canAdminister = permissionService.hasPermission(
                         caregiver.getCaregiverUserId(),
                         "medication.administer",
@@ -165,35 +142,33 @@ public class MedicationReminderScheduler {
                 );
 
                 if (!canAdminister) {
-                    continue; // Skip caregivers who can't administer
+                    log.debug("{} Caregiver {} does not have administer permission, skipping",
+                            methodName, caregiver.getCaregiverUserId());
+                    continue;
                 }
-
-                // Get caregiver user details
                 Optional<User> userOpt = userRepo.findById(caregiver.getCaregiverUserId());
                 if (userOpt.isEmpty()) {
+                    log.warn("{} User not found: {}", methodName, caregiver.getCaregiverUserId());
                     continue;
                 }
                 User user = userOpt.get();
-
-                // Send email
                 String subject = String.format("⏰ Medication Reminder: %s - %s",
                         patient.getFullName(),
-                        schedule.getMedicationId());
-
+                        medication.getMedicationName());
                 String body = emailTemplateService.getMedicationReminderBody(
                         user.getFullName(),
                         patient.getFullName(),
-                        String.valueOf(schedule.getMedicationId()),
+                        medication.getMedicationName(),
                         schedule.getDosage(),
                         scheduledTime,
                         (int) minutesUntil,
-                        schedule.getInstructions()
+                        schedule.getSpecialInstructions()
                 );
 
                 emailService.sendSimpleEmail(user.getEmail(), subject, body);
 
                 log.info("{} Sent reminder to {} for patient {} - medication {}",
-                        methodName, user.getEmail(), patient.getFullName(), schedule.getMedicationId());
+                        methodName, user.getEmail(), patient.getFullName(), medication.getMedicationName());
 
             } catch (Exception e) {
                 log.error("{} Failed to send reminder to caregiver {}: {}",
@@ -201,33 +176,7 @@ public class MedicationReminderScheduler {
             }
         }
     }
-
-    /**
-     * Parse time string like "8:00 AM" or "14:30" to LocalTime
-     */
-    private LocalTime parseTime(String timeStr) {
-        try {
-            // Try 12-hour format first (8:00 AM)
-            DateTimeFormatter formatter12h = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
-            return LocalTime.parse(timeStr, formatter12h);
-        } catch (Exception e1) {
-            try {
-                // Try 24-hour format (14:30)
-                DateTimeFormatter formatter24h = DateTimeFormatter.ofPattern("HH:mm");
-                return LocalTime.parse(timeStr, formatter24h);
-            } catch (Exception e2) {
-                log.warn("Invalid time format: {}", timeStr);
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Clean up old sent reminders to prevent memory leak
-     */
     private void cleanupSentReminders() {
-        // In production, you'd want to use a cache with TTL (like Redis)
-        // For now, clear all after they're 1 hour old
         if (sentReminders.size() > 1000) {
             sentReminders.clear();
             log.info("Cleared sent reminders cache");

@@ -50,35 +50,20 @@ public class MedicationService {
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
 
-    /**
-     * Get all available medications (catalog)
-     */
     @Transactional(readOnly = true)
     public List<Medication> getAllMedications() {
         return medicationRepo.findByRecordStatus(AppConstants.RecordStatus.ACTIVE);
     }
-
-    /**
-     * Create medication schedule with image support
-     */
     @Transactional
     public MedicationScheduleResponse createMedicationSchedule(CreateMedicationScheduleRequest request) {
         String methodName = "createMedicationSchedule";
 
         log.debug("{} Creating medication schedule for patient {}", methodName, request.getPatientId());
-
-        // Check permission
         loginUserUtil.requirePermission(request.getPatientId(), "medication.create_schedule");
-
-        // Validate medication exists
         Medication medication = medicationRepo.findById(request.getMedicationId())
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Medication not found"));
-
-        // Validate patient exists
         Patient patient = patientRepo.findById(request.getPatientId())
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Patient not found"));
-
-        // Create schedule for each time
         List<MedicationSchedule> schedules = new ArrayList<>();
 
         for (String timeStr : request.getTimes()) {
@@ -94,8 +79,6 @@ public class MedicationService {
             schedule.setEndDate(request.getEndDate());
             schedule.setSpecialInstructions(request.getSpecialInstructions());
             schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
-            // Set image URLs
             if (request.getPrescriptionImageUrl() != null && !request.getPrescriptionImageUrl().isEmpty()) {
                 schedule.setPrescriptionImageUrl(request.getPrescriptionImageUrl());
                 log.debug("{} Prescription image attached", methodName);
@@ -108,14 +91,10 @@ public class MedicationService {
 
             schedules.add(schedule);
         }
-
-        // Save all schedules
         schedules = scheduleRepo.saveAll(schedules);
 
         log.info("{} Created {} medication schedules for patient {}",
                 methodName, schedules.size(), request.getPatientId());
-
-        // Return first schedule as response
         MedicationSchedule firstSchedule = schedules.get(0);
 
         return MedicationScheduleResponse.builder()
@@ -138,9 +117,6 @@ public class MedicationService {
                 .build();
     }
 
-    /**
-     * Get all schedules for a patient
-     */
     @Transactional(readOnly = true)
     public List<MedicationSchedule> getPatientSchedules(Long patientId) {
         String methodName = "getPatientSchedules";
@@ -157,23 +133,14 @@ public class MedicationService {
         return schedules;
     }
 
-    /**
-     * Update medication schedule with image support
-     */
     @Transactional
     public MedicationScheduleResponse updateMedicationSchedule(Long scheduleId, UpdateMedicationScheduleRequest request) {
         String methodName = "updateMedicationSchedule";
 
         log.debug("{} Updating schedule {}", methodName, scheduleId);
-
-        // Get schedule
         MedicationSchedule schedule = scheduleRepo.findById(scheduleId)
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Schedule not found"));
-
-        // Check permission
         loginUserUtil.requirePermission(schedule.getPatientId(), "medication.edit_schedule");
-
-        // Update fields if provided
         if (request.getDosage() != null && !request.getDosage().isEmpty()) {
             schedule.setDosage(request.getDosage());
         }
