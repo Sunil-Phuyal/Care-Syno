@@ -15,5 +15,5 @@ public interface MedicationRepository extends JpaRepository<Medication, Long> {
 
     List<Medication> findByRecordStatus(String recordStatus);
 
-    List<Medication> findByNameContainingIgnoreCaseAndRecordStatus(String name, String recordStatus);
+//    List<Medication> findByNameContainingIgnoreCaseAndRecordStatus(String name, String recordStatus);
 }

@@ -46,7 +46,7 @@ public class MedicationSchedule extends BaseEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "special_instructions", length = 500)
+    @Column(name = "instructions", length = 500)
     private String specialInstructions;
 
     @Column(name = "prescription_image_url", length = 500)
