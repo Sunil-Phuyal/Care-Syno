@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * @author Sunil Phuyal
@@ -19,12 +20,18 @@ public class MedicationScheduleResponse {
 
     private Long scheduleId;
     private Long patientId;
+    private String patientName;
     private Long medicationId;
+    private String medicationName;
+    private String genericName;
     private String dosage;
     private String frequency;
-    private String timeOfDay;
-    private String instructions;
+    private LocalTime timeOfDay;
     private LocalDate startDate;
     private LocalDate endDate;
-    private String recordStatus;
+    private String specialInstructions;
+    private String status;
+    private String prescriptionImageUrl;
+    private String medicationPhotoUrl;
+    private String medicationImageUrl;
 }

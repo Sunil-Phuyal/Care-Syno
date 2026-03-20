@@ -21,4 +21,6 @@ public class UpdateScheduleRequest {
     private String instructions;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String prescriptionImageUrl;
+    private String medicationPhotoUrl;
 }
