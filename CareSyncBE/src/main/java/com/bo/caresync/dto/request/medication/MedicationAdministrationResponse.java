@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -18,7 +17,6 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 public class MedicationAdministrationResponse {
-
     private Long administrationId;
     private Long scheduleId;
     private Long patientId;
