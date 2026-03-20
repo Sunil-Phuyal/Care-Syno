@@ -2,7 +2,8 @@
 //
 // Changes from original:
 // - Fixed all dark:bg-*-900/20 opacity classes → solid colors (no more CSS errors)
-// - Connected to real API via medicationApi.getAllSchedules()
+// - Connected to real API via medicationApi.getPatientSchedules()
+// - Added usePatient context to get selectedPatient
 // - Kept all existing structure, calendar, modals, and logic intact
 
 import { useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ import { medicationApi } from '../../api/medication.api';
 import { cn } from '../../utils/cn';
 import type { MedicationSchedule } from '../../types/medication.types';
 import { Spinner } from '../../components/ui/Spinner';
+import { usePatient } from '../../context/PatientContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type EventType = 'MEDICATION' | 'APPOINTMENT' | 'CHECKUP' | 'THERAPY';
@@ -338,6 +340,8 @@ function EventDetailModal({ event, onClose }: { event: ScheduleEvent; onClose: (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function ScheduleManagement() {
+  const { selectedPatient } = usePatient();
+
   const [events, setEvents]               = useState<ScheduleEvent[]>([]);
   const [isLoading, setIsLoading]         = useState(true);
   const [showAddEvent, setShowAddEvent]   = useState(false);
@@ -349,14 +353,16 @@ export function ScheduleManagement() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const schedules = await medicationApi.getAllSchedules().catch(() => []);
+        const schedules = await medicationApi.getPatientSchedules(
+          selectedPatient?.patientId ?? 0
+        ).catch(() => []);
         setEvents(schedules.map(mapScheduleToEvent));
       } finally {
         setIsLoading(false);
       }
     };
     load();
-  }, []);
+  }, [selectedPatient]);
 
   const completed  = events.filter((e) => e.status === 'COMPLETED').length;
   const upcoming   = events.filter((e) => e.status === 'UPCOMING').length;
@@ -421,10 +427,10 @@ export function ScheduleManagement() {
         {/* Calendar */}
         <div>
           <CalendarGrid
-          markedDays={markedDays}
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
-        />
+            markedDays={markedDays}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+          />
         </div>
 
         {/* Today's schedule */}

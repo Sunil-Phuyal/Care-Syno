@@ -1,4 +1,4 @@
-// Patient related types
+// src/types/patient.types.ts
 
 export interface Patient {
   patientId: number;
@@ -21,6 +21,7 @@ export interface CreatePatientRequest {
   address?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  profileImageUrl?: string;        // ← image upload
 }
 
 export interface UpdatePatientRequest extends CreatePatientRequest {}
