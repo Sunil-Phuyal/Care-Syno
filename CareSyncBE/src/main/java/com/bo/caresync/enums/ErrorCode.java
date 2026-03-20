@@ -47,6 +47,7 @@ public enum ErrorCode implements IErrorCode {
     // Conflict / Operation Errors
     RESOURCE_ALREADY_EXISTS(409, "Resource already exists"),
     INVALID_OPERATION(400, "Invalid operation"),
+    DUPLICATE_ADMINISTRATION(409, "Medication already administered recently"),
 
     // Patient / Medication
     PATIENT_ALREADY_EXISTS(409, "A patient with this name and date of birth already exists"),

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -26,9 +28,6 @@ public interface MedicationAdministrationRepository extends JpaRepository<Medica
             LocalDateTime endTime,
             String recordStatus
     );
-    /**
-     * Check if medication was administered within a time window
-     */
     boolean existsByPatientIdAndScheduleIdAndActualTimeBetween(
             Long patientId,
             Long scheduleId,
@@ -40,5 +39,22 @@ public interface MedicationAdministrationRepository extends JpaRepository<Medica
             Long patientId,
             String recordStatus,
             Pageable pageable
+    );
+
+    Optional<MedicationAdministration> findFirstByScheduleIdAndAdministeredAtBetweenOrderByAdministeredAtDesc(
+            Long scheduleId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    boolean existsByScheduleIdAndAdministeredAtBetween(
+            Long scheduleId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
+
+    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
+            Long patientId,
+            String recordStatus
     );
 }
