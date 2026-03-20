@@ -15,46 +15,20 @@ import java.util.Optional;
  * @since 2/5/2026, 8:07 PM,
  **/
 public interface MedicationAdministrationRepository extends JpaRepository<MedicationAdministration, Long> {
-
-    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
+    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
             Long patientId,
             String recordStatus
     );
-
-    List<MedicationAdministration> findByPatientIdAndMedicationIdAndActualTimeBetweenAndRecordStatus(
-            Long patientId,
-            Long medicationId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            String recordStatus
-    );
-    boolean existsByPatientIdAndScheduleIdAndActualTimeBetween(
-            Long patientId,
+    boolean existsByScheduleIdAndAdministeredAtBetween(
             Long scheduleId,
-            LocalDateTime startTime,
-            LocalDateTime endTime
+            LocalDateTime start,
+            LocalDateTime end
     );
-
-    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
-            Long patientId,
-            String recordStatus,
-            Pageable pageable
-    );
-
     Optional<MedicationAdministration> findFirstByScheduleIdAndAdministeredAtBetweenOrderByAdministeredAtDesc(
             Long scheduleId,
             LocalDateTime start,
             LocalDateTime end
     );
 
-    boolean existsByScheduleIdAndAdministeredAtBetween(
-            Long scheduleId,
-            LocalDateTime start,
-            LocalDateTime end
-    );
-
-    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
-            Long patientId,
-            String recordStatus
-    );
+    List<MedicationAdministration> findByPatientId(Long patientId);
 }
