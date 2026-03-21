@@ -1,4 +1,4 @@
-// Medication related types
+// src/types/medication.types.ts
 
 export interface Medication {
   medicationId: number;
@@ -20,6 +20,8 @@ export interface MedicationSchedule {
   instructions?: string;
   startDate: string;
   endDate?: string;
+  prescriptionImageUrl?: string;
+  medicationPhotoUrl?: string;
 }
 
 export interface CreateScheduleRequest {
@@ -31,6 +33,8 @@ export interface CreateScheduleRequest {
   instructions?: string;
   startDate: string;
   endDate?: string;
+  prescriptionImageUrl?: string; 
+  medicationPhotoUrl?: string;  
 }
 
 export interface MedicationAdministration {
@@ -45,6 +49,7 @@ export interface MedicationAdministration {
   status: 'ADMINISTERED' | 'SKIPPED' | 'MISSED' | 'REFUSED';
   notes?: string;
   sideEffects?: string;
+  proofImageUrl?: string;
 }
 
 export interface LogMedicationRequest {
@@ -57,4 +62,5 @@ export interface LogMedicationRequest {
   status: 'ADMINISTERED' | 'SKIPPED' | 'MISSED' | 'REFUSED';
   notes?: string;
   sideEffects?: string;
+  proofImageUrl?: string;        
 }

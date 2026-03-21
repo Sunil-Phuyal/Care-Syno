@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { medicationApi } from '../../api/medication.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
+import { ImageUploader } from '../../components/ui/ImageUploader';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -13,12 +14,11 @@ import { Spinner } from '../../components/ui/Spinner';
 import { cn } from '../../utils/cn';
 import type { Medication, MedicationSchedule } from '../../types/medication.types';
 
-// ─── Status option config ─────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
   { value: 'ADMINISTERED', label: 'Administered', desc: 'Medication taken',       color: 'border-success-500 bg-success-50 dark:bg-success-900' },
   { value: 'SKIPPED',      label: 'Skipped',      desc: 'Intentionally skipped',  color: 'border-warning-500 bg-warning-50 dark:bg-warning-900' },
-  { value: 'MISSED',       label: 'Missed',       desc: 'Accidentally missed',     color: 'border-error-500 bg-error-50 dark:bg-error-900' },
-  { value: 'REFUSED',      label: 'Refused',      desc: 'Patient refused',         color: 'border-gray-400 bg-gray-50 dark:bg-gray-800' },
+  { value: 'MISSED',       label: 'Missed',       desc: 'Accidentally missed',    color: 'border-error-500 bg-error-50 dark:bg-error-900' },
+  { value: 'REFUSED',      label: 'Refused',      desc: 'Patient refused',        color: 'border-gray-400 bg-gray-50 dark:bg-gray-800' },
 ] as const;
 
 export function LogMedication() {
@@ -27,11 +27,12 @@ export function LogMedication() {
   const { selectedPatient } = usePatient();
   const { success, error: showError } = useNotification();
 
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [schedules, setSchedules]     = useState<MedicationSchedule[]>([]);
+  const [medications, setMedications]   = useState<Medication[]>([]);
+  const [schedules, setSchedules]       = useState<MedicationSchedule[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isSubmitting, setIsSubmitting]   = useState(false);
-  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError]               = useState('');
+  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     medicationId: '',
@@ -54,8 +55,6 @@ export function LogMedication() {
         ]);
         setMedications(medsData);
         setSchedules(schedulesData);
-
-        // Pre-fill if coming from a schedule
         if (location.state?.scheduleId) {
           const schedule = schedulesData.find((s) => s.scheduleId === location.state.scheduleId);
           if (schedule) {
@@ -79,8 +78,6 @@ export function LogMedication() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-
-    // Auto-fill dosage when medication selected
     if (name === 'medicationId') {
       const schedule = schedules.find((s) => s.medicationId === Number(value));
       if (schedule) {
@@ -101,14 +98,15 @@ export function LogMedication() {
     setIsSubmitting(true);
     try {
       await medicationApi.logAdministration({
-        patientId:    selectedPatient.patientId,
-        medicationId: Number(form.medicationId),
-        scheduleId:   form.scheduleId ? Number(form.scheduleId) : undefined,
-        actualTime:   form.actualTime,
-        dosageGiven:  form.dosageGiven,
-        status:       form.status,
-        notes:        form.notes || undefined,
-        sideEffects:  form.sideEffects || undefined,
+        patientId:     selectedPatient.patientId,
+        medicationId:  Number(form.medicationId),
+        scheduleId:    form.scheduleId ? Number(form.scheduleId) : undefined,
+        actualTime:    form.actualTime,
+        dosageGiven:   form.dosageGiven,
+        status:        form.status,
+        notes:         form.notes || undefined,
+        sideEffects:   form.sideEffects || undefined,
+        proofImageUrl: proofImageUrl ?? undefined,
       });
       success('Medication logged successfully!');
       navigate('/medications');
@@ -121,7 +119,6 @@ export function LogMedication() {
     }
   };
 
-  // No patient selected
   if (!selectedPatient) {
     return (
       <div className="card text-center py-12">
@@ -145,8 +142,6 @@ export function LogMedication() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-
-      {/* Header */}
       <div>
         <button
           onClick={() => navigate('/medications')}
@@ -162,13 +157,10 @@ export function LogMedication() {
         <p className="page-subtitle">Record medication administration for {selectedPatient.fullName}</p>
       </div>
 
-      {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
-                        border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
@@ -176,17 +168,10 @@ export function LogMedication() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Medication + Time */}
+        {/* Medication details */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Medication Details</h3>
-
-          <Select
-            name="medicationId"
-            label="Medication"
-            value={form.medicationId}
-            onChange={handleChange}
-            required
-          >
+          <Select name="medicationId" label="Medication" value={form.medicationId} onChange={handleChange} required>
             <option value="">Select medication...</option>
             {medications.map((med) => (
               <option key={med.medicationId} value={med.medicationId}>
@@ -194,33 +179,17 @@ export function LogMedication() {
               </option>
             ))}
           </Select>
-
           <div>
-            <Input
-              name="actualTime"
-              label="Time Administered"
-              type="datetime-local"
-              value={form.actualTime}
-              onChange={handleChange}
-              required
-            />
-            <button
-              type="button"
+            <Input name="actualTime" label="Time Administered" type="datetime-local"
+              value={form.actualTime} onChange={handleChange} required />
+            <button type="button"
               onClick={() => setForm((prev) => ({ ...prev, actualTime: new Date().toISOString().slice(0, 16) }))}
-              className="text-xs text-primary-600 dark:text-primary-400 hover:underline mt-1"
-            >
+              className="text-xs text-primary-600 dark:text-primary-400 hover:underline mt-1">
               Set to now
             </button>
           </div>
-
-          <Input
-            name="dosageGiven"
-            label="Dosage Given"
-            value={form.dosageGiven}
-            onChange={handleChange}
-            placeholder="e.g. 500mg, 1 tablet"
-            required
-          />
+          <Input name="dosageGiven" label="Dosage Given" value={form.dosageGiven} onChange={handleChange}
+            placeholder="e.g. 500mg, 1 tablet" required />
         </div>
 
         {/* Status */}
@@ -230,23 +199,15 @@ export function LogMedication() {
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {STATUS_OPTIONS.map((option) => (
-              <label
-                key={option.value}
-                className={cn(
-                  'flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all',
-                  form.status === option.value
-                    ? option.color + ' border-opacity-100'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                )}
-              >
-                <input
-                  type="radio"
-                  name="status"
-                  value={option.value}
-                  checked={form.status === option.value}
-                  onChange={handleChange}
-                  className="text-primary-500 accent-primary-500"
-                />
+              <label key={option.value} className={cn(
+                'flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all',
+                form.status === option.value
+                  ? option.color + ' border-opacity-100'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+              )}>
+                <input type="radio" name="status" value={option.value}
+                  checked={form.status === option.value} onChange={handleChange}
+                  className="text-primary-500 accent-primary-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{option.label}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{option.desc}</p>
@@ -256,37 +217,39 @@ export function LogMedication() {
           </div>
         </div>
 
-        {/* Notes + Side effects */}
+        {/* Proof photo — only show for ADMINISTERED */}
+        {form.status === 'ADMINISTERED' && (
+          <div className="card space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Proof of Administration</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                Optional photo proof that the medication was taken — useful for accountability.
+              </p>
+              <ImageUploader
+                folder="administration-proof"
+                fileName={`proof_schedule_${form.scheduleId || 'unknown'}_${Date.now()}`}
+                label="Proof Photo"
+                value={proofImageUrl}
+                onChange={setProofImageUrl}
+                optional
+                hint="Take a photo of the medication being administered."
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Additional Notes</h3>
-          <Textarea
-            name="notes"
-            label="Notes (optional)"
-            value={form.notes}
-            onChange={handleChange}
-            rows={3}
-            resize="none"
-            placeholder="Any additional notes..."
-          />
-          <Textarea
-            name="sideEffects"
-            label="Side Effects (optional)"
-            value={form.sideEffects}
-            onChange={handleChange}
-            rows={2}
-            resize="none"
-            placeholder="Note any side effects observed..."
-          />
+          <Textarea name="notes" label="Notes (optional)" value={form.notes} onChange={handleChange}
+            rows={3} resize="none" placeholder="Any additional notes..." />
+          <Textarea name="sideEffects" label="Side Effects (optional)" value={form.sideEffects} onChange={handleChange}
+            rows={2} resize="none" placeholder="Note any side effects observed..." />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/medications')}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" fullWidth isLoading={isSubmitting}>
-            Log Medication
-          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/medications')}>Cancel</Button>
+          <Button type="submit" variant="primary" fullWidth isLoading={isSubmitting}>Log Medication</Button>
         </div>
       </form>
     </div>
