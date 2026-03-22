@@ -143,33 +143,27 @@ public class AuthService {
                 roleNames
         );
     }
-
     /**
      * Update user profile
      */
     @Transactional
     public UserResponse updateProfile(UpdateProfileRequest request) {
         String methodName = "updateProfile";
-
         Long currentUserId = loginUserUtil.getCurrentUserId();
-
         log.debug("{} Updating profile for userId={}", methodName, currentUserId);
-
-        // Get current user
         User user = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND, "User not found"));
-
-        // Update fields
         user.setFullName(request.getFullName());
 
         if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
             user.setPhoneNumber(request.getPhoneNumber());
         }
-
+        if (request.getProfileImageUrl() != null && !request.getProfileImageUrl().isEmpty()) {
+            user.setProfileImageUrl(request.getProfileImageUrl());
+            log.debug("{} Profile image URL updated", methodName);
+        }
         User updated = userRepository.save(user);
-
         log.info("{} Successfully updated profile for userId={}", methodName, currentUserId);
-
         return toUserResponse(updated);
     }
 

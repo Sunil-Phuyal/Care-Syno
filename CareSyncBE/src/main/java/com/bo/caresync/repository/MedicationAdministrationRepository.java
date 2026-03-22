@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -13,32 +15,20 @@ import java.util.List;
  * @since 2/5/2026, 8:07 PM,
  **/
 public interface MedicationAdministrationRepository extends JpaRepository<MedicationAdministration, Long> {
-
-    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
+    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
             Long patientId,
             String recordStatus
     );
-
-    List<MedicationAdministration> findByPatientIdAndMedicationIdAndActualTimeBetweenAndRecordStatus(
-            Long patientId,
-            Long medicationId,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            String recordStatus
-    );
-    /**
-     * Check if medication was administered within a time window
-     */
-    boolean existsByPatientIdAndScheduleIdAndActualTimeBetween(
-            Long patientId,
+    boolean existsByScheduleIdAndAdministeredAtBetween(
             Long scheduleId,
-            LocalDateTime startTime,
-            LocalDateTime endTime
+            LocalDateTime start,
+            LocalDateTime end
+    );
+    Optional<MedicationAdministration> findFirstByScheduleIdAndAdministeredAtBetweenOrderByAdministeredAtDesc(
+            Long scheduleId,
+            LocalDateTime start,
+            LocalDateTime end
     );
 
-    List<MedicationAdministration> findByPatientIdAndRecordStatusOrderByActualTimeDesc(
-            Long patientId,
-            String recordStatus,
-            Pageable pageable
-    );
+    List<MedicationAdministration> findByPatientId(Long patientId);
 }

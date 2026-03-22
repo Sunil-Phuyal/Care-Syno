@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { patientApi } from '../../api/patient.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
+import { ImageUploader } from '../../components/ui/ImageUploader';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -12,9 +13,10 @@ import { Textarea } from '../../components/ui/Textarea';
 
 export function CreatePatient() {
   const navigate = useNavigate();
-  const { refreshPatients, myPatients } = usePatient();
+  const { refreshPatients } = usePatient();
   const { success, error: showError } = useNotification();
 
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     fullName: '',
     dateOfBirth: '',
@@ -24,7 +26,6 @@ export function CreatePatient() {
     emergencyContactName: '',
     emergencyContactPhone: '',
   });
-
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,13 +36,13 @@ export function CreatePatient() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
     try {
-      // Backend returns void — create then refresh to get the new patient
-      await patientApi.createPatient(form);
+      await patientApi.createPatient({
+        ...form,
+        profileImageUrl: profileImageUrl ?? undefined,
+      });
       await refreshPatients();
       success('Patient created successfully!');
-      // Navigate to patients list — the new patient will be there
       navigate('/patients');
     } catch (err: any) {
       const msg = err.message || 'Failed to create patient';
@@ -54,8 +55,6 @@ export function CreatePatient() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-
-      {/* Header */}
       <div>
         <button
           onClick={() => navigate('/patients')}
@@ -71,7 +70,6 @@ export function CreatePatient() {
         <p className="page-subtitle">Enter patient information below</p>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,8 +80,19 @@ export function CreatePatient() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="card space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Patient Photo</h3>
+          <ImageUploader
+            folder="patients"
+            fileName={`patient_${form.fullName.replace(/\s+/g, '_') || 'new'}`}
+            label="Profile Photo"
+            value={profileImageUrl}
+            onChange={setProfileImageUrl}
+            optional
+            hint="A photo helps caregivers visually identify the patient."
+          />
+        </div>
 
-        {/* Basic info */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Basic Information</h3>
           <Input name="fullName" label="Full Name" value={form.fullName} onChange={handleChange}
@@ -103,7 +112,6 @@ export function CreatePatient() {
             placeholder="Street, City, State, ZIP" rows={3} resize="none" />
         </div>
 
-        {/* Emergency contact */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Emergency Contact</h3>
           <Input name="emergencyContactName" label="Contact Name"
@@ -112,16 +120,10 @@ export function CreatePatient() {
             value={form.emergencyContactPhone} onChange={handleChange} placeholder="+977-9801234567" />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3">
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/patients')}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
-            Create Patient
-          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/patients')}>Cancel</Button>
+          <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>Create Patient</Button>
         </div>
-
       </form>
     </div>
   );

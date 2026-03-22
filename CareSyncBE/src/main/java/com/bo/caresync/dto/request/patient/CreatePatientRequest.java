@@ -20,4 +20,5 @@ public class CreatePatientRequest {
     private String address;
     private String emergencyContactName;
     private String emergencyContactPhone;
+    private String profileImageUrl;
 }

@@ -33,7 +33,7 @@ public class MedicationController extends BaseController {
 
     @PostMapping("/schedules")
     public ResponseEntity<?> createSchedule(@RequestBody CreateMedicationScheduleRequest request) {
-        medicationService.createSchedule(request);
+        medicationService.createMedicationSchedule(request);
         return successResponse("Schedule created successfully", null);
     }
 
@@ -45,7 +45,7 @@ public class MedicationController extends BaseController {
 
     @PostMapping("/administrations")
     public ResponseEntity<?> logAdministration(@RequestBody LogMedicationRequest request) {
-        MedicationAdministration administration = medicationService.logAdministration(request);
+        MedicationAdministrationResponse administration = medicationService.logAdministration(request);
         return successResponse("Medication logged successfully", administration);
     }
 
@@ -62,8 +62,8 @@ public class MedicationController extends BaseController {
 
     @PutMapping("/schedules/{id}")
     public ResponseEntity<?> updateSchedule(@PathVariable Long id,
-                                            @RequestBody UpdateScheduleRequest request) {
-        MedicationScheduleResponse response = medicationService.updateSchedule(id, request);
+                                            @RequestBody UpdateMedicationScheduleRequest request) {
+        MedicationScheduleResponse response = medicationService.updateMedicationSchedule(id, request);
         return successResponse("Schedule updated successfully", response);
     }
 
@@ -77,5 +77,25 @@ public class MedicationController extends BaseController {
     public ResponseEntity<?> getTodaySchedules(@RequestParam Long patientId) {
         List<TodayScheduleDTO> schedules = medicationService.getTodaySchedules(patientId);
         return successResponse("Today's schedules retrieved successfully", schedules);
+    }
+
+    /**
+     * Create new medication (PRIMARY CAREGIVER only)
+     * POST /api/v1/medications
+     */
+    @PostMapping
+    public ResponseEntity<?> createMedication(@RequestBody CreateMedicationRequest request) {
+        MedicationDTO medication = medicationService.createMedication(request);
+        return successResponse("Medication added successfully", medication);
+    }
+
+    /**
+     * Search medications by name
+     * GET /api/v1/medications/search?query=met
+     */
+    @GetMapping("/search/{query}")
+    public ResponseEntity<?> searchMedications(@PathVariable String query) {
+        List<Medication> medications = medicationService.searchMedications(query);
+        return successResponse("Search results retrieved", medications);
     }
 }

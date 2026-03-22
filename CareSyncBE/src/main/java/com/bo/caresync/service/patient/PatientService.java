@@ -60,6 +60,7 @@ public class PatientService {
             throw new BaseException(ErrorCode.PATIENT_ALREADY_EXISTS);
         }
 
+
         // Create patient
         Patient patient = new Patient();
         patient.setFullName(request.getFullName());
@@ -70,7 +71,9 @@ public class PatientService {
         patient.setEmergencyContactName(request.getEmergencyContactName());
         patient.setEmergencyContactPhone(request.getEmergencyContactPhone());
         patient.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
+        if (request.getProfileImageUrl() != null && !request.getProfileImageUrl().isEmpty()) {
+            patient.setProfileImageUrl(request.getProfileImageUrl());
+        }
         Patient savedPatient = patientRepository.save(patient);
 
         Role primaryRole = roleRepository.findByRoleNameAndRecordStatus(
@@ -149,6 +152,9 @@ public class PatientService {
         patient.setAddress(request.getAddress());
         patient.setEmergencyContactName(request.getEmergencyContactName());
         patient.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        if (request.getProfileImageUrl() != null && !request.getProfileImageUrl().isEmpty()) {
+            patient.setProfileImageUrl(request.getProfileImageUrl());
+        }
 
         Patient saved = patientRepository.save(patient);
 

@@ -16,27 +16,29 @@ import lombok.Setter;
 @Entity
 @Table(name = "medications", schema = "medication")
 public class Medication extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "medication_id")
     private Long medicationId;
 
-    @Column(name = "name")
-    private String name;
+    @Column(name = "medication_name", nullable = false, length = 200)
+    private String medicationName;
 
-    @Column(name = "dosage_form")
-    private String dosageForm;
+    @Column(name = "generic_name", length = 200)
+    private String genericName;
 
-    @Column(name = "strength")
-    private String strength;
-
-    @Column(name = "description")
+    @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "common_side_effects")
-    private String commonSideEffects;
+    @Column(name = "dosage_form", length = 50)
+    private String dosageForm;
 
-    @Column(name = "warnings")
-    private String warnings;
+    @Column(name = "strength", length = 50)
+    private String strength;
+
+    @Column(name = "manufacturer", length = 200)
+    private String manufacturer;
+
+    @Column(name = "medication_image_url", length = 500)
+    private String medicationImageUrl;
 }

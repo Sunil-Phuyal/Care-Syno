@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * @author Sunil Phuyal
@@ -13,12 +14,14 @@ import java.time.LocalDate;
  **/
 @Getter
 @Setter
-public class UpdateScheduleRequest {
+public class UpdateMedicationScheduleRequest {
 
     private String dosage;
     private String frequency;
-    private String timeOfDay;
+    private LocalTime timeOfDay;
     private String instructions;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String prescriptionImageUrl;
+    private String medicationPhotoUrl;
 }

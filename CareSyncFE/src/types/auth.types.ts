@@ -1,10 +1,11 @@
-// Authentication related types
+// src/types/auth.types.ts
 
 export interface User {
   userId: number;
   email: string;
   fullName: string;
   phoneNumber?: string;
+  profileImageUrl?: string;
   isEmailVerified: boolean;
   roles: string[];
 }
@@ -27,6 +28,12 @@ export interface LoginResponse {
   email: string;
   fullName: string;
   roles: string[];
+}
+
+export interface UpdateProfileRequest {
+  fullName?: string;
+  phone?: string;
+  profileImageUrl?: string;       // ← new
 }
 
 export interface AuthContextType {

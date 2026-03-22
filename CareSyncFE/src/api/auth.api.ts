@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  UpdateProfileRequest,
   User
 } from '../types/auth.types';
 import type { ApiResponse } from '../types/common.types';
@@ -26,7 +27,7 @@ export const authApi = {
     return response.data.apiResponseData.responseData;
   },
 
-  updateProfile: async (data: { fullName?: string; phone?: string }): Promise<User> => {
+  updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
     const response = await api.put<ApiResponse<User>>('/auth/profile', data);
     return response.data.apiResponseData.responseData;
   },

@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { patientApi } from '../../api/patient.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
+import { ImageUploader } from '../../components/ui/ImageUploader';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -17,20 +18,20 @@ export function EditPatient() {
   const { refreshPatients } = usePatient();
   const { success, error: showError } = useNotification();
 
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
-    fullName:             '',
-    dateOfBirth:          '',
-    gender:               'MALE',
-    phoneNumber:          '',
-    address:              '',
+    fullName: '',
+    dateOfBirth: '',
+    gender: 'MALE',
+    phoneNumber: '',
+    address: '',
     emergencyContactName: '',
-    emergencyContactPhone:'',
+    emergencyContactPhone: '',
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving]   = useState(false);
-  const [error, setError]         = useState('');
+  const [isLoading, setIsLoading]   = useState(true);
+  const [isSaving, setIsSaving]     = useState(false);
+  const [error, setError]           = useState('');
 
-  // Load patient data
   useEffect(() => {
     if (!id) return;
     const load = async () => {
@@ -46,6 +47,7 @@ export function EditPatient() {
           emergencyContactName: patient.emergencyContactName ?? '',
           emergencyContactPhone:patient.emergencyContactPhone ?? '',
         });
+        setProfileImageUrl(patient.profileImageUrl ?? null);
       } catch {
         setError('Failed to load patient. Please try again.');
       } finally {
@@ -64,7 +66,10 @@ export function EditPatient() {
     setError('');
     setIsSaving(true);
     try {
-      await patientApi.updatePatient(Number(id), form);
+      await patientApi.updatePatient(Number(id), {
+        ...form,
+        profileImageUrl: profileImageUrl ?? undefined,
+      });
       await refreshPatients();
       success('Patient updated successfully!');
       navigate(`/patients/${id}`);
@@ -90,8 +95,6 @@ export function EditPatient() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-
-      {/* Header */}
       <div>
         <button
           onClick={() => navigate(`/patients/${id}`)}
@@ -107,13 +110,10 @@ export function EditPatient() {
         <p className="page-subtitle">Update patient information</p>
       </div>
 
-      {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
-                        border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
@@ -121,95 +121,45 @@ export function EditPatient() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Basic info */}
+        {/* Photo */}
+        <div className="card space-y-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50">Patient Photo</h3>
+          <ImageUploader
+            folder="patients"
+            fileName={`patient_${form.fullName.replace(/\s+/g, '_') || id}`}
+            label="Profile Photo"
+            value={profileImageUrl}
+            onChange={setProfileImageUrl}
+            optional
+            hint="Update the patient's profile photo."
+          />
+        </div>
+
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Basic Information</h3>
-
-          <Input
-            name="fullName"
-            label="Full Name"
-            value={form.fullName}
-            onChange={handleChange}
-            required
-          />
-
+          <Input name="fullName" label="Full Name" value={form.fullName} onChange={handleChange} required />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              name="dateOfBirth"
-              label="Date of Birth"
-              type="date"
-              value={form.dateOfBirth}
-              onChange={handleChange}
-              required
-            />
-            <Select
-              name="gender"
-              label="Gender"
-              value={form.gender}
-              onChange={handleChange}
-            >
+            <Input name="dateOfBirth" label="Date of Birth" type="date"
+              value={form.dateOfBirth} onChange={handleChange} required />
+            <Select name="gender" label="Gender" value={form.gender} onChange={handleChange}>
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
               <option value="OTHER">Other</option>
             </Select>
           </div>
-
-          <Input
-            name="phoneNumber"
-            label="Phone Number"
-            type="tel"
-            value={form.phoneNumber}
-            onChange={handleChange}
-          />
-
-          <Textarea
-            name="address"
-            label="Address"
-            value={form.address}
-            onChange={handleChange}
-            rows={3}
-            resize="none"
-          />
+          <Input name="phoneNumber" label="Phone Number" type="tel" value={form.phoneNumber} onChange={handleChange} />
+          <Textarea name="address" label="Address" value={form.address} onChange={handleChange} rows={3} resize="none" />
         </div>
 
-        {/* Emergency contact */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Emergency Contact</h3>
-
-          <Input
-            name="emergencyContactName"
-            label="Contact Name"
-            value={form.emergencyContactName}
-            onChange={handleChange}
-          />
-
-          <Input
-            name="emergencyContactPhone"
-            label="Contact Phone"
-            type="tel"
-            value={form.emergencyContactPhone}
-            onChange={handleChange}
-          />
+          <Input name="emergencyContactName" label="Contact Name" value={form.emergencyContactName} onChange={handleChange} />
+          <Input name="emergencyContactPhone" label="Contact Phone" type="tel" value={form.emergencyContactPhone} onChange={handleChange} />
         </div>
 
-        {/* Form actions */}
         <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() => navigate(`/patients/${id}`)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            isLoading={isSaving}
-          >
-            Update Patient
-          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate(`/patients/${id}`)}>Cancel</Button>
+          <Button type="submit" variant="primary" fullWidth isLoading={isSaving}>Update Patient</Button>
         </div>
       </form>
     </div>

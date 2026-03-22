@@ -1,46 +1,34 @@
-// src/pages/Settings.tsx
-//
-// Changes from original:
-// - Fixed all dark:bg-*-900/20 opacity classes → solid colors (no more CSS errors)
-// - Connected password change to authApi.changePassword()
-// - Connected profile save to authApi.updateProfile()
-// - Kept all tabs, structure, switches, sessions intact
+// src/pages/settings/Settings.tsx
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../api/auth.api';
+import { ImageUploader } from '../../components/ui/ImageUploader';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
-import { Switch } from '../../components/ui/Switch';
 import { Textarea } from '../../components/ui/Textarea';
-import { Avatar } from '../../components/ui/Avatar';
-import { AlertDialog } from '../../components/ui/AlertDialog';
 import { cn } from '../../utils/cn';
-import { useAuth } from '../../context/AuthContext';
-import { authApi } from '../../api/auth.api';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type SettingsTab = 'profile' | 'notifications' | 'security';
+type SettingsTab = 'profile' | 'security';
 
-// ─── Profile Tab ──────────────────────────────────────────────────────────────
 function ProfileTab() {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved]       = useState(false);
   const [error, setError]       = useState('');
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(
+    (user as any)?.profileImageUrl ?? null
+  );
+
   const [form, setForm] = useState({
-    fullName:          user?.fullName ?? '',
-    email:             user?.email ?? '',
-    phone:             '',
-    dateOfBirth:       '',
-    relationship:      'Primary Caregiver',
-    address:           '',
-    emergencyName:     '',
-    emergencyPhone:    '',
-    emergencyRelation: '',
-    bloodType:         '',
-    allergies:         '',
-    medicalNotes:      '',
+    fullName:     user?.fullName ?? '',
+    email:        user?.email ?? '',
+    phone:        '',
+    dateOfBirth:  '',
+    relationship: 'Primary Caregiver',
+    address:      '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -49,12 +37,15 @@ function ProfileTab() {
   const handleSave = async () => {
     setIsSaving(true);
     setError('');
+    setSaved(false);
     try {
       await authApi.updateProfile({
-        fullName: form.fullName,
-        phone:    form.phone,
+        fullName:        form.fullName,
+        phone:           form.phone,
+        profileImageUrl: profileImageUrl ?? undefined,
       });
       setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch {
       setError('Failed to save profile. Please try again.');
     } finally {
@@ -65,52 +56,70 @@ function ProfileTab() {
   return (
     <div className="space-y-6">
 
-      {/* Avatar section */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-6">
-            <div className="relative">
-              <Avatar fallback={form.fullName || 'U'} size="2xl" variant="rounded" />
-              <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary-500 text-white
-                                 rounded-full flex items-center justify-center shadow-lg
-                                 hover:bg-primary-600 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">
-                {form.fullName || 'Your Name'}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{form.relationship}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{form.email}</p>
-            </div>
+      {/* Avatar card */}
+      <div className="card">
+        <div className="flex items-center gap-6">
+          {/* Avatar */}
+          <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0
+                          bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                {form.fullName?.charAt(0)?.toUpperCase() ?? 'U'}
+              </span>
+            )}
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-50">
+              {form.fullName || 'Your Name'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{form.relationship}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{form.email}</p>
+          </div>
+        </div>
+      </div>
 
-      {/* Error banner */}
+      {/* Error / success */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900
-                        border border-red-200 dark:border-red-800 rounded-xl">
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
+      {saved && (
+        <div className="flex items-center gap-3 p-4 bg-success-50 dark:bg-success-900 border border-success-200 dark:border-success-700 rounded-xl">
+          <svg className="w-5 h-5 text-success-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <p className="text-sm text-success-700 dark:text-success-300">Profile saved successfully!</p>
+        </div>
+      )}
+
+      {/* Profile photo upload */}
+      <div className="card space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-50">Profile Photo</h3>
+        <ImageUploader
+          folder="users"
+          fileName={`user_${user?.userId ?? 'me'}`}
+          label="Profile Photo"
+          value={profileImageUrl}
+          onChange={setProfileImageUrl}
+          optional
+          hint="This photo will appear in your profile and alongside your name."
+        />
+      </div>
 
       {/* Personal info */}
-      <Card>
-        <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input name="fullName"    label="Full Name"     value={form.fullName}    onChange={handleChange} required />
-          <Input name="email"       label="Email Address" value={form.email}       onChange={handleChange} type="email" required />
-          <Input name="phone"       label="Phone Number"  value={form.phone}       onChange={handleChange} type="tel" placeholder="+1 (555) 000-0000" />
+      <div className="card space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-50">Personal Information</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input name="fullName" label="Full Name" value={form.fullName} onChange={handleChange} required />
+          <Input name="email" label="Email Address" value={form.email} onChange={handleChange} type="email" disabled />
+          <Input name="phone" label="Phone Number" value={form.phone} onChange={handleChange} type="tel"
+            placeholder="+977-9801234567" />
           <Input name="dateOfBirth" label="Date of Birth" value={form.dateOfBirth} onChange={handleChange} type="date" />
           <Select name="relationship" label="Role / Relationship" value={form.relationship} onChange={handleChange}>
             <option>Primary Caregiver</option>
@@ -118,407 +127,133 @@ function ProfileTab() {
             <option>Professional Caregiver</option>
             <option>Healthcare Provider</option>
           </Select>
-          <div className="sm:col-span-2">
-            <Textarea name="address" label="Address" value={form.address} onChange={handleChange}
-              placeholder="Street, City, State, ZIP" rows={2} resize="none" />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <Textarea name="address" label="Address" value={form.address} onChange={handleChange}
+          placeholder="Street, City, State, ZIP" rows={2} resize="none" />
+      </div>
 
-      {/* Emergency contact */}
-      <Card>
-        <CardHeader><CardTitle>Emergency Contact</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input name="emergencyName"  label="Contact Name"  value={form.emergencyName}  onChange={handleChange} placeholder="Full name" />
-          <Input name="emergencyPhone" label="Contact Phone" value={form.emergencyPhone} onChange={handleChange} type="tel" placeholder="+1 (555) 000-0000" />
-          <Select name="emergencyRelation" label="Relationship" value={form.emergencyRelation} onChange={handleChange}>
-            <option value="">Select relationship...</option>
-            <option>Spouse</option>
-            <option>Parent</option>
-            <option>Sibling</option>
-            <option>Child</option>
-            <option>Friend</option>
-            <option>Doctor</option>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {/* Medical info */}
-      <Card>
-        <CardHeader><CardTitle>Medical Information</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select name="bloodType" label="Blood Type" value={form.bloodType} onChange={handleChange}>
-            <option value="">Select blood type...</option>
-            {['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </Select>
-          <div className="sm:col-span-2">
-            <Textarea name="allergies" label="Allergies" value={form.allergies} onChange={handleChange}
-              placeholder="List known allergies, or 'None'" rows={2} resize="none" />
-          </div>
-          <div className="sm:col-span-2">
-            <Textarea name="medicalNotes" label="Medical Notes" value={form.medicalNotes} onChange={handleChange}
-              placeholder="Additional medical information, conditions, notes..." rows={3} resize="none" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Save buttons */}
-      <div className="flex justify-end gap-3">
-        <Button variant="secondary" onClick={() => setForm({ ...form, fullName: user?.fullName ?? '', email: user?.email ?? '' })}>
-          Discard Changes
-        </Button>
+      <div className="flex justify-end">
         <Button variant="primary" onClick={handleSave} isLoading={isSaving}>
           Save Changes
         </Button>
       </div>
-
-      <AlertDialog
-        open={saved}
-        onClose={() => setSaved(false)}
-        title="Profile Updated"
-        description="Your profile has been saved successfully."
-        variant="success"
-      />
     </div>
   );
 }
 
-// ─── Notifications Tab ────────────────────────────────────────────────────────
-function NotificationsTab() {
-  const [settings, setSettings] = useState({
-    emailMedication:  true,
-    emailAppointment: true,
-    emailAlert:       true,
-    pushMedication:   true,
-    pushAppointment:  false,
-    pushAlert:        true,
-    smsAlert:         true,
-    smsMedication:    false,
-    reminderMinutes:  '30',
-    dailySummary:     true,
-    weeklyReport:     true,
-  });
-
-  const toggle = (key: keyof typeof settings) =>
-    setSettings((s) => ({ ...s, [key]: !s[key] }));
-
-  // Reusable switch row
-  function SwitchRow({ label, desc, k }: { label: string; desc: string; k: keyof typeof settings }) {
-    return (
-      <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-        <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{label}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
-        </div>
-        <Switch checked={settings[k] as boolean} onChange={() => toggle(k)} size="md" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader><CardTitle>Email Notifications</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0">
-          <SwitchRow k="emailMedication"  label="Medication Reminders"  desc="Email when a medication is due or missed" />
-          <SwitchRow k="emailAppointment" label="Appointment Reminders" desc="Email reminder before scheduled appointments" />
-          <SwitchRow k="emailAlert"       label="Critical Alerts"       desc="Immediate email for overdue medications" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Push Notifications</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0">
-          <SwitchRow k="pushMedication"   label="Medication Reminders"  desc="Push notification when medication is due" />
-          <SwitchRow k="pushAppointment"  label="Appointment Reminders" desc="Push notification before appointments" />
-          <SwitchRow k="pushAlert"        label="Critical Alerts"       desc="Instant push for urgent care events" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>SMS Notifications</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0">
-          <SwitchRow k="smsAlert"       label="Critical Alerts"       desc="SMS for overdue medications and emergencies" />
-          <SwitchRow k="smsMedication"  label="Medication Reminders"  desc="SMS reminders for scheduled medications" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Reminder Settings</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0 space-y-4">
-          <Select
-            label="Advance Reminder Time"
-            value={settings.reminderMinutes}
-            onChange={(e) => setSettings((s) => ({ ...s, reminderMinutes: e.target.value }))}
-          >
-            <option value="15">15 minutes before</option>
-            <option value="30">30 minutes before</option>
-            <option value="60">1 hour before</option>
-            <option value="120">2 hours before</option>
-          </Select>
-          <SwitchRow k="dailySummary" label="Daily Summary Email" desc="Receive a daily care summary each evening" />
-          <SwitchRow k="weeklyReport" label="Weekly Report Email" desc="Weekly adherence and activity report" />
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <Button variant="primary">Save Notification Settings</Button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Security Tab ─────────────────────────────────────────────────────────────
+// ─── Security Tab ──────────────────────────────────────────────────────────────
 function SecurityTab() {
-  const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
-  const [twoFactor, setTwoFactor] = useState(false);
-  const [isSaving, setIsSaving]   = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [pwError, setPwError]     = useState('');
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError]       = useState('');
+  const [saved, setSaved]       = useState(false);
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswords({ ...passwords, [e.target.name]: e.target.value });
-    setPwError('');
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSavePassword = async () => {
-    if (passwords.newPass !== passwords.confirm) { setPwError('Passwords do not match'); return; }
-    if (passwords.newPass.length < 6)            { setPwError('Password must be at least 6 characters'); return; }
+  const handleSave = async () => {
+    if (form.newPassword !== form.confirmPassword) {
+      setError('New passwords do not match.');
+      return;
+    }
     setIsSaving(true);
+    setError('');
     try {
       await authApi.changePassword({
-        currentPassword: passwords.current,
-        newPassword:     passwords.newPass,
+        currentPassword: form.currentPassword,
+        newPassword:     form.newPassword,
       });
       setSaved(true);
-      setPasswords({ current: '', newPass: '', confirm: '' });
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => setSaved(false), 3000);
     } catch {
-      setPwError('Failed to update password. Please check your current password.');
+      setError('Failed to change password. Check your current password and try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  function SwitchRow({ label, desc, checked, onChange }: {
-    label: string; desc: string; checked: boolean; onChange: () => void;
-  }) {
-    return (
-      <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-        <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{label}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
-        </div>
-        <Switch checked={checked} onChange={onChange} size="md" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
+      )}
+      {saved && (
+        <div className="flex items-center gap-3 p-4 bg-success-50 dark:bg-success-900 border border-success-200 dark:border-success-700 rounded-xl">
+          <p className="text-sm text-success-700 dark:text-success-300">Password changed successfully!</p>
+        </div>
+      )}
 
-      {/* Change password */}
-      <Card>
-        <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0 space-y-4">
-          <Input
-            name="current"
-            label="Current Password"
-            type="password"
-            placeholder="Enter current password"
-            value={passwords.current}
-            onChange={handlePasswordChange}
-          />
-          <Input
-            name="newPass"
-            label="New Password"
-            type="password"
-            placeholder="Enter new password"
-            value={passwords.newPass}
-            onChange={handlePasswordChange}
-            helperText="Minimum 6 characters"
-          />
-          <Input
-            name="confirm"
-            label="Confirm New Password"
-            type="password"
-            placeholder="Confirm new password"
-            value={passwords.confirm}
-            onChange={handlePasswordChange}
-            error={pwError}
-          />
-          <div className="flex justify-end">
-            <Button variant="primary" onClick={handleSavePassword} isLoading={isSaving}>
-              Update Password
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security preferences */}
-      <Card>
-        <CardHeader><CardTitle>Security Preferences</CardTitle></CardHeader>
-        <CardContent className="p-6 pt-0">
-          <SwitchRow
-            label="Two-Factor Authentication"
-            desc="Add extra security by requiring a code when signing in"
-            checked={twoFactor}
-            onChange={() => setTwoFactor((v) => !v)}
-          />
-          <SwitchRow
-            label="Login Notifications"
-            desc="Email me when a new device logs into my account"
-            checked={true}
-            onChange={() => {}}
-          />
-          <SwitchRow
-            label="Session Timeout"
-            desc="Automatically log out after 30 minutes of inactivity"
-            checked={true}
-            onChange={() => {}}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Active sessions */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Active Sessions</CardTitle>
-          <Button variant="danger" size="sm">Log Out All</Button>
-        </CardHeader>
-        <CardContent className="p-6 pt-0 space-y-3">
-          {[
-            { device: 'Chrome on Windows', location: 'New York, NY', time: 'Active now', current: true },
-            { device: 'Safari on iPhone',  location: 'New York, NY', time: '2 hours ago', current: false },
-          ].map((session, i) => (
-            <div key={i} className="flex items-center justify-between p-3
-                                    bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg
-                                flex items-center justify-center">
-                  <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{session.device}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{session.location} · {session.time}</p>
-                </div>
-              </div>
-              {session.current
-                ? (
-                  <span className="text-xs text-success-700 dark:text-success-300 font-semibold
-                                   bg-success-50 dark:bg-success-900 px-2 py-1 rounded-full">
-                    This device
-                  </span>
-                )
-                : <Button variant="ghost" size="sm">Revoke</Button>
-              }
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Danger zone */}
-      <Card className="border-error-200 dark:border-error-800">
-        <CardHeader>
-          <CardTitle className="text-error-600 dark:text-error-400">Danger Zone</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 pt-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-50">Delete Account</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Permanently delete your account and all data. This cannot be undone.
-              </p>
-            </div>
-            <Button variant="danger" size="sm">Delete Account</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <AlertDialog
-        open={saved}
-        onClose={() => setSaved(false)}
-        title="Password Updated"
-        description="Your password has been changed successfully."
-        variant="success"
-      />
+      <div className="card space-y-4">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-50">Change Password</h3>
+        <Input name="currentPassword" label="Current Password" type="password"
+          value={form.currentPassword} onChange={handleChange} />
+        <Input name="newPassword" label="New Password" type="password"
+          value={form.newPassword} onChange={handleChange} />
+        <Input name="confirmPassword" label="Confirm New Password" type="password"
+          value={form.confirmPassword} onChange={handleChange} />
+        <div className="flex justify-end">
+          <Button variant="primary" onClick={handleSave} isLoading={isSaving}>
+            Change Password
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Main Settings Page ───────────────────────────────────────────────────────
+// ─── Main Settings Page ────────────────────────────────────────────────────────
 export function Settings() {
+  const navigate     = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
 
-  const tabs: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
-    {
-      key: 'profile',
-      label: 'Profile',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-    },
-    {
-      key: 'notifications',
-      label: 'Notifications',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      ),
-    },
-    {
-      key: 'security',
-      label: 'Security',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      ),
-    },
+  const TABS: { key: SettingsTab; label: string }[] = [
+    { key: 'profile',  label: 'Profile' },
+    { key: 'security', label: 'Security' },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
 
       {/* Header */}
-      <div>
-        <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Manage your account preferences and security</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle">Manage your account and preferences</p>
+        </div>
+        <button
+          onClick={() => navigate('/settings/notifications')}
+          className="btn btn-secondary text-sm"
+        >
+          🔔 Notification Settings
+        </button>
       </div>
 
-      {/* Tab switcher */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-              activeTab === tab.key
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      {/* Tabs */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <nav className="flex gap-6">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'pb-3 px-1 border-b-2 text-sm font-medium transition-colors',
+                activeTab === tab.key
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300'
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Tab content */}
-      {activeTab === 'profile'       && <ProfileTab />}
-      {activeTab === 'notifications' && <NotificationsTab />}
-      {activeTab === 'security'      && <SecurityTab />}
+      {activeTab === 'profile'  && <ProfileTab />}
+      {activeTab === 'security' && <SecurityTab />}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * @author Sunil Phuyal
@@ -24,27 +25,33 @@ public class MedicationSchedule extends BaseEntity {
     @Column(name = "schedule_id")
     private Long scheduleId;
 
-    @Column(name = "patient_id")
+    @Column(name = "patient_id", nullable = false)
     private Long patientId;
 
-    @Column(name = "medication_id")
+    @Column(name = "medication_id", nullable = false)
     private Long medicationId;
 
-    @Column(name = "dosage")
+    @Column(name = "dosage", nullable = false, length = 50)
     private String dosage;
 
-    @Column(name = "frequency")
+    @Column(name = "frequency", nullable = false, length = 50)
     private String frequency;
 
-    @Column(name = "time_of_day")
-    private String timeOfDay;
-
-    @Column(name = "instructions")
-    private String instructions;
+    @Column(name = "time_of_day", nullable = false)
+    private LocalTime timeOfDay;
 
     @Column(name = "start_date")
     private LocalDate startDate;
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Column(name = "instructions", length = 500)
+    private String specialInstructions;
+
+    @Column(name = "prescription_image_url", length = 500)
+    private String prescriptionImageUrl;
+
+    @Column(name = "medication_photo_url", length = 500)
+    private String medicationPhotoUrl;
 }

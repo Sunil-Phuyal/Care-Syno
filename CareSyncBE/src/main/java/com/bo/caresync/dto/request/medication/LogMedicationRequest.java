@@ -23,4 +23,5 @@ public class LogMedicationRequest {
     private String status;
     private String notes;
     private String sideEffects;
+    private String proofImageUrl;
 }

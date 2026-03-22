@@ -26,14 +26,15 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.List;
 
 /**
+ * Service for medication management
+ *
  * @author Sunil Phuyal
- * @version v1.0
+ * @version 1.0
  * @project CareSyncBE
- * @since 2/6/2026, 2:31 PM,
- **/
+ * @since 2/6/2026
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,274 +50,105 @@ public class MedicationService {
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
 
-
     @Transactional(readOnly = true)
     public List<Medication> getAllMedications() {
         return medicationRepo.findByRecordStatus(AppConstants.RecordStatus.ACTIVE);
     }
-
     @Transactional
-    public void createSchedule(CreateMedicationScheduleRequest request) {
-        String methodName = AppUtil.getMethodName();
+    public MedicationScheduleResponse createMedicationSchedule(CreateMedicationScheduleRequest request) {
+        String methodName = "createMedicationSchedule";
 
-        // Check permission
-        loginUserUtil.requirePermission(
-                request.getPatientId(),
-                AppConstants.Permission.MEDICATION_CREATE_SCHEDULE
-        );
+        log.debug("{} Creating medication schedule for patient {}", methodName, request.getPatientId());
+        loginUserUtil.requirePermission(request.getPatientId(), "medication.create_schedule");
+        Medication medication = medicationRepo.findById(request.getMedicationId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Medication not found"));
+        Patient patient = patientRepo.findById(request.getPatientId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Patient not found"));
+        List<MedicationSchedule> schedules = new ArrayList<>();
 
-        MedicationSchedule schedule = new MedicationSchedule();
-        schedule.setPatientId(request.getPatientId());
-        schedule.setMedicationId(request.getMedicationId());
-        schedule.setDosage(request.getDosage());
-        schedule.setFrequency(request.getFrequency());
-        schedule.setTimeOfDay(request.getTimeOfDay());
-        schedule.setInstructions(request.getInstructions());
-        schedule.setStartDate(request.getStartDate());   // assumed LocalDate in both request & entity
-        schedule.setEndDate(request.getEndDate());       // assumed LocalDate in both request & entity
-        schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-        scheduleRepo.save(schedule);
+        for (String timeStr : request.getTimes()) {
+            LocalTime time = parseTime(timeStr);
 
-        log.info("{} Medication schedule created for patientId={}", methodName, request.getPatientId());
+            MedicationSchedule schedule = new MedicationSchedule();
+            schedule.setPatientId(request.getPatientId());
+            schedule.setMedicationId(request.getMedicationId());
+            schedule.setDosage(request.getDosage());
+            schedule.setFrequency(request.getFrequency());
+            schedule.setTimeOfDay(time);
+            schedule.setStartDate(request.getStartDate() != null ? request.getStartDate() : LocalDate.now());
+            schedule.setEndDate(request.getEndDate());
+            schedule.setSpecialInstructions(request.getSpecialInstructions());
+            schedule.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+            if (request.getPrescriptionImageUrl() != null && !request.getPrescriptionImageUrl().isEmpty()) {
+                schedule.setPrescriptionImageUrl(request.getPrescriptionImageUrl());
+                log.debug("{} Prescription image attached", methodName);
+            }
+
+            if (request.getMedicationPhotoUrl() != null && !request.getMedicationPhotoUrl().isEmpty()) {
+                schedule.setMedicationPhotoUrl(request.getMedicationPhotoUrl());
+                log.debug("{} Medication photo attached", methodName);
+            }
+
+            schedules.add(schedule);
+        }
+        schedules = scheduleRepo.saveAll(schedules);
+
+        log.info("{} Created {} medication schedules for patient {}",
+                methodName, schedules.size(), request.getPatientId());
+        MedicationSchedule firstSchedule = schedules.get(0);
+
+        return MedicationScheduleResponse.builder()
+                .scheduleId(firstSchedule.getScheduleId())
+                .patientId(firstSchedule.getPatientId())
+                .patientName(patient.getFullName())
+                .medicationId(firstSchedule.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .genericName(medication.getGenericName())
+                .dosage(firstSchedule.getDosage())
+                .frequency(firstSchedule.getFrequency())
+                .timeOfDay(firstSchedule.getTimeOfDay())
+                .startDate(firstSchedule.getStartDate())
+                .endDate(firstSchedule.getEndDate())
+                .specialInstructions(firstSchedule.getSpecialInstructions())
+                .prescriptionImageUrl(firstSchedule.getPrescriptionImageUrl())
+                .medicationPhotoUrl(firstSchedule.getMedicationPhotoUrl())
+                .medicationImageUrl(medication.getMedicationImageUrl())
+                .status(AppConstants.RecordStatus.ACTIVE)
+                .build();
     }
 
     @Transactional(readOnly = true)
     public List<MedicationSchedule> getPatientSchedules(Long patientId) {
-        String methodName = AppUtil.getMethodName();
+        String methodName = "getPatientSchedules";
 
-        // Check permission
-        loginUserUtil.requirePermission(patientId, AppConstants.Permission.MEDICATION_VIEW);
+        loginUserUtil.requirePermission(patientId, "medication.view");
 
         List<MedicationSchedule> schedules = scheduleRepo.findByPatientIdAndRecordStatus(
                 patientId,
                 AppConstants.RecordStatus.ACTIVE
         );
 
-        log.info("{} Retrieved {} schedules for patient {}",
-                methodName, schedules.size(), patientId);
+        log.info("{} Retrieved {} schedules for patient {}", methodName, schedules.size(), patientId);
+
         return schedules;
     }
 
     @Transactional
-    public MedicationAdministration logAdministration(LogMedicationRequest request) {
-        String methodName = AppUtil.getMethodName();
-        Long currentUserId = loginUserUtil.getCurrentUserId();
+    public MedicationScheduleResponse updateMedicationSchedule(Long scheduleId, UpdateMedicationScheduleRequest request) {
+        String methodName = "updateMedicationSchedule";
 
-        // Check permission
-        loginUserUtil.requirePermission(
-                request.getPatientId(),
-                AppConstants.Permission.MEDICATION_ADMINISTER
-        );
-
-        // Check for duplicate dose (within 4 hours)
-        LocalDateTime fourHoursAgo = request.getActualTime().minusHours(4);
-        List<MedicationAdministration> recentAdministrations = administrationRepo
-                .findByPatientIdAndMedicationIdAndActualTimeBetweenAndRecordStatus(
-                        request.getPatientId(),
-                        request.getMedicationId(),
-                        fourHoursAgo,
-                        request.getActualTime(),
-                        AppConstants.RecordStatus.ACTIVE
-                );
-
-        if (!recentAdministrations.isEmpty()) {
-            log.warn("{} Duplicate dose detected within 4 hours for patient {} medication {}",
-                    methodName, request.getPatientId(), request.getMedicationId());
-
-            // Send warning email to all caregivers
-            try {
-                MedicationAdministration recent = recentAdministrations.get(0);
-                User previousCaregiver = userRepo.findById(recent.getCaregiverUserId())
-                        .orElse(null);
-                User currentCaregiver = loginUserUtil.getCurrentUser();
-                Patient patient = patientRepo.findById(request.getPatientId())
-                        .orElseThrow(() -> new BaseException(ErrorCode.PATIENT_NOT_FOUND));
-                Medication medication = medicationRepo.findById(request.getMedicationId())
-                        .orElseThrow(() -> new BaseException(ErrorCode.MEDICATION_NOT_FOUND));
-
-                // Get all caregivers for this patient
-                List<PatientCaregiver> caregivers = patientCaregiverRepo
-                        .findByPatientIdAndRecordStatus(request.getPatientId(), AppConstants.RecordStatus.ACTIVE);
-
-                String[] caregiverEmails = caregivers.stream()
-                        .map(pc -> userRepo.findById(pc.getCaregiverUserId()).orElse(null))
-                        .filter(u -> u != null)
-                        .map(User::getEmail)
-                        .toArray(String[]::new);
-
-                if (caregiverEmails.length > 0) {
-                    String warningBody = emailTemplateService.getDuplicateDoseWarningBody(
-                            currentCaregiver.getFullName(),
-                            patient.getFullName(),
-                            medication.getName(),
-                            recent.getActualTime().toString(),
-                            previousCaregiver != null ? previousCaregiver.getFullName() : "Unknown"
-                    );
-
-                    emailService.sendBulkEmail(
-                            caregiverEmails,
-                            "Duplicate Dose Warning - " + patient.getFullName(),
-                            warningBody
-                    );
-
-                    log.info("{} Duplicate dose warning email sent to {} caregivers",
-                            methodName, caregiverEmails.length);
-                }
-            } catch (Exception e) {
-                log.error("{} Failed to send duplicate dose warning email", methodName, e);
-                // Don't throw exception - the warning email is optional
-            }
-        }
-
-        MedicationAdministration administration = new MedicationAdministration();
-        administration.setPatientId(request.getPatientId());
-        administration.setMedicationId(request.getMedicationId());
-        administration.setScheduleId(request.getScheduleId());
-        administration.setCaregiverUserId(currentUserId);
-        administration.setScheduledTime(request.getScheduledTime());
-        administration.setActualTime(request.getActualTime());
-        administration.setDosageGiven(request.getDosageGiven());
-        administration.setStatus(request.getStatus());
-        administration.setNotes(request.getNotes());
-        administration.setSideEffects(request.getSideEffects());
-        administration.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
-        MedicationAdministration saved = administrationRepo.save(administration);
-
-        log.info("{} Medication logged: administrationId={}, caregiverId={}",
-                methodName, saved.getAdministrationId(), currentUserId);
-        return saved;
-    }
-
-    @Transactional(readOnly = true)
-    public List<MedicationAdministration> getAdministrationHistory(Long patientId) {
-        String methodName = AppUtil.getMethodName();
-
-        // Check permission
-        loginUserUtil.requirePermission(
-                patientId,
-                AppConstants.Permission.MEDICATION_VIEW_HISTORY
-        );
-
-        List<MedicationAdministration> history = administrationRepo
-                .findByPatientIdAndRecordStatusOrderByActualTimeDesc(
-                        patientId,
-                        AppConstants.RecordStatus.ACTIVE
-                );
-
-        log.info("{} Retrieved {} administration records for patient {}",
-                methodName, history.size(), patientId);
-        return history;
-    }
-
-    @Transactional(readOnly = true)
-    public List<UpcomingMedicationDTO> getUpcomingMedications(Long patientId) {
-        String methodName = "getUpcomingMedications";
-
-        log.debug("{} Getting upcoming medications for patientId={}", methodName, patientId);
-
-        // Permission check
-        loginUserUtil.requirePermission(patientId, "medication.view");
-
-        // Get all active schedules for patient
-        List<MedicationSchedule> schedules = scheduleRepo
-                .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
-
-        List<UpcomingMedicationDTO> upcomingMedications = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime twoHoursLater = now.plusHours(2);
-
-        for (MedicationSchedule schedule : schedules) {
-            // Skip if no time specified
-            if (schedule.getTimeOfDay() == null || schedule.getTimeOfDay().isEmpty()) {
-                continue;
-            }
-
-            // Parse times (e.g., "8:00 AM, 2:00 PM, 8:00 PM")
-            String[] times = schedule.getTimeOfDay().split(",");
-
-            for (String timeStr : times) {
-                try {
-                    // Parse time
-                    LocalTime time = parseTime(timeStr.trim());
-                    LocalDateTime scheduledDateTime = LocalDate.now().atTime(time);
-
-                    // If scheduled time is in the past today, skip
-                    if (scheduledDateTime.isBefore(now.minusMinutes(30))) {
-                        continue;
-                    }
-
-                    // If scheduled time is within next 2 hours
-                    if (scheduledDateTime.isBefore(twoHoursLater)) {
-
-                        // Check if already administered
-                        boolean alreadyAdministered = administrationRepo
-                                .existsByPatientIdAndScheduleIdAndActualTimeBetween(
-                                        patientId,
-                                        schedule.getScheduleId(),
-                                        scheduledDateTime.minusMinutes(30),
-                                        scheduledDateTime.plusMinutes(30)
-                                );
-
-                        if (!alreadyAdministered) {
-                            long minutesUntil = Duration.between(now, scheduledDateTime).toMinutes();
-
-                            // Get medication details
-                            Optional<Medication> medication = medicationRepo
-                                    .findById(schedule.getMedicationId());
-
-                            upcomingMedications.add(UpcomingMedicationDTO.builder()
-                                    .scheduleId(schedule.getScheduleId())
-                                    .medicationId(schedule.getMedicationId())
-                                    .medicationName(medication.map(Medication::getName).orElse("Unknown"))
-                                    .dosage(schedule.getDosage())
-                                    .instructions(schedule.getInstructions())
-                                    .scheduledTime(scheduledDateTime)
-                                    .minutesUntilDue((int) minutesUntil)
-                                    .isOverdue(minutesUntil < 0)
-                                    .build());
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("Failed to parse time: {}", timeStr, e);
-                }
-            }
-        }
-        upcomingMedications.sort(Comparator.comparing(UpcomingMedicationDTO::getScheduledTime));
-
-        log.info("{} Found {} upcoming medications", methodName, upcomingMedications.size());
-
-        return upcomingMedications;
-    }
-
-    /**
-     * Update a medication schedule
-     */
-    @Transactional
-    public MedicationScheduleResponse updateSchedule(Long scheduleId, UpdateScheduleRequest request) {
-        String methodName = "updateSchedule";
-
-        log.debug("{} Updating schedule with ID={}", methodName, scheduleId);
-
-        // Get existing schedule
+        log.debug("{} Updating schedule {}", methodName, scheduleId);
         MedicationSchedule schedule = scheduleRepo.findById(scheduleId)
                 .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Schedule not found"));
-
-        // Check permission
         loginUserUtil.requirePermission(schedule.getPatientId(), "medication.edit_schedule");
-
-        // Update fields — entity uses LocalDate, request must also provide LocalDate
-        if (request.getDosage() != null) {
+        if (request.getDosage() != null && !request.getDosage().isEmpty()) {
             schedule.setDosage(request.getDosage());
         }
-        if (request.getFrequency() != null) {
+        if (request.getFrequency() != null && !request.getFrequency().isEmpty()) {
             schedule.setFrequency(request.getFrequency());
         }
         if (request.getTimeOfDay() != null) {
             schedule.setTimeOfDay(request.getTimeOfDay());
-        }
-        if (request.getInstructions() != null) {
-            schedule.setInstructions(request.getInstructions());
         }
         if (request.getStartDate() != null) {
             schedule.setStartDate(request.getStartDate());
@@ -324,12 +156,49 @@ public class MedicationService {
         if (request.getEndDate() != null) {
             schedule.setEndDate(request.getEndDate());
         }
+        if (request.getInstructions() != null) {
+            schedule.setSpecialInstructions(request.getInstructions());
+        }
 
-        MedicationSchedule updated = scheduleRepo.save(schedule);
+        if (request.getPrescriptionImageUrl() != null && !request.getPrescriptionImageUrl().isEmpty()) {
+            schedule.setPrescriptionImageUrl(request.getPrescriptionImageUrl());
+            log.debug("{} Prescription image updated", methodName);
+        }
 
-        log.info("{} Successfully updated schedule ID={}", methodName, scheduleId);
+        if (request.getMedicationPhotoUrl() != null && !request.getMedicationPhotoUrl().isEmpty()) {
+            schedule.setMedicationPhotoUrl(request.getMedicationPhotoUrl());
+            log.debug("{} Medication photo updated", methodName);
+        }
 
-        return toScheduleResponse(updated);
+        schedule = scheduleRepo.save(schedule);
+
+        // Get medication and patient details
+        Medication medication = medicationRepo.findById(schedule.getMedicationId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Medication not found"));
+
+        Patient patient = patientRepo.findById(schedule.getPatientId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Patient not found"));
+
+        log.info("{} Schedule {} updated successfully", methodName, scheduleId);
+
+        return MedicationScheduleResponse.builder()
+                .scheduleId(schedule.getScheduleId())
+                .patientId(schedule.getPatientId())
+                .patientName(patient.getFullName())
+                .medicationId(schedule.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .genericName(medication.getGenericName())
+                .dosage(schedule.getDosage())
+                .frequency(schedule.getFrequency())
+                .timeOfDay(schedule.getTimeOfDay())
+                .startDate(schedule.getStartDate())
+                .endDate(schedule.getEndDate())
+                .specialInstructions(schedule.getSpecialInstructions())
+                .prescriptionImageUrl(schedule.getPrescriptionImageUrl())
+                .medicationPhotoUrl(schedule.getMedicationPhotoUrl())
+                .medicationImageUrl(medication.getMedicationImageUrl())
+                .status(schedule.getRecordStatus())
+                .build();
     }
 
     /**
@@ -359,6 +228,116 @@ public class MedicationService {
     }
 
     /**
+     * Log medication administration with proof image
+     */
+    @Transactional
+    public MedicationAdministrationResponse logAdministration(LogMedicationRequest request) {
+        String methodName = "logAdministration";
+
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        // Validate schedule exists
+        MedicationSchedule schedule = scheduleRepo.findById(request.getScheduleId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Schedule not found"));
+
+        // Check permission
+        loginUserUtil.requirePermission(schedule.getPatientId(), "medication.administer");
+
+        // Check for duplicate dose (within 1 hour)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime oneHourAgo = now.minusHours(1);
+
+        Optional<MedicationAdministration> recentLog = administrationRepo
+                .findFirstByScheduleIdAndAdministeredAtBetweenOrderByAdministeredAtDesc(
+                        request.getScheduleId(),
+                        oneHourAgo,
+                        now
+                );
+
+        if (recentLog.isPresent()) {
+            log.warn("{} Duplicate dose detected within 1 hour for schedule {}", methodName, request.getScheduleId());
+
+            // Send warning email to caregivers
+            try {
+                sendDuplicateDoseWarning(schedule, recentLog.get(), currentUserId);
+            } catch (Exception e) {
+                log.error("{} Failed to send duplicate dose warning", methodName, e);
+            }
+
+            throw new BaseException(ErrorCode.DUPLICATE_ADMINISTRATION,
+                    "This medication was already logged in the last hour");
+        }
+
+        // Create administration log
+        MedicationAdministration administration = new MedicationAdministration();
+        administration.setScheduleId(request.getScheduleId());
+        administration.setPatientId(schedule.getPatientId());
+        administration.setMedicationId(schedule.getMedicationId());
+        administration.setAdministeredAt(now);
+        administration.setAdministeredBy(currentUserId);
+        administration.setStatus(request.getStatus());
+        administration.setNotes(request.getNotes());
+        administration.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+
+        // Set proof image if provided
+        if (request.getProofImageUrl() != null && !request.getProofImageUrl().isEmpty()) {
+            administration.setProofImageUrl(request.getProofImageUrl());
+            log.debug("{} Proof image attached", methodName);
+        }
+
+        administration = administrationRepo.save(administration);
+
+        // Get details for response
+        Medication medication = medicationRepo.findById(schedule.getMedicationId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Medication not found"));
+
+        Patient patient = patientRepo.findById(schedule.getPatientId())
+                .orElseThrow(() -> new BaseException(ErrorCode.RESOURCE_NOT_FOUND, "Patient not found"));
+
+        User caregiver = userRepo.findById(currentUserId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND, "User not found"));
+
+        log.info("{} Medication {} logged as {} by user {}",
+                methodName, medication.getMedicationName(), request.getStatus(), caregiver.getFullName());
+
+        return MedicationAdministrationResponse.builder()
+                .administrationId(administration.getAdministrationId())
+                .scheduleId(administration.getScheduleId())
+                .patientId(administration.getPatientId())
+                .patientName(patient.getFullName())
+                .medicationId(administration.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .dosage(schedule.getDosage())
+                .administeredAt(administration.getAdministeredAt())
+                .administeredBy(administration.getAdministeredBy())
+                .administeredByName(caregiver.getFullName())
+                .status(administration.getStatus())
+                .notes(administration.getNotes())
+                .proofImageUrl(administration.getProofImageUrl())
+                .build();
+    }
+
+    /**
+     * Get medication administration history
+     */
+    @Transactional(readOnly = true)
+    public List<MedicationAdministration> getAdministrationHistory(Long patientId) {
+        String methodName = "getAdministrationHistory";
+
+        loginUserUtil.requirePermission(patientId, "medication.view_history");
+
+        List<MedicationAdministration> history = administrationRepo
+                .findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
+                        patientId,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+
+        log.info("{} Retrieved {} administration records for patient {}", methodName, history.size(), patientId);
+
+        return history;
+    }
+
+    /**
      * Get today's medication schedules for a patient
      */
     @Transactional(readOnly = true)
@@ -379,59 +358,45 @@ public class MedicationService {
 
         for (MedicationSchedule schedule : schedules) {
             // Skip if no time specified
-            if (schedule.getTimeOfDay() == null || schedule.getTimeOfDay().isEmpty()) {
+            if (schedule.getTimeOfDay() == null) {
                 continue;
             }
 
-            // FIX: entity field is already LocalDate — no need to call LocalDate.parse()
-            LocalDate startDate = schedule.getStartDate();
-            if (startDate != null && startDate.isAfter(today)) {
+            // Check if schedule is active today
+            if (schedule.getStartDate() != null && schedule.getStartDate().isAfter(today)) {
                 continue; // Hasn't started yet
             }
 
-            if (schedule.getEndDate() != null) {
-                LocalDate endDate = schedule.getEndDate();  // FIX: already LocalDate
-                if (endDate.isBefore(today)) {
-                    continue; // Already ended
-                }
+            if (schedule.getEndDate() != null && schedule.getEndDate().isBefore(today)) {
+                continue; // Already ended
             }
 
-            // Parse times
-            String[] times = schedule.getTimeOfDay().split(",");
+            // Parse time
+            LocalTime time = schedule.getTimeOfDay();
+            LocalDateTime scheduledDateTime = today.atTime(time);
 
-            for (String timeStr : times) {
-                try {
-                    LocalTime time = parseTime(timeStr.trim());
-                    LocalDateTime scheduledDateTime = today.atTime(time);
+            // Check if already administered
+            boolean administered = administrationRepo
+                    .existsByScheduleIdAndAdministeredAtBetween(
+                            schedule.getScheduleId(),
+                            scheduledDateTime.minusMinutes(30),
+                            scheduledDateTime.plusMinutes(30)
+                    );
 
-                    // Check if already administered
-                    boolean administered = administrationRepo
-                            .existsByPatientIdAndScheduleIdAndActualTimeBetween(
-                                    patientId,
-                                    schedule.getScheduleId(),
-                                    scheduledDateTime.minusMinutes(30),
-                                    scheduledDateTime.plusMinutes(30)
-                            );
+            // Get medication details
+            Medication medication = medicationRepo.findById(schedule.getMedicationId())
+                    .orElse(null);
 
-                    // Get medication details
-                    Optional<Medication> medication = medicationRepo
-                            .findById(schedule.getMedicationId());
-
-                    todaySchedules.add(TodayScheduleDTO.builder()
-                            .scheduleId(schedule.getScheduleId())
-                            .medicationId(schedule.getMedicationId())
-                            .medicationName(medication.map(Medication::getName).orElse("Unknown"))
-                            .dosage(schedule.getDosage())
-                            .scheduledTime(scheduledDateTime)
-                            .isAdministered(administered)
-                            .isPast(scheduledDateTime.isBefore(LocalDateTime.now()))
-                            .instructions(schedule.getInstructions())
-                            .build());
-
-                } catch (Exception e) {
-                    log.warn("Failed to parse time: {}", timeStr, e);
-                }
-            }
+            todaySchedules.add(TodayScheduleDTO.builder()
+                    .scheduleId(schedule.getScheduleId())
+                    .medicationId(schedule.getMedicationId())
+                    .medicationName(medication != null ? medication.getMedicationName() : "Unknown")
+                    .dosage(schedule.getDosage())
+                    .scheduledTime(scheduledDateTime)
+                    .isAdministered(administered)
+                    .isPast(scheduledDateTime.isBefore(LocalDateTime.now()))
+                    .instructions(schedule.getSpecialInstructions())
+                    .build());
         }
 
         // Sort by scheduled time
@@ -443,38 +408,277 @@ public class MedicationService {
     }
 
     /**
-     * Maps a MedicationSchedule entity to a MedicationScheduleResponse DTO.
+     * Get upcoming medications (next 2 hours)
      */
-    private MedicationScheduleResponse toScheduleResponse(MedicationSchedule schedule) {
-        return MedicationScheduleResponse.builder()
-                .scheduleId(schedule.getScheduleId())
-                .patientId(schedule.getPatientId())
-                .medicationId(schedule.getMedicationId())
-                .dosage(schedule.getDosage())
-                .frequency(schedule.getFrequency())
-                .timeOfDay(schedule.getTimeOfDay())
-                .instructions(schedule.getInstructions())
-                .startDate(schedule.getStartDate())
-                .endDate(schedule.getEndDate())
-                .recordStatus(schedule.getRecordStatus())
+    @Transactional(readOnly = true)
+    public List<UpcomingMedicationDTO> getUpcomingMedications(Long patientId) {
+        String methodName = "getUpcomingMedications";
+
+        log.debug("{} Getting upcoming medications for patientId={}", methodName, patientId);
+
+        loginUserUtil.requirePermission(patientId, "medication.view");
+
+        List<MedicationSchedule> schedules = scheduleRepo
+                .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
+
+        List<UpcomingMedicationDTO> upcomingMedications = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime twoHoursLater = now.plusHours(2);
+        LocalDate today = LocalDate.now();
+
+        for (MedicationSchedule schedule : schedules) {
+            if (schedule.getTimeOfDay() == null) {
+                continue;
+            }
+
+            LocalTime time = schedule.getTimeOfDay();
+            LocalDateTime scheduledDateTime = today.atTime(time);
+
+            // Skip if more than 30 minutes in the past
+            if (scheduledDateTime.isBefore(now.minusMinutes(30))) {
+                continue;
+            }
+
+            // If scheduled time is within next 2 hours
+            if (scheduledDateTime.isBefore(twoHoursLater)) {
+                // Check if already administered
+                boolean alreadyAdministered = administrationRepo
+                        .existsByScheduleIdAndAdministeredAtBetween(
+                                schedule.getScheduleId(),
+                                scheduledDateTime.minusMinutes(30),
+                                scheduledDateTime.plusMinutes(30)
+                        );
+
+                if (!alreadyAdministered) {
+                    long minutesUntil = Duration.between(now, scheduledDateTime).toMinutes();
+
+                    // Get medication details
+                    Medication medication = medicationRepo.findById(schedule.getMedicationId())
+                            .orElse(null);
+
+                    upcomingMedications.add(UpcomingMedicationDTO.builder()
+                            .scheduleId(schedule.getScheduleId())
+                            .medicationId(schedule.getMedicationId())
+                            .medicationName(medication != null ? medication.getMedicationName() : "Unknown")
+                            .dosage(schedule.getDosage())
+                            .instructions(schedule.getSpecialInstructions())
+                            .scheduledTime(scheduledDateTime)
+                            .minutesUntilDue((int) minutesUntil)
+                            .isOverdue(minutesUntil < 0)
+                            .build());
+                }
+            }
+        }
+
+        upcomingMedications.sort(Comparator.comparing(UpcomingMedicationDTO::getScheduledTime));
+
+        log.info("{} Found {} upcoming medications", methodName, upcomingMedications.size());
+
+        return upcomingMedications;
+    }
+
+    /**
+     * Check if current user is a PRIMARY caregiver for any patient
+     */
+    public boolean isPrimaryCaregiver() {
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        List<PatientCaregiver> caregiverLinks = patientCaregiverRepo
+                .findByCaregiverUserIdAndRecordStatus(
+                        currentUserId,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+
+        // Check if user has PRIMARY_CAREGIVER role for at least one patient
+        for (PatientCaregiver link : caregiverLinks) {
+            if (link.getRoleId().equals(AppConstants.Role.PRIMARY_CAREGIVER)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Create new medication (PRIMARY CAREGIVER only)
+     */
+    @Transactional
+    public MedicationDTO createMedication(CreateMedicationRequest request) {
+        String methodName = "createMedication";
+
+        // Check permission
+        if (!isPrimaryCaregiver()) {
+            throw new BaseException(
+                    ErrorCode.PERMISSION_DENIED,
+                    "Only primary caregivers can add medicines"
+            );
+        }
+
+        // Normalize medicine name (capitalize properly)
+        String normalizedName = capitalizeWords(request.getMedicationName().trim());
+
+        // Check if medicine already exists (case-insensitive)
+        Optional<Medication> existingOpt = medicationRepo
+                .findByMedicationNameIgnoreCase(normalizedName);
+
+        if (existingOpt.isPresent()) {
+            log.warn("{} Medication already exists: {}", methodName, normalizedName);
+            throw new BaseException(
+                    ErrorCode.DUPLICATE_ENTRY,
+                    "Medicine '" + normalizedName + "' already exists"
+            );
+        }
+
+        // Create new medication
+        Medication medication = new Medication();
+        medication.setMedicationName(normalizedName);
+        medication.setGenericName(request.getGenericName() != null ?
+                capitalizeWords(request.getGenericName().trim()) : normalizedName);
+//        medication.setMedicationClass(request.getMedicationClass());
+        medication.setDescription(request.getDescription());
+//        medication.setCommonDosages(request.getCommonDosages());
+//        medication.setSideEffects(request.getSideEffects());
+//        medication.setContraindications(request.getContraindications());
+        medication.setMedicationImageUrl(request.getMedicationImageUrl());
+        medication.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        medication.setCreatedBy(loginUserUtil.getCurrentUserEmail());
+        medication.setCreatedAt(LocalDateTime.now());
+
+        medication = medicationRepo.save(medication);
+
+        log.info("{} Successfully created medication: {} (ID: {})",
+                methodName, medication.getMedicationName(), medication.getMedicationId());
+
+        return MedicationDTO.builder()
+                .medicationId(medication.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .genericName(medication.getGenericName())
+//                .medicationClass(medication.getMedicationClass())
+                .description(medication.getDescription())
+//                .commonDosages(medication.getCommonDosages())
+//                .sideEffects(medication.getSideEffects())
+//                .contraindications(medication.getContraindications())
+                .medicationImageUrl(medication.getMedicationImageUrl())
+                .addedBy(medication.getCreatedBy())
+                .addedAt(medication.getCreatedAt())
                 .build();
     }
 
     /**
-     * Parse time string like "8:00 AM" or "14:30" to LocalTime
+     * Search medications by name (for autocomplete)
+     */
+    @Transactional(readOnly = true)
+    public List<Medication> searchMedications(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return medicationRepo.findByRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        }
+
+        String searchTerm = query.trim();
+
+        return medicationRepo
+                .findByMedicationNameContainingIgnoreCaseOrGenericNameContainingIgnoreCaseAndRecordStatus(
+                        searchTerm,
+                        searchTerm,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+    }
+
+    /**
+     * Capitalize each word (e.g., "metformin hydrochloride" → "Metformin Hydrochloride")
+     */
+    private String capitalizeWords(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+
+        String[] words = input.trim().toLowerCase().split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1))
+                        .append(" ");
+            }
+        }
+
+        return result.toString().trim();
+    }
+
+    /**
+     * Send duplicate dose warning email
+     */
+    private void sendDuplicateDoseWarning(MedicationSchedule schedule, MedicationAdministration recentLog, Long currentUserId) {
+        try {
+            Patient patient = patientRepo.findById(schedule.getPatientId()).orElse(null);
+            Medication medication = medicationRepo.findById(schedule.getMedicationId()).orElse(null);
+            User currentCaregiver = userRepo.findById(currentUserId).orElse(null);
+            User previousCaregiver = userRepo.findById(recentLog.getAdministeredBy()).orElse(null);
+
+            if (patient == null || medication == null || currentCaregiver == null) {
+                return;
+            }
+
+            // Get all caregivers for this patient
+            List<PatientCaregiver> caregivers = patientCaregiverRepo
+                    .findByPatientIdAndRecordStatus(schedule.getPatientId(), AppConstants.RecordStatus.ACTIVE);
+
+            List<String> caregiverEmails = new ArrayList<>();
+            for (PatientCaregiver pc : caregivers) {
+                User caregiver = userRepo.findById(pc.getCaregiverUserId()).orElse(null);
+                if (caregiver != null && caregiver.getEmail() != null) {
+                    caregiverEmails.add(caregiver.getEmail());
+                }
+            }
+
+            if (!caregiverEmails.isEmpty()) {
+                String subject = "⚠️ Duplicate Dose Warning - " + patient.getFullName();
+                String body = emailTemplateService.getDuplicateDoseWarningBody(
+                        currentCaregiver.getFullName(),
+                        patient.getFullName(),
+                        medication.getMedicationName(),
+                        recentLog.getAdministeredAt().toString(),
+                        previousCaregiver != null ? previousCaregiver.getFullName() : "Unknown"
+                );
+
+                emailService.sendBulkEmail(
+                        caregiverEmails.toArray(new String[0]),
+                        subject,
+                        body
+                );
+
+                log.info("Duplicate dose warning email sent to {} caregivers", caregiverEmails.size());
+            }
+        } catch (Exception e) {
+            log.error("Failed to send duplicate dose warning", e);
+        }
+    }
+
+    /**
+     * Parse time string (supports multiple formats)
      */
     private LocalTime parseTime(String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty()) {
+            throw new BaseException(ErrorCode.INVALID_INPUT, "Time cannot be empty");
+        }
+
+        timeStr = timeStr.trim();
+
         try {
-            // Try 12-hour format first (8:00 AM)
-            DateTimeFormatter formatter12h = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
-            return LocalTime.parse(timeStr, formatter12h);
+            // Try HH:mm format (24-hour)
+            return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm"));
         } catch (Exception e1) {
             try {
-                // Try 24-hour format (14:30)
-                DateTimeFormatter formatter24h = DateTimeFormatter.ofPattern("HH:mm");
-                return LocalTime.parse(timeStr, formatter24h);
+                // Try h:mm a format (12-hour with AM/PM)
+                return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH));
             } catch (Exception e2) {
-                throw new BaseException(ErrorCode.INVALID_INPUT, "Invalid time format: " + timeStr);
+                try {
+                    // Try hh:mm a format
+                    return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+                } catch (Exception e3) {
+                    throw new BaseException(ErrorCode.INVALID_INPUT,
+                            "Invalid time format: " + timeStr + ". Use HH:mm or h:mm AM/PM");
+                }
             }
         }
     }

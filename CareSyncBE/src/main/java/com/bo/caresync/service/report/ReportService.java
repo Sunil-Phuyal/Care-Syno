@@ -56,7 +56,7 @@ public class ReportService {
 
         // Get all administrations
         List<MedicationAdministration> administrations = administrationRepo
-                .findByPatientIdAndRecordStatusOrderByActualTimeDesc(
+                . findByPatientIdAndRecordStatusOrderByAdministeredAtDesc(
                         patientId,
                         AppConstants.RecordStatus.ACTIVE
                 );

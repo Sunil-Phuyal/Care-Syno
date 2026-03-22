@@ -21,4 +21,5 @@ public class UpdatePatientRequest {
     private String address;
     private String emergencyContactName;
     private String emergencyContactPhone;
+    private String profileImageUrl;
 }
