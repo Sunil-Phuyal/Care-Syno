@@ -15,10 +15,10 @@ import { cn } from '../../utils/cn';
 import type { Medication, MedicationSchedule } from '../../types/medication.types';
 
 const STATUS_OPTIONS = [
-  { value: 'ADMINISTERED', label: 'Administered', desc: 'Medication taken',       color: 'border-success-500 bg-success-50 dark:bg-success-900' },
-  { value: 'SKIPPED',      label: 'Skipped',      desc: 'Intentionally skipped',  color: 'border-warning-500 bg-warning-50 dark:bg-warning-900' },
-  { value: 'MISSED',       label: 'Missed',       desc: 'Accidentally missed',    color: 'border-error-500 bg-error-50 dark:bg-error-900' },
-  { value: 'REFUSED',      label: 'Refused',      desc: 'Patient refused',        color: 'border-gray-400 bg-gray-50 dark:bg-gray-800' },
+  { value: 'ADMINISTERED', label: 'Administered', desc: 'Medication taken',      color: 'border-success-500 bg-success-50 dark:bg-success-900' },
+  { value: 'SKIPPED',      label: 'Skipped',      desc: 'Intentionally skipped', color: 'border-warning-500 bg-warning-50 dark:bg-warning-900' },
+  { value: 'MISSED',       label: 'Missed',       desc: 'Accidentally missed',   color: 'border-error-500 bg-error-50 dark:bg-error-900' },
+  { value: 'REFUSED',      label: 'Refused',      desc: 'Patient refused',       color: 'border-gray-400 bg-gray-50 dark:bg-gray-800' },
 ] as const;
 
 export function LogMedication() {
@@ -27,11 +27,12 @@ export function LogMedication() {
   const { selectedPatient } = usePatient();
   const { success, error: showError } = useNotification();
 
-  const [medications, setMedications]   = useState<Medication[]>([]);
-  const [schedules, setSchedules]       = useState<MedicationSchedule[]>([]);
+  const [medications, setMedications]     = useState<Medication[]>([]);
+  const [schedules, setSchedules]         = useState<MedicationSchedule[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError]               = useState('');
+  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [error, setError]                 = useState('');
+  const [isDuplicate, setIsDuplicate]     = useState(false);
   const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -95,6 +96,7 @@ export function LogMedication() {
     e.preventDefault();
     if (!selectedPatient) return;
     setError('');
+    setIsDuplicate(false);
     setIsSubmitting(true);
     try {
       await medicationApi.logAdministration({
@@ -112,6 +114,10 @@ export function LogMedication() {
       navigate('/medications');
     } catch (err: any) {
       const msg = err.message || 'Failed to log medication';
+      // Detect duplicate administration error
+      if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
+        setIsDuplicate(true);
+      }
       showError(msg);
       setError(msg);
     } finally {
@@ -142,12 +148,11 @@ export function LogMedication() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+
       <div>
-        <button
-          onClick={() => navigate('/medications')}
+        <button onClick={() => navigate('/medications')}
           className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400
-                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors"
-        >
+                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -157,7 +162,24 @@ export function LogMedication() {
         <p className="page-subtitle">Record medication administration for {selectedPatient.fullName}</p>
       </div>
 
-      {error && (
+      {/* Duplicate dose warning */}
+      {isDuplicate && (
+        <div className="flex items-start gap-3 p-4 bg-warning-50 dark:bg-warning-900
+                        border border-warning-200 dark:border-warning-700 rounded-xl">
+          <span className="text-2xl flex-shrink-0">⚠️</span>
+          <div>
+            <p className="font-semibold text-warning-800 dark:text-warning-200">
+              Duplicate dose detected
+            </p>
+            <p className="text-sm text-warning-700 dark:text-warning-300 mt-0.5">
+              {error}. All caregivers have been notified.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Generic error */}
+      {error && !isDuplicate && (
         <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -202,12 +224,12 @@ export function LogMedication() {
               <label key={option.value} className={cn(
                 'flex items-center gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all',
                 form.status === option.value
-                  ? option.color + ' border-opacity-100'
+                  ? option.color
                   : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
               )}>
                 <input type="radio" name="status" value={option.value}
                   checked={form.status === option.value} onChange={handleChange}
-                  className="text-primary-500 accent-primary-500" />
+                  className="accent-primary-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-50">{option.label}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{option.desc}</p>
@@ -217,24 +239,22 @@ export function LogMedication() {
           </div>
         </div>
 
-        {/* Proof photo — only show for ADMINISTERED */}
+        {/* Proof photo — only for ADMINISTERED */}
         {form.status === 'ADMINISTERED' && (
           <div className="card space-y-4">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Proof of Administration</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Optional photo proof that the medication was taken — useful for accountability.
-              </p>
-              <ImageUploader
-                folder="administration-proof"
-                fileName={`proof_schedule_${form.scheduleId || 'unknown'}_${Date.now()}`}
-                label="Proof Photo"
-                value={proofImageUrl}
-                onChange={setProofImageUrl}
-                optional
-                hint="Take a photo of the medication being administered."
-              />
-            </div>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Proof of Administration</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Optional photo proof that the medication was taken.
+            </p>
+            <ImageUploader
+              folder="administration-proof"
+              fileName={`proof_schedule_${form.scheduleId || 'unknown'}_${Date.now()}`}
+              label="Proof Photo"
+              value={proofImageUrl}
+              onChange={setProofImageUrl}
+              optional
+              hint="Take a photo of the medication being administered."
+            />
           </div>
         )}
 
@@ -243,8 +263,9 @@ export function LogMedication() {
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Additional Notes</h3>
           <Textarea name="notes" label="Notes (optional)" value={form.notes} onChange={handleChange}
             rows={3} resize="none" placeholder="Any additional notes..." />
-          <Textarea name="sideEffects" label="Side Effects (optional)" value={form.sideEffects} onChange={handleChange}
-            rows={2} resize="none" placeholder="Note any side effects observed..." />
+          <Textarea name="sideEffects" label="Side Effects (optional)" value={form.sideEffects}
+            onChange={handleChange} rows={2} resize="none"
+            placeholder="Note any side effects observed..." />
         </div>
 
         <div className="flex gap-3">
