@@ -54,7 +54,9 @@ public enum ErrorCode implements IErrorCode {
     FILE_UPLOAD_FAILED(400, "File upload failed"),
     FILE_TOO_LARGE(400, "File size exceeds maximum allowed size"),
     INVALID_FILE_TYPE(400, "Invalid file type"),
-    MEDICATION_NOT_FOUND(404, "Medication not found");
+    MEDICATION_NOT_FOUND(404, "Medication not found"),
+
+    DUPLICATE_ENTRY(409, "Entry already exists");
 
     private final int httpStatus;
     private final String message;

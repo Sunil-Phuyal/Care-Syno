@@ -78,4 +78,24 @@ public class MedicationController extends BaseController {
         List<TodayScheduleDTO> schedules = medicationService.getTodaySchedules(patientId);
         return successResponse("Today's schedules retrieved successfully", schedules);
     }
+
+    /**
+     * Create new medication (PRIMARY CAREGIVER only)
+     * POST /api/v1/medications
+     */
+    @PostMapping
+    public ResponseEntity<?> createMedication(@RequestBody CreateMedicationRequest request) {
+        MedicationDTO medication = medicationService.createMedication(request);
+        return successResponse("Medication added successfully", medication);
+    }
+
+    /**
+     * Search medications by name
+     * GET /api/v1/medications/search?query=met
+     */
+    @GetMapping("/search/{query}")
+    public ResponseEntity<?> searchMedications(@PathVariable String query) {
+        List<Medication> medications = medicationService.searchMedications(query);
+        return successResponse("Search results retrieved", medications);
+    }
 }

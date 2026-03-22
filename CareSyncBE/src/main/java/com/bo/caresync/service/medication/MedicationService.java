@@ -478,6 +478,134 @@ public class MedicationService {
     }
 
     /**
+     * Check if current user is a PRIMARY caregiver for any patient
+     */
+    public boolean isPrimaryCaregiver() {
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        List<PatientCaregiver> caregiverLinks = patientCaregiverRepo
+                .findByCaregiverUserIdAndRecordStatus(
+                        currentUserId,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+
+        // Check if user has PRIMARY_CAREGIVER role for at least one patient
+        for (PatientCaregiver link : caregiverLinks) {
+            if (link.getRoleId().equals(AppConstants.Role.PRIMARY_CAREGIVER)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Create new medication (PRIMARY CAREGIVER only)
+     */
+    @Transactional
+    public MedicationDTO createMedication(CreateMedicationRequest request) {
+        String methodName = "createMedication";
+
+        // Check permission
+        if (!isPrimaryCaregiver()) {
+            throw new BaseException(
+                    ErrorCode.PERMISSION_DENIED,
+                    "Only primary caregivers can add medicines"
+            );
+        }
+
+        // Normalize medicine name (capitalize properly)
+        String normalizedName = capitalizeWords(request.getMedicationName().trim());
+
+        // Check if medicine already exists (case-insensitive)
+        Optional<Medication> existingOpt = medicationRepo
+                .findByMedicationNameIgnoreCase(normalizedName);
+
+        if (existingOpt.isPresent()) {
+            log.warn("{} Medication already exists: {}", methodName, normalizedName);
+            throw new BaseException(
+                    ErrorCode.DUPLICATE_ENTRY,
+                    "Medicine '" + normalizedName + "' already exists"
+            );
+        }
+
+        // Create new medication
+        Medication medication = new Medication();
+        medication.setMedicationName(normalizedName);
+        medication.setGenericName(request.getGenericName() != null ?
+                capitalizeWords(request.getGenericName().trim()) : normalizedName);
+//        medication.setMedicationClass(request.getMedicationClass());
+        medication.setDescription(request.getDescription());
+//        medication.setCommonDosages(request.getCommonDosages());
+//        medication.setSideEffects(request.getSideEffects());
+//        medication.setContraindications(request.getContraindications());
+        medication.setMedicationImageUrl(request.getMedicationImageUrl());
+        medication.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        medication.setCreatedBy(loginUserUtil.getCurrentUserEmail());
+        medication.setCreatedAt(LocalDateTime.now());
+
+        medication = medicationRepo.save(medication);
+
+        log.info("{} Successfully created medication: {} (ID: {})",
+                methodName, medication.getMedicationName(), medication.getMedicationId());
+
+        return MedicationDTO.builder()
+                .medicationId(medication.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .genericName(medication.getGenericName())
+//                .medicationClass(medication.getMedicationClass())
+                .description(medication.getDescription())
+//                .commonDosages(medication.getCommonDosages())
+//                .sideEffects(medication.getSideEffects())
+//                .contraindications(medication.getContraindications())
+                .medicationImageUrl(medication.getMedicationImageUrl())
+                .addedBy(medication.getCreatedBy())
+                .addedAt(medication.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * Search medications by name (for autocomplete)
+     */
+    @Transactional(readOnly = true)
+    public List<Medication> searchMedications(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return medicationRepo.findByRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        }
+
+        String searchTerm = query.trim();
+
+        return medicationRepo
+                .findByMedicationNameContainingIgnoreCaseOrGenericNameContainingIgnoreCaseAndRecordStatus(
+                        searchTerm,
+                        searchTerm,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+    }
+
+    /**
+     * Capitalize each word (e.g., "metformin hydrochloride" → "Metformin Hydrochloride")
+     */
+    private String capitalizeWords(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+
+        String[] words = input.trim().toLowerCase().split("\\s+");
+        StringBuilder result = new StringBuilder();
+
+        for (String word : words) {
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1))
+                        .append(" ");
+            }
+        }
+
+        return result.toString().trim();
+    }
+
+    /**
      * Send duplicate dose warning email
      */
     private void sendDuplicateDoseWarning(MedicationSchedule schedule, MedicationAdministration recentLog, Long currentUserId) {
