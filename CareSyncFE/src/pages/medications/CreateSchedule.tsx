@@ -12,46 +12,65 @@ import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import type { Medication } from '../../types/medication.types';
 
+const FREQUENCY_DEFAULTS: Record<string, string[]> = {
+  ONCE_DAILY:        ['08:00'],
+  TWICE_DAILY:       ['08:00', '20:00'],
+  THREE_TIMES_DAILY: ['08:00', '14:00', '20:00'],
+  FOUR_TIMES_DAILY:  ['08:00', '12:00', '16:00', '20:00'],
+  AS_NEEDED:         [],
+  WEEKLY:            ['08:00'],
+  CUSTOM:            ['08:00'],
+};
+
 export function CreateSchedule() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
   const { success, error: showError } = useNotification();
 
-  const [medications, setMedications]         = useState<Medication[]>([]);
+  const [medications, setMedications]                   = useState<Medication[]>([]);
   const [prescriptionImageUrl, setPrescriptionImageUrl] = useState<string | null>(null);
   const [medicationPhotoUrl, setMedicationPhotoUrl]     = useState<string | null>(null);
+  const [times, setTimes]                               = useState<string[]>(['08:00']);
   const [form, setForm] = useState({
     medicationId: '',
-    dosage: '',
-    frequency: 'ONCE_DAILY',
-    timeOfDay: '',
+    dosage:       '',
+    frequency:    'ONCE_DAILY',
     instructions: '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
+    startDate:    new Date().toISOString().split('T')[0],
+    endDate:      '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]         = useState('');
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await medicationApi.getAllMedications();
-        setMedications(data);
-      } catch {
-        showError('Failed to load medications');
-      }
-    };
-    load();
+    medicationApi.getAllMedications()
+      .then(setMedications)
+      .catch(() => showError('Failed to load medications'));
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'frequency') {
+      setTimes(FREQUENCY_DEFAULTS[value] ?? ['08:00']);
+    }
+  };
+
+  const handleTimeChange = (index: number, value: string) =>
+    setTimes((prev) => prev.map((t, i) => (i === index ? value : t)));
+
+  const addTime    = () => setTimes((prev) => [...prev, '12:00']);
+  const removeTime = (index: number) => setTimes((prev) => prev.filter((_, i) => i !== index));
 
   const selectedMedName = medications.find(m => String(m.medicationId) === form.medicationId)?.name ?? 'medication';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
+    if (times.length === 0 && form.frequency !== 'AS_NEEDED') {
+      setError('Please add at least one time.');
+      return;
+    }
     setError('');
     setIsLoading(true);
     try {
@@ -60,7 +79,7 @@ export function CreateSchedule() {
         medicationId:         Number(form.medicationId),
         dosage:               form.dosage,
         frequency:            form.frequency,
-        timeOfDay:            form.timeOfDay || undefined,
+        times,
         instructions:         form.instructions || undefined,
         startDate:            form.startDate,
         endDate:              form.endDate || undefined,
@@ -90,12 +109,11 @@ export function CreateSchedule() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+
       <div>
-        <button
-          onClick={() => navigate('/medications')}
+        <button onClick={() => navigate('/medications')}
           className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400
-                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors"
-        >
+                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -139,6 +157,7 @@ export function CreateSchedule() {
         {/* Schedule */}
         <div className="card space-y-4">
           <h3 className="font-semibold text-gray-900 dark:text-gray-50">Schedule</h3>
+
           <Select name="frequency" label="Frequency" value={form.frequency} onChange={handleChange} required>
             <option value="ONCE_DAILY">Once daily</option>
             <option value="TWICE_DAILY">Twice daily</option>
@@ -148,16 +167,50 @@ export function CreateSchedule() {
             <option value="WEEKLY">Weekly</option>
             <option value="CUSTOM">Custom</option>
           </Select>
-          <div>
-            <Input name="timeOfDay" label="Time(s) of Day" value={form.timeOfDay} onChange={handleChange}
-              placeholder="e.g. 8:00 AM, 8:00 PM" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Separate multiple times with commas.
-            </p>
-          </div>
+
+          {form.frequency !== 'AS_NEEDED' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Time(s) of Day
+              </label>
+              <div className="space-y-2">
+                {times.map((time, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="time"
+                      value={time}
+                      onChange={(e) => handleTimeChange(index, e.target.value)}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600
+                                 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50
+                                 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    {times.length > 1 && (
+                      <button type="button" onClick={() => removeTime(index)}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addTime}
+                className="mt-2 text-sm text-primary-600 dark:text-primary-400 font-medium
+                           hover:underline flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add another time
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input name="startDate" label="Start Date" type="date" value={form.startDate} onChange={handleChange} required />
-            <Input name="endDate" label="End Date (optional)" type="date" value={form.endDate} onChange={handleChange} />
+            <Input name="startDate" label="Start Date" type="date"
+              value={form.startDate} onChange={handleChange} required />
+            <Input name="endDate" label="End Date (optional)" type="date"
+              value={form.endDate} onChange={handleChange} />
           </div>
         </div>
 
@@ -185,11 +238,10 @@ export function CreateSchedule() {
               hint="Scan or photograph the prescription document."
             />
           </div>
-
           <div className="border-t border-gray-100 dark:border-gray-700 pt-6">
             <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Medication Photo</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              Photo of the actual pill or bottle — helps caregivers identify it correctly.
+              Photo of the actual pill or bottle — helps identify it correctly.
             </p>
             <ImageUploader
               folder="medications"

@@ -5,7 +5,7 @@ import { uploadApi } from '../../api/upload.api';
 import { cn } from '../../utils/cn';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-const MAX_SIZE_MB = 5;
+const MAX_SIZE_MB = 15;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 interface ImageUploaderProps {
