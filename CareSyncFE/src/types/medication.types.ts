@@ -29,7 +29,7 @@ export interface CreateScheduleRequest {
   medicationId: number;
   dosage: string;
   frequency: string;
-  timeOfDay?: string;
+  times: string[];
   instructions?: string;
   startDate: string;
   endDate?: string;

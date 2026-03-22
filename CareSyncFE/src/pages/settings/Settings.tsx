@@ -13,7 +13,6 @@ import { cn } from '../../utils/cn';
 
 type SettingsTab = 'profile' | 'security';
 
-// ─── Profile Tab ───────────────────────────────────────────────────────────────
 function ProfileTab() {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
