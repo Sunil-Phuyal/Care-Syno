@@ -5,19 +5,40 @@ import type {
   Medication,
   MedicationSchedule,
   CreateScheduleRequest,
+  AddMedicationRequest,
   MedicationAdministration,
-  LogMedicationRequest
+  LogMedicationRequest,
 } from '../types/medication.types';
 import type { ApiResponse } from '../types/common.types';
 
 export const medicationApi = {
 
   /**
-   * Get all medications (master list)
+   * Get all medications (master catalog)
    * GET /api/v1/medications
    */
   getAllMedications: async (): Promise<Medication[]> => {
     const response = await api.get<ApiResponse<Medication[]>>('/medications');
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Search medications by name
+   * GET /api/v1/medications/search/{query}
+   */
+  searchMedications: async (query: string): Promise<Medication[]> => {
+    const response = await api.get<ApiResponse<Medication[]>>(
+      `/medications/search/${query}`
+    );
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Add a new medication to the catalog (PRIMARY only)
+   * POST /api/v1/medications
+   */
+  addMedication: async (data: AddMedicationRequest): Promise<Medication> => {
+    const response = await api.post<ApiResponse<Medication>>('/medications', data);
     return response.data.apiResponseData.responseData;
   },
 

@@ -2,12 +2,30 @@
 
 export interface Medication {
   medicationId: number;
-  name: string;
-  dosageForm?: string;
-  strength?: string;
+  medicationName: string;
+  name?: string;               // alias for compatibility
+  genericName?: string;
+  medicationClass?: string;
   description?: string;
-  commonSideEffects?: string;
-  warnings?: string;
+  commonDosages?: string;
+  sideEffects?: string;
+  contraindications?: string;
+  medicationImageUrl?: string;
+  strength?: string;
+  dosageForm?: string;
+  addedBy?: string;
+  addedAt?: string;
+}
+
+export interface AddMedicationRequest {
+  medicationName: string;
+  genericName?: string;
+  medicationClass?: string;
+  description?: string;
+  commonDosages?: string;
+  sideEffects?: string;
+  contraindications?: string;
+  medicationImageUrl?: string;
 }
 
 export interface MedicationSchedule {
@@ -19,6 +37,7 @@ export interface MedicationSchedule {
   frequency: string;
   timeOfDay?: string;
   instructions?: string;
+  specialInstructions?: string;
   startDate: string;
   endDate?: string;
   prescriptionImageUrl?: string;
@@ -30,8 +49,9 @@ export interface CreateScheduleRequest {
   medicationId: number;
   dosage: string;
   frequency: string;
-  times: string[];               // ← array e.g. ["08:00", "20:00"]
+  times: string[];
   instructions?: string;
+  specialInstructions?: string;
   startDate: string;
   endDate?: string;
   prescriptionImageUrl?: string;
