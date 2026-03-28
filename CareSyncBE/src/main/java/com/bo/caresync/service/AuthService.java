@@ -73,8 +73,7 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         Role primaryRole = roleRepository.findByRoleNameAndRecordStatus(
-                AppConstants.Role.PRIMARY_CAREGIVER,
-                AppConstants.RecordStatus.ACTIVE
+                AppConstants.Role.PRIMARY_CAREGIVER, AppConstants.RecordStatus.ACTIVE
         ).orElseThrow(() -> new BaseException(ErrorCode.ROLE_NOT_FOUND));
 
         UserRole userRole = new UserRole();
@@ -200,9 +199,9 @@ public class AuthService {
         Long currentUserId = loginUserUtil.getCurrentUserId();
 
         log.debug("{} {} Changing password for userId={}",className, methodName, currentUserId);
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new BaseException(ErrorCode.INVALID_INPUT, "New passwords do not match");
-        }
+//        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+//            throw new BaseException(ErrorCode.INVALID_INPUT, "New passwords do not match");
+//        }
         if (request.getCurrentPassword().equals(request.getNewPassword())) {
             throw new BaseException(ErrorCode.INVALID_INPUT, "New password must be different from current password");
         }
@@ -211,9 +210,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
             throw new BaseException(ErrorCode.INVALID_CREDENTIALS, "Current password is incorrect");
         }
-
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-
         userRepository.save(user);
         try {
             emailService.sendSimpleEmail(
@@ -224,7 +221,6 @@ public class AuthService {
         } catch (Exception e) {
             log.warn("{} Failed to send password change email: {}", methodName, e.getMessage());
         }
-
         log.info("{} Successfully changed password for userId={}", methodName, currentUserId);
     }
 

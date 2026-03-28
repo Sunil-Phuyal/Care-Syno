@@ -2,6 +2,7 @@ package com.bo.caresync.service.medication;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.dto.request.medication.*;
+import com.bo.caresync.entity.auth.Role;
 import com.bo.caresync.entity.medication.Medication;
 import com.bo.caresync.entity.medication.MedicationAdministration;
 import com.bo.caresync.entity.medication.MedicationSchedule;
@@ -13,7 +14,6 @@ import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
 import com.bo.caresync.service.email.EmailService;
 import com.bo.caresync.service.email.EmailTemplateService;
-import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * Service for medication management
- *
  * @author Sunil Phuyal
  * @version 1.0
  * @project CareSyncBE
@@ -47,6 +45,7 @@ public class MedicationService {
     private final PatientRepository patientRepo;
     private final PatientCaregiverRepository patientCaregiverRepo;
     private final UserRepository userRepo;
+    private final RoleRepository roleRepo;
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
 
@@ -477,9 +476,6 @@ public class MedicationService {
         return upcomingMedications;
     }
 
-    /**
-     * Check if current user is a PRIMARY caregiver for any patient
-     */
     public boolean isPrimaryCaregiver() {
         Long currentUserId = loginUserUtil.getCurrentUserId();
 
@@ -489,9 +485,11 @@ public class MedicationService {
                         AppConstants.RecordStatus.ACTIVE
                 );
 
-        // Check if user has PRIMARY_CAREGIVER role for at least one patient
         for (PatientCaregiver link : caregiverLinks) {
-            if (link.getRoleId().equals(AppConstants.Role.PRIMARY_CAREGIVER)) {
+            // Fetch the role name using the numeric roleId
+            Role role = roleRepo.findById(link.getRoleId()).orElse(null);
+
+            if (role != null && role.getRoleName().equals(AppConstants.Role.PRIMARY_CAREGIVER)) {
                 return true;
             }
         }
@@ -514,22 +512,21 @@ public class MedicationService {
             );
         }
 
-        // Normalize medicine name (capitalize properly)
+        // Normalize medicine name
         String normalizedName = capitalizeWords(request.getMedicationName().trim());
 
-        // Check if medicine already exists (case-insensitive)
+        // Check if exists
         Optional<Medication> existingOpt = medicationRepo
                 .findByMedicationNameIgnoreCase(normalizedName);
 
         if (existingOpt.isPresent()) {
-            log.warn("{} Medication already exists: {}", methodName, normalizedName);
             throw new BaseException(
                     ErrorCode.DUPLICATE_ENTRY,
                     "Medicine '" + normalizedName + "' already exists"
             );
         }
 
-        // Create new medication
+        // Create medication
         Medication medication = new Medication();
         medication.setMedicationName(normalizedName);
         medication.setGenericName(request.getGenericName() != null ?
@@ -546,7 +543,7 @@ public class MedicationService {
 
         medication = medicationRepo.save(medication);
 
-        log.info("{} Successfully created medication: {} (ID: {})",
+        log.info("{} Created medication: {} (ID: {})",
                 methodName, medication.getMedicationName(), medication.getMedicationId());
 
         return MedicationDTO.builder()
@@ -565,7 +562,7 @@ public class MedicationService {
     }
 
     /**
-     * Search medications by name (for autocomplete)
+     * Search medications by name
      */
     @Transactional(readOnly = true)
     public List<Medication> searchMedications(String query) {
@@ -584,7 +581,7 @@ public class MedicationService {
     }
 
     /**
-     * Capitalize each word (e.g., "metformin hydrochloride" → "Metformin Hydrochloride")
+     * Capitalize words
      */
     private String capitalizeWords(String input) {
         if (input == null || input.isEmpty()) {

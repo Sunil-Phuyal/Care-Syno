@@ -1,170 +1,247 @@
 // src/pages/medications/MedicationList.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { medicationApi } from '../../api/medication.api';
-import { usePatient } from '../../context/PatientContext';
-import { PermissionGate } from '../../components/common/PermissionGate';
+import { useNotification } from '../../context/NotificationContext';
+import { ImageUploader } from '../../components/ui/ImageUploader';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { Textarea } from '../../components/ui/Textarea';
 import { Spinner } from '../../components/ui/Spinner';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { formatters } from '../../utils/formatters';
+import { PermissionGate } from '../../components/common/PermissionGate';
 import { cn } from '../../utils/cn';
-import type { Medication, MedicationSchedule } from '../../types/medication.types';
+import type { Medication, AddMedicationRequest } from '../../types/medication.types';
 
-function ScheduleCard({
-  schedule,
-  medicationName,
-  onLog,
-  onDelete,
+// ─── Add Medicine Form ─────────────────────────────────────────────────────────
+function AddMedicineForm({
+  onAdded,
+  onCancel,
 }: {
-  schedule: MedicationSchedule;
-  medicationName: string;
-  onLog: () => void;
-  onDelete: () => void;
+  onAdded: (med: Medication) => void;
+  onCancel: () => void;
 }) {
-  const isActive = !schedule.endDate || new Date(schedule.endDate) >= new Date();
+  const { success, error: showError } = useNotification();
+  const [medicationImageUrl, setMedicationImageUrl] = useState<string | null>(null);
+  const [form, setForm] = useState<AddMedicationRequest>({
+    medicationName:    '',
+    genericName:       '',
+    medicationClass:   '',
+    description:       '',
+    commonDosages:     '',
+    sideEffects:       '',
+    contraindications: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError]         = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async () => {
+    if (!form.medicationName.trim()) { setError('Medicine name is required.'); return; }
+    setError('');
+    setIsLoading(true);
+    try {
+      const med = await medicationApi.addMedication({
+        ...form,
+        medicationImageUrl: medicationImageUrl ?? undefined,
+      });
+      success(`${form.medicationName} added successfully!`);
+      onAdded(med);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to add medicine';
+      showError(msg);
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="card flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-50 truncate">{medicationName}</h3>
-          <p className="text-2xl font-bold text-primary-500 mt-1">{schedule.dosage}</p>
-        </div>
-        <span className={cn(
-          'text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0',
-          isActive
-            ? 'bg-success-100 dark:bg-success-800 text-success-700 dark:text-success-100'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-        )}>
-          {isActive ? 'Active' : 'Ended'}
-        </span>
+    <div className="card space-y-4 border-2 border-primary-200 dark:border-primary-700">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-50">Add New Medicine</h3>
+        <button onClick={onCancel}
+          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200
+                     rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <div className="space-y-2 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">⏰</span>
-          <span className="text-gray-500 dark:text-gray-400">Frequency:</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">
-            {schedule.frequency.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-          </span>
-        </div>
-        {schedule.timeOfDay && (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">🕐</span>
-            <span className="text-gray-500 dark:text-gray-400">Time:</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{schedule.timeOfDay}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">📅</span>
-          <span className="text-gray-500 dark:text-gray-400">Started:</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{formatters.date(schedule.startDate)}</span>
-        </div>
-        {schedule.endDate && (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400">🏁</span>
-            <span className="text-gray-500 dark:text-gray-400">Ends:</span>
-            <span className="font-medium text-gray-900 dark:text-gray-100">{formatters.date(schedule.endDate)}</span>
-          </div>
-        )}
-      </div>
-
-      {schedule.instructions && (
-        <div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Instructions</p>
-          <p className="text-sm text-gray-700 dark:text-gray-200">{schedule.instructions}</p>
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {/* Image indicators */}
-      {(schedule.prescriptionImageUrl || schedule.medicationPhotoUrl) && (
-        <div className="flex gap-2">
-          {schedule.prescriptionImageUrl && (
-            <a href={schedule.prescriptionImageUrl} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              📋 View Prescription
-            </a>
-          )}
-          {schedule.medicationPhotoUrl && (
-            <a href={schedule.medicationPhotoUrl} target="_blank" rel="noopener noreferrer"
-              className="text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              💊 View Photo
-            </a>
-          )}
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input name="medicationName" label="Medicine Name *" value={form.medicationName}
+          onChange={handleChange} placeholder="e.g. Metformin" />
+        <Input name="genericName" label="Generic Name" value={form.genericName}
+          onChange={handleChange} placeholder="e.g. Metformin Hydrochloride" />
+        <Input name="medicationClass" label="Medicine Class" value={form.medicationClass}
+          onChange={handleChange} placeholder="e.g. Antidiabetic" />
+        <Input name="commonDosages" label="Common Dosages" value={form.commonDosages}
+          onChange={handleChange} placeholder="e.g. 500mg, 850mg, 1000mg" />
+      </div>
 
-      <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
-        <PermissionGate permission="medication.administer">
-          <button onClick={onLog} className="btn btn-primary btn-sm flex-1">Log Now</button>
-        </PermissionGate>
-        <PermissionGate permission="medication.delete_schedule">
-          <button onClick={onDelete} className="btn btn-danger btn-sm">Delete</button>
-        </PermissionGate>
+      <Textarea name="description" label="Description" value={form.description}
+        onChange={handleChange} rows={2} resize="none"
+        placeholder="e.g. Used to control blood sugar levels" />
+      <Textarea name="sideEffects" label="Side Effects" value={form.sideEffects}
+        onChange={handleChange} rows={2} resize="none"
+        placeholder="e.g. Nausea, diarrhea, stomach upset" />
+
+      <ImageUploader
+        folder="medications"
+        fileName={`medication_${form.medicationName.replace(/\s+/g, '_') || 'new'}`}
+        label="Medicine Image"
+        value={medicationImageUrl}
+        onChange={setMedicationImageUrl}
+        optional
+        hint="Photo of the medicine package or pill."
+      />
+
+      <div className="flex gap-3">
+        <Button type="button" variant="secondary" fullWidth onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="primary" fullWidth isLoading={isLoading} onClick={handleSubmit}>
+          Add Medicine
+        </Button>
       </div>
     </div>
   );
 }
 
+// ─── Medicine Card ─────────────────────────────────────────────────────────────
+function MedicineCard({ medicine }: { medicine: Medication }) {
+  return (
+    <div className="card flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        {medicine.medicationImageUrl ? (
+          <img src={medicine.medicationImageUrl} alt={medicine.medicationName}
+            className="w-12 h-12 rounded-xl object-cover flex-shrink-0
+                       border border-gray-200 dark:border-gray-600" />
+        ) : (
+          <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900
+                          flex items-center justify-center flex-shrink-0 text-2xl">
+            💊
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50 truncate">
+            {medicine.medicationName}
+          </h3>
+          {medicine.genericName && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{medicine.genericName}</p>
+          )}
+          {medicine.medicationClass && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full
+                             bg-primary-100 dark:bg-primary-900
+                             text-primary-700 dark:text-primary-300 font-medium">
+              {medicine.medicationClass}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {medicine.commonDosages && (
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="font-medium text-gray-700 dark:text-gray-300">Dosages: </span>
+          {medicine.commonDosages}
+        </div>
+      )}
+
+      {medicine.description && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{medicine.description}</p>
+      )}
+
+      {medicine.sideEffects && (
+        <div className="text-xs text-warning-700 dark:text-warning-300">
+          <span className="font-medium">⚠️ Side effects: </span>
+          {medicine.sideEffects}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export function MedicationList() {
   const navigate = useNavigate();
-  const { selectedPatient } = usePatient();
-  const [schedules, setSchedules]     = useState<MedicationSchedule[]>([]);
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
-  const [error, setError]             = useState('');
+  const [medications, setMedications]   = useState<Medication[]>([]);
+  const [filtered, setFiltered]         = useState<Medication[]>([]);
+  const [isLoading, setIsLoading]       = useState(true);
+  const [error, setError]               = useState('');
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [isSearching, setIsSearching]   = useState(false);
+  const [showAddForm, setShowAddForm]   = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!selectedPatient) return;
-    const load = async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const [schedulesData, medsData] = await Promise.all([
-          medicationApi.getPatientSchedules(selectedPatient.patientId),
-          medicationApi.getAllMedications(),
-        ]);
-        setSchedules(schedulesData);
-        setMedications(medsData);
-      } catch {
-        setError('Failed to load medication schedules.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
-  }, [selectedPatient]);
+    loadMedications();
+  }, []);
 
-  const getMedicationName = (medicationId: number) =>
-    medications.find(m => m.medicationId === medicationId)?.name ?? `Medication #${medicationId}`;
-
-  const handleDelete = async (scheduleId: number) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
+  const loadMedications = async () => {
+    setIsLoading(true);
+    setError('');
     try {
-      await medicationApi.deleteSchedule(scheduleId);
-      setSchedules((prev) => prev.filter((s) => s.scheduleId !== scheduleId));
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete schedule.');
+      const data = await medicationApi.getAllMedications();
+      setMedications(data);
+      setFiltered(data);
+    } catch {
+      setError('Failed to load medicines.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (!selectedPatient) {
-    return (
-      <div className="card text-center py-12">
-        <p className="text-4xl mb-3">👤</p>
-        <p className="text-gray-500 dark:text-gray-400">Please select a patient to view medications.</p>
-        <button onClick={() => navigate('/patients')} className="btn btn-primary mt-4">Go to Patients</button>
-      </div>
-    );
-  }
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value;
+    setSearchQuery(q);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!q.trim()) { setFiltered(medications); return; }
+
+    if (q.length >= 2) {
+      setIsSearching(true);
+      debounceRef.current = setTimeout(async () => {
+        try {
+          const results = await medicationApi.searchMedications(q);
+          setFiltered(results);
+        } catch {
+          // Fallback to client-side filter
+          setFiltered(medications.filter(m =>
+            m.medicationName?.toLowerCase().includes(q.toLowerCase()) ||
+            m.genericName?.toLowerCase().includes(q.toLowerCase())
+          ));
+        } finally {
+          setIsSearching(false);
+        }
+      }, 300);
+    } else {
+      setFiltered(medications.filter(m =>
+        m.medicationName?.toLowerCase().includes(q.toLowerCase())
+      ));
+    }
+  };
+
+  const handleAdded = (med: Medication) => {
+    const updated = [med, ...medications];
+    setMedications(updated);
+    setFiltered(updated);
+    setShowAddForm(false);
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <Spinner size="lg" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading medications...</p>
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading medicines...</p>
         </div>
       </div>
     );
@@ -173,63 +250,92 @@ export function MedicationList() {
   return (
     <div className="space-y-6">
 
+      {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="page-title">Medication Schedules</h1>
-          <p className="page-subtitle">Managing medications for {selectedPatient.fullName}</p>
+          <h1 className="page-title">Medications</h1>
+          <p className="page-subtitle">Medicine catalog and schedules</p>
         </div>
         <div className="flex gap-2">
-          <PermissionGate permission="medication.administer">
-            <button onClick={() => navigate('/medications/log')} className="btn btn-primary">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-              Log Medication
-            </button>
-          </PermissionGate>
+          <button onClick={() => navigate('/medications/schedules')} className="btn btn-secondary">
+            📋 View Schedules
+          </button>
           <PermissionGate permission="medication.create_schedule">
-            <button onClick={() => navigate('/medications/new')} className="btn btn-secondary">
+            <button onClick={() => !showAddForm && setShowAddForm(true)} className="btn btn-primary">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Schedule
+              Add Medicine
             </button>
           </PermissionGate>
         </div>
       </div>
 
+      {/* Add medicine form */}
+      {showAddForm && (
+        <AddMedicineForm
+          onAdded={handleAdded}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
+
+      {/* Error */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-xl">
           <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {schedules.length === 0 ? (
-        <EmptyState
-          title="No medication schedules"
-          description="Create a medication schedule to get started."
-          action={{ label: 'Create Schedule', onClick: () => navigate('/medications/new') }}
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {schedules.map((schedule) => (
-            <ScheduleCard
-              key={schedule.scheduleId}
-              schedule={schedule}
-              medicationName={getMedicationName(schedule.medicationId)}
-              onLog={() => navigate('/medications/log', { state: { scheduleId: schedule.scheduleId } })}
-              onDelete={() => handleDelete(schedule.scheduleId)}
-            />
-          ))}
+      {/* Search */}
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
-      )}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearch}
+          placeholder="Search medicines..."
+          className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600
+                     rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50
+                     focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+        {isSearching && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="w-4 h-4 border-2 border-primary-300 border-t-primary-500 rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
 
-      <PermissionGate permission="medication.view_history">
-        <button onClick={() => navigate('/medications/history')} className="btn btn-ghost">
-          View Administration History →
-        </button>
-      </PermissionGate>
+      {/* Medicine grid */}
+      {filtered.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-4xl mb-3">💊</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-2">
+            {searchQuery ? `No medicines found for "${searchQuery}"` : 'No medicines in catalog yet.'}
+          </p>
+          <PermissionGate permission="medication.create_schedule">
+            <button onClick={() => setShowAddForm(true)}
+              className="btn btn-primary mt-3">
+              Add First Medicine
+            </button>
+          </PermissionGate>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            {filtered.length} medicine{filtered.length !== 1 ? 's' : ''} found
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((med) => (
+              <MedicineCard key={med.medicationId} medicine={med} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

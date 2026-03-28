@@ -47,10 +47,7 @@ public class AuthController extends BaseController {
     public ResponseEntity<?> getCurrentUser() {
         Long userId = loginUserUtil.getCurrentUserId();
         UserResponse response = authService.getCurrentUser(userId);
-        return successResponse(
-                "User details retrieved successfully",
-                response
-        );
+        return successResponse("User details retrieved successfully", response);
     }
 
     @PutMapping("/profile")
