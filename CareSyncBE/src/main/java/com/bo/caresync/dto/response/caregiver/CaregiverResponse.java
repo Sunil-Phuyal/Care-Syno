@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 /**
  * @author Sunil Phuyal
  * @version v1.0
@@ -25,4 +27,5 @@ public class CaregiverResponse {
     private String roleDisplayName;
     private String relationship;
     private Boolean isActive;
+    private LocalDateTime invitedAt;
 }

@@ -49,4 +49,10 @@ public class CaregiverController extends BaseController {
         caregiverService.grantPermission(request);
         return successResponse("Permission updated successfully", null);
     }
+
+    @PutMapping("/role")
+    public ResponseEntity<?> updateCaregiverRole(@RequestBody UpdateCaregiverRoleRequest request) {
+        CaregiverResponse response = caregiverService.updateCaregiverRole(request);
+        return successResponse("Caregiver role updated successfully", response);
+    }
 }

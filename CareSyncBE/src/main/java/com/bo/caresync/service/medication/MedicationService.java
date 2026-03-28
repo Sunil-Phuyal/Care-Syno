@@ -345,10 +345,8 @@ public class MedicationService {
 
         log.debug("{} Getting today's schedules for patientId={}", methodName, patientId);
 
-        // Check permission
         loginUserUtil.requirePermission(patientId, "medication.view");
 
-        // Get all active schedules
         List<MedicationSchedule> schedules = scheduleRepo
                 .findByPatientIdAndRecordStatus(patientId, AppConstants.RecordStatus.ACTIVE);
 
@@ -356,35 +354,38 @@ public class MedicationService {
         LocalDate today = LocalDate.now();
 
         for (MedicationSchedule schedule : schedules) {
-            // Skip if no time specified
             if (schedule.getTimeOfDay() == null) {
                 continue;
             }
 
-            // Check if schedule is active today
             if (schedule.getStartDate() != null && schedule.getStartDate().isAfter(today)) {
-                continue; // Hasn't started yet
+                continue;
             }
 
             if (schedule.getEndDate() != null && schedule.getEndDate().isBefore(today)) {
-                continue; // Already ended
+                continue;
             }
 
-            // Parse time
             LocalTime time = schedule.getTimeOfDay();
             LocalDateTime scheduledDateTime = today.atTime(time);
-
-            // Check if already administered
-            boolean administered = administrationRepo
-                    .existsByScheduleIdAndAdministeredAtBetween(
+            Optional<MedicationAdministration> adminRecord = administrationRepo
+                    .findFirstByScheduleIdAndAdministeredAtBetweenOrderByAdministeredAtDesc(
                             schedule.getScheduleId(),
                             scheduledDateTime.minusMinutes(30),
                             scheduledDateTime.plusMinutes(30)
                     );
 
-            // Get medication details
-            Medication medication = medicationRepo.findById(schedule.getMedicationId())
-                    .orElse(null);
+            boolean administered = adminRecord.isPresent();
+            String administeredByName = null;
+            LocalDateTime administeredAt = null;
+
+            if (adminRecord.isPresent()) {
+                User adminUser = userRepo.findById(adminRecord.get().getAdministeredBy()).orElse(null);
+                administeredByName = adminUser != null ? adminUser.getFullName() : "Unknown";
+                administeredAt = adminRecord.get().getAdministeredAt();
+            }
+
+            Medication medication = medicationRepo.findById(schedule.getMedicationId()).orElse(null);
 
             todaySchedules.add(TodayScheduleDTO.builder()
                     .scheduleId(schedule.getScheduleId())
@@ -395,10 +396,11 @@ public class MedicationService {
                     .isAdministered(administered)
                     .isPast(scheduledDateTime.isBefore(LocalDateTime.now()))
                     .instructions(schedule.getSpecialInstructions())
+                    .administeredBy(administeredByName)
+                    .administeredAt(administeredAt)
                     .build());
         }
 
-        // Sort by scheduled time
         todaySchedules.sort(Comparator.comparing(TodayScheduleDTO::getScheduledTime));
 
         log.info("{} Found {} schedules for today", methodName, todaySchedules.size());
