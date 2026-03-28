@@ -39,7 +39,7 @@ public class MedicationController extends BaseController {
 
     @GetMapping("/schedules/patient/{patientId}")
     public ResponseEntity<?> getPatientSchedules(@PathVariable Long patientId) {
-        List<MedicationSchedule> schedules = medicationService.getPatientSchedules(patientId);
+        List<MedicationScheduleResponse> schedules = medicationService.getPatientSchedules(patientId);
         return successResponse("Schedules retrieved successfully", schedules);
     }
 
