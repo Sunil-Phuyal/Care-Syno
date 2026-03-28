@@ -127,12 +127,12 @@ public class CaregiverService {
             caregiver.setFullName(request.getFullName());
             caregiver.setPasswordHash(passwordEncoder.encode(tempPassword));
             caregiver.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-
+            caregiver.setIsEmailVerified(false);
             caregiver = userRepo.save(caregiver);
 
             UserRole userRole = new UserRole();
             userRole.setUserId(caregiver.getUserId());
-            userRole.setRoleId(1L);
+            userRole.setRoleId(11113L);
             userRole.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
             userRoleRepo.save(userRole);
 
@@ -342,6 +342,7 @@ public class CaregiverService {
                 .roleDisplayName(role.getDisplayName())
                 .relationship(link.getRelationship())
                 .isActive(AppConstants.RecordStatus.ACTIVE.equals(link.getRecordStatus()))
+                .invitedAt(link.getCreatedAt())
                 .build();
     }
 }

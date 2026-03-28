@@ -14,7 +14,6 @@ import { Spinner } from '../../components/ui/Spinner';
 import { cn } from '../../utils/cn';
 import type { Medication, MedicationSchedule } from '../../types/medication.types';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const FREQUENCY_DEFAULTS: Record<string, string[]> = {
