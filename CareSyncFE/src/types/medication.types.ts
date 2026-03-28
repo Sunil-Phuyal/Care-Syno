@@ -3,7 +3,7 @@
 export interface Medication {
   medicationId: number;
   medicationName: string;
-  name?: string;               // alias for compatibility
+  name?: string;              
   genericName?: string;
   medicationClass?: string;
   description?: string;

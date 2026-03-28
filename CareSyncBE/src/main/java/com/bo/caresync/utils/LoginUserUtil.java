@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class LoginUserUtil {
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     private final PatientCaregiverRepository patientCaregiverRepo;
     private final PermissionService permissionService;

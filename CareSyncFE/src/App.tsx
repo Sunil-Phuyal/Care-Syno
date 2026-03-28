@@ -18,6 +18,7 @@ import { PatientDetail } from './pages/patients/PatientDetail';
 import { CreatePatient } from './pages/patients/CreatePatient';
 import { EditPatient } from './pages/patients/EditPatient';
 import { MedicationList } from './pages/medications/MedicationList';
+import { MedicationSchedules } from './pages/medications/MedicationSchedules';
 import { CreateSchedule } from './pages/medications/CreateSchedule';
 import { LogMedication } from './pages/medications/LogMedication';
 import { MedicationHistory } from './pages/medications/MedicationHistory';
@@ -42,38 +43,47 @@ function App() {
                   <Route path="/register" element={<Register />} />
 
                   {/* Protected routes */}
-                  <Route
-                    path="/*"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardLayout>
-                          <Routes>
-                            <Route path="dashboard"                  element={<Dashboard />} />
-                            <Route path="activity-log"               element={<ActivityLog />} />
-                            <Route path="schedule"                   element={<ScheduleManagement />} />
-                            <Route path="alerts"                     element={<Alerts />} />
-                            <Route path="settings"                   element={<Settings />} />
-                            <Route path="settings/notifications"     element={<NotificationSettings />} />
-                            <Route path="patients"                   element={<PatientList />} />
-                            <Route path="patients/new"               element={<CreatePatient />} />
-                            <Route path="patients/:id"               element={<PatientDetail />} />
-                            <Route path="patients/:id/edit"          element={<EditPatient />} />
-                            <Route path="medications"                element={<MedicationList />} />
-                            <Route path="medications/new"            element={<CreateSchedule />} />
-                            <Route path="medications/log"            element={<LogMedication />} />
-                            <Route path="medications/history"        element={<MedicationHistory />} />
-                            <Route path="caregivers"                 element={<CaregiverList />} />
-                            <Route path="caregivers/invite"          element={<InviteCaregiver />} />
-                            <Route path="caregivers/:id/permissions" element={<ManagePermissions />} />
-                            <Route path="reports/adherence"          element={<AdherenceReport />} />
-                            <Route path="reports/summary"            element={<PatientSummary />} />
-                            <Route path="/"  element={<Navigate to="/dashboard" replace />} />
-                            <Route path="*"  element={<Navigate to="/dashboard" replace />} />
-                          </Routes>
-                        </DashboardLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="/*" element={
+                    <ProtectedRoute>
+                      <DashboardLayout>
+                        <Routes>
+                          <Route path="dashboard"                  element={<Dashboard />} />
+                          <Route path="activity-log"               element={<ActivityLog />} />
+                          <Route path="schedule"                   element={<ScheduleManagement />} />
+                          <Route path="alerts"                     element={<Alerts />} />
+                          <Route path="settings"                   element={<Settings />} />
+                          <Route path="settings/notifications"     element={<NotificationSettings />} />
+
+                          {/* Patients */}
+                          <Route path="patients"                   element={<PatientList />} />
+                          <Route path="patients/new"               element={<CreatePatient />} />
+                          <Route path="patients/:id"               element={<PatientDetail />} />
+                          <Route path="patients/:id/edit"          element={<EditPatient />} />
+
+                          {/* Medications — catalog */}
+                          <Route path="medications"                element={<MedicationList />} />
+
+                          {/* Medications — schedules */}
+                          <Route path="medications/schedules"      element={<MedicationSchedules />} />
+                          <Route path="medications/new"            element={<CreateSchedule />} />
+                          <Route path="medications/log"            element={<LogMedication />} />
+                          <Route path="medications/history"        element={<MedicationHistory />} />
+
+                          {/* Caregivers */}
+                          <Route path="caregivers"                 element={<CaregiverList />} />
+                          <Route path="caregivers/invite"          element={<InviteCaregiver />} />
+                          <Route path="caregivers/:id/permissions" element={<ManagePermissions />} />
+
+                          {/* Reports */}
+                          <Route path="reports/adherence"          element={<AdherenceReport />} />
+                          <Route path="reports/summary"            element={<PatientSummary />} />
+
+                          <Route path="/"  element={<Navigate to="/dashboard" replace />} />
+                          <Route path="*"  element={<Navigate to="/dashboard" replace />} />
+                        </Routes>
+                      </DashboardLayout>
+                    </ProtectedRoute>
+                  } />
                 </Routes>
               </PatientProvider>
             </PermissionProvider>
