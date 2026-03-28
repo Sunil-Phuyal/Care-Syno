@@ -3,7 +3,7 @@
 export interface Medication {
   medicationId: number;
   medicationName: string;
-  name?: string;              
+  name?: string;
   genericName?: string;
   medicationClass?: string;
   description?: string;
@@ -64,8 +64,11 @@ export interface MedicationAdministration {
   medicationId: number;
   medicationName?: string;
   scheduleId?: number;
-  caregiverUserId: number;
+  // Backend returns these two field names — keep both for safety
+  caregiverUserId?: number;
+  administeredBy?: number;
   caregiverName?: string;
+  administeredByName?: string;
   scheduledTime?: string;
   actualTime: string;
   administeredAt?: string;
@@ -94,10 +97,25 @@ export interface TodayScheduleDTO {
   medicationId: number;
   medicationName: string;
   dosage: string;
-  scheduledTime: string;       // LocalDateTime serializes to ISO string
+  scheduledTime: string;
   isAdministered: boolean;
   isPast: boolean;
   instructions?: string;
   administeredBy?: string | null;
   administeredAt?: string | null;
+}
+
+// ── NEW ──────────────────────────────────────────────────────
+// Matches backend UpcomingMedicationDTO from MedicationService
+// getUpcomingMedications() — medications due in the next 2 hours
+// that have NOT been administered yet.
+export interface UpcomingMedicationDTO {
+  scheduleId: number;
+  medicationId: number;
+  medicationName: string;
+  dosage: string;
+  instructions?: string;
+  scheduledTime: string;      // ISO string from LocalDateTime
+  minutesUntilDue: number;    // negative = overdue
+  isOverdue: boolean;
 }

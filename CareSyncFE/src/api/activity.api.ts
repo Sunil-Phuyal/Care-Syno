@@ -1,51 +1,58 @@
 // src/api/activity.api.ts
-//
-// Activity log API — new file, your backend needs to implement these endpoints.
 
 import { api } from '../lib/axios';
 import type { ApiResponse } from '../types/common.types';
 
-// ── Types ──────────────────────────────────────────────
-export interface Activity {
-  id: number;
-  type: 'medication' | 'appointment' | 'note' | 'alert' | 'vitals';
-  description: string;
-  patientName?: string;
-  performedBy: string;
-  createdAt: string;
-  status?: 'completed' | 'pending' | 'missed';
+// ─────────────────────────────────────────────────────────────
+// ActivityDTO — matches backend ActivityService.toActivityDTO()
+// Field names must match exactly what the backend builder sets.
+//
+// Backend fields:
+//   activityId, activityType, description, performedByName,
+//   performedByEmail, patientName, patientId, timestamp,
+//   icon, color
+// ─────────────────────────────────────────────────────────────
+export interface ActivityDTO {
+  activityId:        number;
+  activityType:      string;   // e.g. "MEDICATION_ADMINISTERED", "MEDICATION_MISSED"
+  description:       string;
+  performedByName:   string;
+  performedByEmail:  string;
+  patientName:       string;
+  patientId:         number;
+  timestamp:         string;   // ISO string from LocalDateTime
+  icon:              string;
+  color:             'success' | 'warning' | 'error' | 'info';
 }
 
-export interface ActivityFilters {
-  type?: Activity['type'];
-  patientId?: number;
-  from?: string;
-  to?: string;
-  page?: number;
-  limit?: number;
-}
-
-// ── API Functions ──────────────────────────────────────
-
+// ─────────────────────────────────────────────────────────────
+// API functions — params match backend controller exactly
+//
+// Backend endpoints:
+//   GET /api/v1/activity/recent?limit=20
+//   GET /api/v1/activity?patientId=X&limit=50
+// ─────────────────────────────────────────────────────────────
 export const activityApi = {
 
   /**
-   * Get activity log with optional filters
-   * GET /api/v1/activity
+   * Get recent activity across all patients this caregiver manages.
+   * GET /api/v1/activity/recent?limit={limit}
    */
-  getActivity: async (filters?: ActivityFilters): Promise<Activity[]> => {
-    const response = await api.get<ApiResponse<Activity[]>>('/activity', {
-      params: filters,
+  getRecentActivity: async (limit = 20): Promise<ActivityDTO[]> => {
+    const response = await api.get<ApiResponse<ActivityDTO[]>>('/activity/recent', {
+      params: { limit },
     });
     return response.data.apiResponseData.responseData;
   },
 
   /**
-   * Get recent activity (last 10) for dashboard
-   * GET /api/v1/activity/recent
+   * Get activity for a specific patient.
+   * GET /api/v1/activity?patientId={patientId}&limit={limit}
    */
-  getRecentActivity: async (): Promise<Activity[]> => {
-    const response = await api.get<ApiResponse<Activity[]>>('/activity/recent');
+  getPatientActivity: async (patientId: number, limit = 50): Promise<ActivityDTO[]> => {
+    const response = await api.get<ApiResponse<ActivityDTO[]>>('/activity', {
+      params: { patientId, limit },
+    });
     return response.data.apiResponseData.responseData;
   },
 };
