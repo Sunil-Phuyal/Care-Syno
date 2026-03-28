@@ -88,3 +88,16 @@ export interface LogMedicationRequest {
   sideEffects?: string;
   proofImageUrl?: string;
 }
+
+export interface TodayScheduleDTO {
+  scheduleId: number;
+  medicationId: number;
+  medicationName: string;
+  dosage: string;
+  scheduledTime: string;       // LocalDateTime serializes to ISO string
+  isAdministered: boolean;
+  isPast: boolean;
+  instructions?: string;
+  administeredBy?: string | null;
+  administeredAt?: string | null;
+}
