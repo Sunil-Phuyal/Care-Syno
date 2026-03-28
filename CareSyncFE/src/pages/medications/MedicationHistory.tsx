@@ -1,5 +1,4 @@
 // src/pages/medications/MedicationHistory.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { medicationApi } from '../../api/medication.api';
@@ -17,7 +16,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: string; style: string
   REFUSED:      { label: 'Refused',      icon: '🚫', style: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
 };
 
-function HistoryRow({ record }: { record: MedicationAdministration }) {
+function HistoryRow({ record, patientName }: { record: MedicationAdministration; patientName: string }) {
   const [showPhoto, setShowPhoto] = useState(false);
   const config = STATUS_CONFIG[record.status] ?? STATUS_CONFIG.ADMINISTERED;
   const time = record.administeredAt ?? record.actualTime;
@@ -36,11 +35,17 @@ function HistoryRow({ record }: { record: MedicationAdministration }) {
                 {config.label}
               </span>
             </div>
+
+            {/* ── Patient name on every record — critical for multi-patient caregivers ── */}
+            <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
+              👤 {patientName}
+            </p>
+
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {record.dosageGiven} ·{' '}
               <span className="text-gray-600 dark:text-gray-300">
-                by {record.caregiverName ?? `Caregiver #${record.caregiverUserId}`}
-              </span>
+  by {record.caregiverName ?? `Caregiver #${record.caregiverUserId}`}
+</span>
             </p>
             {record.notes && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 italic">
@@ -53,14 +58,19 @@ function HistoryRow({ record }: { record: MedicationAdministration }) {
               </p>
             )}
             {record.proofImageUrl && (
-              <button onClick={() => setShowPhoto(!showPhoto)}
-                className="text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline mt-1">
+              <button
+                onClick={() => setShowPhoto(!showPhoto)}
+                className="text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline mt-1"
+              >
                 {showPhoto ? 'Hide proof photo' : '📷 View proof photo'}
               </button>
             )}
             {showPhoto && record.proofImageUrl && (
-              <img src={record.proofImageUrl} alt="Proof"
-                className="mt-2 rounded-xl max-w-[200px] border border-gray-200 dark:border-gray-600" />
+              <img
+                src={record.proofImageUrl}
+                alt="Proof"
+                className="mt-2 rounded-xl max-w-[200px] border border-gray-200 dark:border-gray-600"
+              />
             )}
           </div>
         </div>
@@ -72,7 +82,6 @@ function HistoryRow({ record }: { record: MedicationAdministration }) {
   );
 }
 
-// Group records by date
 function groupByDate(records: MedicationAdministration[]) {
   const groups: Record<string, MedicationAdministration[]> = {};
   records.forEach((r) => {
@@ -88,10 +97,10 @@ function groupByDate(records: MedicationAdministration[]) {
 export function MedicationHistory() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
-  const [history, setHistory]   = useState<MedicationAdministration[]>([]);
+  const [history, setHistory] = useState<MedicationAdministration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]       = useState('');
-  const [filter, setFilter]     = useState<string>('ALL');
+  const [error, setError] = useState('');
+  const [filter, setFilter] = useState<string>('ALL');
 
   useEffect(() => {
     if (!selectedPatient) return;
@@ -132,22 +141,27 @@ export function MedicationHistory() {
   }
 
   const filtered = filter === 'ALL' ? history : history.filter((r) => r.status === filter);
-  const grouped  = groupByDate(filtered);
+  const grouped = groupByDate(filtered);
 
   return (
     <div className="space-y-6">
-
       <div>
-        <button onClick={() => navigate('/medications')}
-          className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400
-                     hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors">
+        <button
+          onClick={() => navigate('/medications')}
+          className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium mb-3 transition-colors"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back to Medications
         </button>
         <h1 className="page-title">Medication History</h1>
-        <p className="page-subtitle">Administration history for {selectedPatient.fullName}</p>
+        <p className="page-subtitle">
+          Administration history for{' '}
+          <span className="font-semibold text-primary-600 dark:text-primary-400">
+            {selectedPatient.fullName}
+          </span>
+        </p>
       </div>
 
       {error && (
@@ -156,17 +170,19 @@ export function MedicationHistory() {
         </div>
       )}
 
-      {/* Filter tabs */}
       {history.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           {['ALL', 'ADMINISTERED', 'SKIPPED', 'MISSED', 'REFUSED'].map((status) => (
-            <button key={status} onClick={() => setFilter(status)}
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
               className={cn(
                 'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
                 filter === status
                   ? 'bg-primary-500 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              )}>
+              )}
+            >
               {status === 'ALL' ? 'All' : STATUS_CONFIG[status]?.label}
             </button>
           ))}
@@ -188,7 +204,11 @@ export function MedicationHistory() {
               </p>
               <div className="card divide-y divide-gray-100 dark:divide-gray-700">
                 {records.map((record) => (
-                  <HistoryRow key={record.administrationId} record={record} />
+                  <HistoryRow
+                    key={record.administrationId}
+                    record={record}
+                    patientName={selectedPatient.fullName}
+                  />
                 ))}
               </div>
             </div>
