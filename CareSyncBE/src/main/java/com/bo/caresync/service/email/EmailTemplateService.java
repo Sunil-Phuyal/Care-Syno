@@ -209,49 +209,73 @@ public class EmailTemplateService {
             """, fullName, frontendUrl, resetToken);
     }
 
-    /**
-     * Medication reminder email template
-     */
-    public String getMedicationReminderBody(String caregiverName,
-                                            String patientName,
-                                            String medicationName,
-                                            String dosage,
-                                            LocalDateTime scheduledTime,
-                                            int minutesUntilDue,
-                                            String instructions) {
-
+    public String getMedicationReminderBody(
+            String caregiverName,
+            String patientName,
+            String medicationName,
+            String dosage,
+            LocalDateTime scheduledTime,
+            int minutesUntilDue,
+            String instructions,
+            String windowKey  // ← ADD THIS: "30MIN", "5MIN", or "NOW"
+    ) {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
         String timeStr = scheduledTime.format(timeFormatter);
 
         StringBuilder body = new StringBuilder();
         body.append("Dear ").append(caregiverName).append(",\n\n");
 
-        if (minutesUntilDue > 0) {
-            body.append(" UPCOMING MEDICATION REMINDER\n\n");
-            body.append("This is a reminder that ").append(patientName)
-                    .append(" has a medication due in ").append(minutesUntilDue)
-                    .append(" minutes.\n\n");
-        } else {
-            body.append(" OVERDUE MEDICATION ALERT\n\n");
-            body.append("This is a reminder that ").append(patientName)
-                    .append(" has a medication that is overdue.\n\n");
+        // ── Header changes based on which window fired ──
+        switch (windowKey) {
+            case "30MIN" -> {
+                body.append("⏰ UPCOMING MEDICATION REMINDER\n\n");
+                body.append(patientName)
+                        .append(" has a medication due in approximately 30 minutes.\n\n");
+            }
+            case "5MIN" -> {
+                body.append("⚡ MEDICATION DUE VERY SOON\n\n");
+                body.append(patientName)
+                        .append(" needs their medication in about 5 minutes. Please prepare now.\n\n");
+            }
+            case "NOW" -> {
+                body.append("🔴 TIME TO GIVE MEDICATION NOW\n\n");
+                body.append("It is time to administer ")
+                        .append(patientName)
+                        .append("'s medication immediately.\n\n");
+            }
+            default -> {
+                body.append("⏰ MEDICATION REMINDER\n\n");
+                body.append(patientName)
+                        .append(" has a medication due in ")
+                        .append(minutesUntilDue)
+                        .append(" minutes.\n\n");
+            }
         }
 
+        // ── Medication details block (unchanged) ──
         body.append("Medication Details:\n");
         body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        body.append("Patient: ").append(patientName).append("\n");
-        body.append("Medication: ").append(medicationName).append("\n");
-        body.append("Dosage: ").append(dosage).append("\n");
-        body.append("Scheduled Time: ").append(timeStr).append("\n");
+        body.append("Patient:          ").append(patientName).append("\n");
+        body.append("Medication:       ").append(medicationName).append("\n");
+        body.append("Dosage:           ").append(dosage).append("\n");
+        body.append("Scheduled Time:   ").append(timeStr).append("\n");
 
         if (instructions != null && !instructions.isEmpty()) {
-            body.append("Instructions: ").append(instructions).append("\n");
+            body.append("Instructions:     ").append(instructions).append("\n");
         }
 
         body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
 
-        body.append("Please ensure the medication is administered as scheduled.\n\n");
-        body.append("Log into CareSync to record the administration:\n");
+        // ── Call to action changes based on urgency ──
+        if ("NOW".equals(windowKey)) {
+            body.append("⚠️  Please administer the medication immediately and log it in CareSync.\n\n");
+        } else if ("5MIN".equals(windowKey)) {
+            body.append("Please get the medication ready now and log it once administered.\n\n");
+        } else {
+            body.append("Please ensure the medication is administered as scheduled.\n\n");
+        }
+
+        body.append("Log the administration here:\n");
         body.append(frontendUrl).append("/medications/log\n\n");
 
         body.append("Best regards,\n");

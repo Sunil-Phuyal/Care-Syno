@@ -1,161 +1,117 @@
-// src/pages/ActivityLog.tsx
+// src/pages/activity/ActivityLog.tsx
 
 import { useState, useEffect } from 'react';
 import { activityApi } from '../../api/activity.api';
-import { Card } from '../../components/ui/Card';
+import type { ActivityDTO } from '../../api/activity.api';
+import { usePatient } from '../../context/PatientContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { Avatar } from '../../components/ui/Avatar';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Spinner } from '../../components/ui/Spinner';
 import { cn } from '../../utils/cn';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type ActivityType = 'ALL' | 'MEDICATION' | 'APPOINTMENT' | 'NOTE' | 'ALERT' | 'CAREGIVER';
-type ActivityStatus = 'ADMINISTERED' | 'SKIPPED' | 'OVERDUE' | 'PENDING' | 'COMPLETED' | 'INFO';
+// ─────────────────────────────────────────────────────────────
+// Derive a display "type" from backend activityType string
+// e.g. "MEDICATION_ADMINISTERED" → "MEDICATION"
+// ─────────────────────────────────────────────────────────────
+type DisplayType = 'ALL' | 'MEDICATION';
 
-interface Activity {
-  id: string;
-  type: Exclude<ActivityType, 'ALL'>;
-  title: string;
-  description: string;
-  status: ActivityStatus;
-  user: string;
-  timestamp: string;
-  date: string;
-  patient: string;
+function getDisplayType(activityType: string): Exclude<DisplayType, 'ALL'> {
+  if (activityType.startsWith('MEDICATION')) return 'MEDICATION';
+  return 'MEDICATION'; // currently backend only returns medication activities
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-const TYPE_FILTERS: { label: string; value: ActivityType }[] = [
-  { label: 'All Activity',  value: 'ALL' },
-  { label: 'Medications',   value: 'MEDICATION' },
-  { label: 'Appointments',  value: 'APPOINTMENT' },
-  { label: 'Notes',         value: 'NOTE' },
-  { label: 'Alerts',        value: 'ALERT' },
-  { label: 'Caregiver',     value: 'CAREGIVER' },
-];
-
-const TYPE_ICONS: Record<Exclude<ActivityType, 'ALL'>, string> = {
-  MEDICATION:  '💊',
-  APPOINTMENT: '📅',
-  NOTE:        '📝',
-  ALERT:       '⚠️',
-  CAREGIVER:   '👥',
+// ─────────────────────────────────────────────────────────────
+// Color config using system tokens only (no orange, purple, blue
+// that aren't in tailwind config)
+// ─────────────────────────────────────────────────────────────
+const COLOR_CONFIG: Record<ActivityDTO['color'], {
+  bar: string;
+  badge: string;
+  badgeText: string;
+}> = {
+  success: {
+    bar:       'bg-success-500',
+    badge:     'bg-success-100 dark:bg-success-900',
+    badgeText: 'text-success-700 dark:text-success-300',
+  },
+  warning: {
+    bar:       'bg-warning-500',
+    badge:     'bg-warning-100 dark:bg-warning-900',
+    badgeText: 'text-warning-700 dark:text-warning-300',
+  },
+  error: {
+    bar:       'bg-error-500',
+    badge:     'bg-error-100 dark:bg-error-900',
+    badgeText: 'text-error-700 dark:text-error-300',
+  },
+  info: {
+    bar:       'bg-primary-400',
+    badge:     'bg-primary-100 dark:bg-primary-900',
+    badgeText: 'text-primary-700 dark:text-primary-300',
+  },
 };
 
-// Solid colors — no opacity tricks that break in @apply
-const TYPE_COLORS: Record<Exclude<ActivityType, 'ALL'>, string> = {
-  MEDICATION:  'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300',
-  APPOINTMENT: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
-  NOTE:        'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
-  ALERT:       'bg-error-100 dark:bg-error-900 text-error-700 dark:text-error-300',
-  CAREGIVER:   'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
-};
+// Friendly label from activityType
+// "MEDICATION_ADMINISTERED" → "Administered"
+// "MEDICATION_MISSED"       → "Missed"
+function getActivityLabel(activityType: string): string {
+  const suffix = activityType.split('_').slice(1).join(' ');
+  if (!suffix) return activityType;
+  return suffix.charAt(0).toUpperCase() + suffix.slice(1).toLowerCase();
+}
 
-const STATUS_BADGE: Record<ActivityStatus, { label: string; className: string }> = {
-  ADMINISTERED: { label: 'Administered', className: 'bg-success-100 text-success-700 dark:bg-success-800 dark:text-success-100' },
-  SKIPPED:      { label: 'Skipped',      className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
-  OVERDUE:      { label: 'Overdue',      className: 'bg-error-100 text-error-700 dark:bg-error-800 dark:text-error-100' },
-  PENDING:      { label: 'Pending',      className: 'bg-warning-100 text-warning-700 dark:bg-warning-800 dark:text-warning-100' },
-  COMPLETED:    { label: 'Completed',    className: 'bg-success-100 text-success-700 dark:bg-success-800 dark:text-success-100' },
-  INFO:         { label: 'Info',         className: 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100' },
-};
-
-// ─── Map API response to our Activity shape ───────────────────────────────────
-// Your backend returns activity.type as lowercase — we uppercase it to match our types
-function mapApiActivity(item: any): Activity {
-  const typeMap: Record<string, Exclude<ActivityType, 'ALL'>> = {
-    medication:  'MEDICATION',
-    appointment: 'APPOINTMENT',
-    note:        'NOTE',
-    alert:       'ALERT',
-    vitals:      'NOTE',       // vitals shows as note
-  };
-
-  const statusMap: Record<string, ActivityStatus> = {
-    completed:  'COMPLETED',
-    pending:    'PENDING',
-    missed:     'OVERDUE',
-    ADMINISTERED: 'ADMINISTERED',
-    SKIPPED:    'SKIPPED',
-    OVERDUE:    'OVERDUE',
-    PENDING:    'PENDING',
-    COMPLETED:  'COMPLETED',
-    INFO:       'INFO',
-  };
-
-  // Format date for grouping
-  const createdAt = new Date(item.createdAt);
-  const today = new Date();
+// Format timestamp for grouping
+function getDateLabel(isoString: string): string {
+  const date      = new Date(isoString);
+  const today     = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
 
-  let dateLabel = 'Earlier';
-  if (createdAt.toDateString() === today.toDateString()) {
-    dateLabel = 'Today';
-  } else if (createdAt.toDateString() === yesterday.toDateString()) {
-    dateLabel = 'Yesterday';
-  } else {
-    dateLabel = createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  return {
-    id:          String(item.id),
-    type:        typeMap[item.type?.toLowerCase()] ?? 'NOTE',
-    title:       item.description ?? 'Activity',
-    description: item.description ?? '',
-    status:      statusMap[item.status] ?? 'INFO',
-    user:        item.performedBy ?? 'System',
-    timestamp:   createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-    date:        dateLabel,
-    patient:     item.patientName ?? '',
-  };
+  if (date.toDateString() === today.toDateString())     return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// ─── Activity Row ─────────────────────────────────────────────────────────────
-function ActivityRow({ activity }: { activity: Activity }) {
-  const badge = STATUS_BADGE[activity.status];
+// ─────────────────────────────────────────────────────────────
+// Single activity row
+// ─────────────────────────────────────────────────────────────
+function ActivityRow({ item }: { item: ActivityDTO }) {
+  const cfg   = COLOR_CONFIG[item.color] ?? COLOR_CONFIG.info;
+  const label = getActivityLabel(item.activityType);
+  const time  = new Date(item.timestamp).toLocaleTimeString([], {
+    hour: '2-digit', minute: '2-digit',
+  });
 
   return (
-    <div className="flex items-start gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30
-                    rounded-xl transition-colors">
-      {/* Type icon */}
-      <div className={cn(
-        'w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0',
-        TYPE_COLORS[activity.type]
-      )}>
-        {TYPE_ICONS[activity.type]}
-      </div>
+    <div className="relative flex items-start gap-4 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-xl transition-colors overflow-hidden">
+      {/* Left color bar */}
+      <div className={cn('absolute left-0 top-2 bottom-2 w-0.5 rounded-full', cfg.bar)} />
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-              {activity.title}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {activity.description}
-            </p>
-          </div>
-          {/* Status badge */}
-          <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium flex-shrink-0', badge.className)}>
-            {badge.label}
+      <div className="flex-1 min-w-0 pl-3">
+        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-md', cfg.badge, cfg.badgeText)}>
+            {label}
           </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">{time}</span>
         </div>
 
-        {/* Meta row */}
-        <div className="flex items-center gap-2 mt-2">
-          <Avatar fallback={activity.user} size="xs" />
-          <span className="text-xs text-gray-500 dark:text-gray-400">{activity.user}</span>
-          <span className="text-xs text-gray-300 dark:text-gray-600">·</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{activity.timestamp}</span>
-          {activity.patient && (
+        <p className="text-sm text-gray-700 dark:text-gray-200 leading-snug">
+          {item.description}
+        </p>
+
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            by <span className="font-medium text-gray-700 dark:text-gray-300">{item.performedByName}</span>
+          </span>
+          {item.patientName && (
             <>
               <span className="text-xs text-gray-300 dark:text-gray-600">·</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">{activity.patient}</span>
+              <span className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                {item.patientName}
+              </span>
             </>
           )}
         </div>
@@ -164,42 +120,55 @@ function ActivityRow({ activity }: { activity: Activity }) {
   );
 }
 
-// ─── Date Group ───────────────────────────────────────────────────────────────
-function DateGroup({ date, activities }: { date: string; activities: Activity[] }) {
+// ─────────────────────────────────────────────────────────────
+// Date group
+// ─────────────────────────────────────────────────────────────
+function DateGroup({ date, items }: { date: string; items: ActivityDTO[] }) {
   return (
     <div>
-      {/* Sticky date label */}
       <div className="sticky top-0 bg-gray-50 dark:bg-gray-900 py-2 px-1 z-10">
         <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           {date}
         </span>
       </div>
-      <Card className="divide-y divide-gray-100 dark:divide-gray-700/50 p-0 overflow-hidden">
-        {activities.map((a) => (
-          <ActivityRow key={a.id} activity={a} />
+      <div className="card divide-y divide-gray-100 dark:divide-gray-700/50 p-2">
+        {items.map((item) => (
+          <ActivityRow key={item.activityId} item={item} />
         ))}
-      </Card>
+      </div>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────────────────────
 export function ActivityLog() {
-  const [activities, setActivities]   = useState<Activity[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
-  const [error, setError]             = useState('');
-  const [search, setSearch]           = useState('');
-  const [typeFilter, setTypeFilter]   = useState<ActivityType>('ALL');
-  const [dateFilter, setDateFilter]   = useState('all');
+  const { selectedPatient } = usePatient();
 
-  // Load from API
+  const [activities, setActivities] = useState<ActivityDTO[]>([]);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [error, setError]           = useState('');
+  const [search, setSearch]         = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [colorFilter, setColorFilter] = useState<'ALL' | ActivityDTO['color']>('ALL');
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       setError('');
       try {
-        const data = await activityApi.getActivity();
-        setActivities(data.map(mapApiActivity));
+        let data: ActivityDTO[];
+
+        if (selectedPatient) {
+          // Specific patient — use patientActivity endpoint
+          data = await activityApi.getPatientActivity(selectedPatient.patientId, 50);
+        } else {
+          // No patient selected — load recent across all patients
+          data = await activityApi.getRecentActivity(20);
+        }
+
+        setActivities(data);
       } catch {
         setError('Could not load activity log. Please refresh.');
       } finally {
@@ -207,27 +176,34 @@ export function ActivityLog() {
       }
     };
     load();
-  }, []);
+  }, [selectedPatient]);
 
-  // Filter activities
+  // ── Filtering ──
   const filtered = activities.filter((a) => {
-    const matchesType   = typeFilter === 'ALL' || a.type === typeFilter;
     const matchesSearch = !search
-      || a.title.toLowerCase().includes(search.toLowerCase())
-      || a.description.toLowerCase().includes(search.toLowerCase());
+      || a.description.toLowerCase().includes(search.toLowerCase())
+      || a.performedByName.toLowerCase().includes(search.toLowerCase())
+      || a.patientName?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesColor = colorFilter === 'ALL' || a.color === colorFilter;
+
+    const dateLabel = getDateLabel(a.timestamp).toLowerCase();
     const matchesDate = dateFilter === 'all'
-      || a.date.toLowerCase().includes(dateFilter.toLowerCase());
-    return matchesType && matchesSearch && matchesDate;
+      || (dateFilter === 'today'     && dateLabel === 'today')
+      || (dateFilter === 'yesterday' && dateLabel === 'yesterday');
+
+    return matchesSearch && matchesColor && matchesDate;
   });
 
-  // Group by date
-  const grouped = filtered.reduce<Record<string, Activity[]>>((acc, a) => {
-    if (!acc[a.date]) acc[a.date] = [];
-    acc[a.date].push(a);
+  // ── Group by date ──
+  const grouped = filtered.reduce<Record<string, ActivityDTO[]>>((acc, a) => {
+    const label = getDateLabel(a.timestamp);
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(a);
     return acc;
   }, {});
 
-  const dateOrder = ['Today', 'Yesterday'];
+  const dateOrder   = ['Today', 'Yesterday'];
   const sortedDates = Object.keys(grouped).sort((a, b) => {
     const ai = dateOrder.indexOf(a);
     const bi = dateOrder.indexOf(b);
@@ -237,19 +213,24 @@ export function ActivityLog() {
     return 0;
   });
 
-  // Export to CSV — simple version
+  // ── CSV export ──
   const handleExport = () => {
     const rows = [
-      ['Date', 'Time', 'Type', 'Title', 'Description', 'Status', 'User', 'Patient'],
-      ...filtered.map((a) => [a.date, a.timestamp, a.type, a.title, a.description, a.status, a.user, a.patient]),
+      ['Date', 'Time', 'Type', 'Description', 'Performed By', 'Patient'],
+      ...filtered.map((a) => [
+        getDateLabel(a.timestamp),
+        new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        a.activityType,
+        a.description,
+        a.performedByName,
+        a.patientName,
+      ]),
     ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
+    const csv  = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href     = url;
-    link.download = 'activity-log.csv';
-    link.click();
+    link.href = url; link.download = 'activity-log.csv'; link.click();
     URL.revokeObjectURL(url);
   };
 
@@ -271,9 +252,14 @@ export function ActivityLog() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">Activity Log</h1>
-          <p className="page-subtitle">Complete history of all care activities</p>
+          <p className="page-subtitle">
+            {selectedPatient
+              ? <>Care history for <span className="font-semibold text-primary-600 dark:text-primary-400">{selectedPatient.fullName}</span></>
+              : 'Recent activity across all patients'
+            }
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExport}>
+        <Button variant="secondary" size="sm" onClick={handleExport}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -282,93 +268,82 @@ export function ActivityLog() {
         </Button>
       </div>
 
-      {/* Error banner */}
+      {/* Error */}
       {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20
-                        border border-red-200 dark:border-red-800 rounded-xl">
-          <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+        <div className="flex items-center justify-between gap-3 p-4 bg-error-50 dark:bg-error-900 border border-error-200 dark:border-error-800 rounded-xl">
+          <p className="text-sm text-error-700 dark:text-error-300">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn btn-secondary btn-sm"
+          >
+            Refresh
+          </button>
         </div>
       )}
 
-      {/* Search + Date filter */}
+      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="Search activities..."
+          placeholder="Search by description, caregiver, or patient..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          leftIcon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          }
-          className="sm:w-64"
+          className="sm:flex-1"
         />
         <Select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="sm:w-40"
+          className="sm:w-36"
         >
           <option value="all">All Dates</option>
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>
         </Select>
+        <Select
+          value={colorFilter}
+          onChange={(e) => setColorFilter(e.target.value as any)}
+          className="sm:w-40"
+        >
+          <option value="ALL">All Status</option>
+          <option value="success">Administered</option>
+          <option value="warning">Skipped</option>
+          <option value="error">Missed / Refused</option>
+          <option value="info">Other</option>
+        </Select>
       </div>
 
-      {/* Type filter tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {TYPE_FILTERS.map((f) => (
+      {/* Result count + clear */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Showing{' '}
+          <span className="font-semibold text-gray-900 dark:text-gray-50">{filtered.length}</span>
+          {' '}of{' '}
+          <span className="font-semibold text-gray-900 dark:text-gray-50">{activities.length}</span>
+          {' '}activities
+        </p>
+        {(search || dateFilter !== 'all' || colorFilter !== 'ALL') && (
           <button
-            key={f.value}
-            onClick={() => setTypeFilter(f.value)}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
-              typeFilter === f.value
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700'
-            )}
+            onClick={() => { setSearch(''); setDateFilter('all'); setColorFilter('ALL'); }}
+            className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium"
           >
-            {f.label}
-            {f.value !== 'ALL' && (
-              <span className="ml-1.5 text-xs opacity-70">
-                {activities.filter((a) => a.type === f.value).length}
-              </span>
-            )}
+            Clear filters
           </button>
-        ))}
+        )}
       </div>
 
-      {/* Result count */}
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Showing{' '}
-        <span className="font-semibold text-gray-900 dark:text-gray-50">{filtered.length}</span>
-        {' '}activities
-      </p>
-
-      {/* Activity list grouped by date */}
+      {/* Activity list */}
       {filtered.length === 0 ? (
         <EmptyState
-          icon={
-            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          }
           title="No activities found"
-          description="Try adjusting your filters to find what you're looking for."
+          description="Try adjusting your filters to find what you are looking for."
           action={{
             label: 'Clear filters',
-            onClick: () => { setSearch(''); setTypeFilter('ALL'); setDateFilter('all'); },
+            onClick: () => { setSearch(''); setDateFilter('all'); setColorFilter('ALL'); },
           }}
         />
       ) : (
         <div className="space-y-4">
           {sortedDates.map((date) => (
-            <DateGroup key={date} date={date} activities={grouped[date]} />
+            <DateGroup key={date} date={date} items={grouped[date]} />
           ))}
         </div>
       )}

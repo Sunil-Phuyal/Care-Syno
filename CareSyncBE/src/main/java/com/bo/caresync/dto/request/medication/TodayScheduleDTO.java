@@ -27,4 +27,6 @@ public class TodayScheduleDTO {
     private Boolean isAdministered;
     private Boolean isPast;
     private String instructions;
+    private String administeredBy;
+    private LocalDateTime administeredAt;
 }

@@ -8,6 +8,7 @@ import type {
   AddMedicationRequest,
   MedicationAdministration,
   LogMedicationRequest,
+  TodayScheduleDTO,
 } from '../types/medication.types';
 import type { ApiResponse } from '../types/common.types';
 
@@ -46,8 +47,8 @@ export const medicationApi = {
    * Get today's medication schedules for a patient
    * GET /api/v1/medications/schedules/today?patientId={patientId}
    */
-  getTodaysSchedule: async (patientId: number): Promise<MedicationSchedule[]> => {
-    const response = await api.get<ApiResponse<MedicationSchedule[]>>(
+  getTodaysSchedule: async (patientId: number): Promise<TodayScheduleDTO[]> => {
+    const response = await api.get<ApiResponse<TodayScheduleDTO[]>>(
       '/medications/schedules/today',
       { params: { patientId } }
     );
