@@ -1,138 +1,181 @@
-  // src/pages/patients/PatientList.tsx
+// src/pages/patients/PatientList.tsx
 
-  import { useNavigate } from 'react-router-dom';
-  import { usePatient } from '../../context/PatientContext';
-  import { PermissionGate } from '../../components/common/PermissionGate';
-  import { Spinner } from '../../components/ui/Spinner';
-  import { EmptyState } from '../../components/ui/EmptyState';
-  import { formatters } from '../../utils/formatters';
-  import type { Patient } from '../../types/patient.types';
+import { useNavigate } from 'react-router-dom';
+import { usePatient } from '../../context/PatientContext';
+import { PermissionGate } from '../../components/common/PermissionGate';
+import { Spinner } from '../../components/ui/Spinner';
+import { formatters } from '../../utils/formatters';
+import { cn } from '../../utils/cn';
+import type { Patient } from '../../types/patient.types';
 
-  // ─── Patient Card ─────────────────────────────────────────────────────────────
-  function PatientCard({ patient, onClick, onEdit }: {
-    patient: Patient;
-    onClick: () => void;
-    onEdit: (e: React.MouseEvent) => void;
-  }) {
-    return (
-      <div
-        onClick={onClick}
-        className="card hover:shadow-md hover:border-primary-200 dark:hover:border-primary-700
-                  transition-all cursor-pointer group"
-      >
-        {/* Avatar + name */}
-        <div className="flex items-start gap-4 mb-4">
-          <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900 rounded-full
-                          flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">{patient.gender === 'MALE' ? '👴' : '👵'}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-50 truncate">
-              {patient.fullName}
-            </h3>
-            {patient.age && (
-              <p className="text-sm text-gray-500 dark:text-gray-400">{patient.age} years old</p>
-            )}
-            {patient.dateOfBirth && (
-              <p className="text-xs text-gray-400 dark:text-gray-500">
-                Born: {formatters.date(patient.dateOfBirth)}
-              </p>
-            )}
-          </div>
-        </div>
+// ── Avatar initials ───────────────────────────────────────────────────────────
+function Avatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  return (
+    <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/60 flex items-center justify-center shrink-0">
+      <span className="text-xs font-medium text-primary-700 dark:text-primary-300">
+        {initials}
+      </span>
+    </div>
+  );
+}
 
-        {/* Contact info */}
-        <div className="space-y-1.5 text-sm mb-4">
-          {patient.phoneNumber && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <span>📞</span>
-              <span>{patient.phoneNumber}</span>
-            </div>
-          )}
-          {patient.emergencyContactName && (
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <span>🚨</span>
-              <span>{patient.emergencyContactName}</span>
-            </div>
+// ── Single row ────────────────────────────────────────────────────────────────
+function PatientRow({ patient, onClick, onEdit }: {
+  patient: Patient;
+  onClick: () => void;
+  onEdit: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="grid grid-cols-[2fr_1fr_1fr_120px] items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0 cursor-pointer"
+    >
+      {/* Name + avatar */}
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar name={patient.fullName} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+            {patient.fullName}
+          </p>
+          {patient.dateOfBirth && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Born {formatters.date(patient.dateOfBirth)}
+            </p>
           )}
         </div>
+      </div>
 
-        {/* Action buttons */}
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-700 flex gap-2">
+      {/* Age + gender */}
+      <div>
+        {patient.age ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {patient.age} yrs
+            <span className="text-gray-300 dark:text-gray-600 mx-1.5">·</span>
+            <span className="capitalize">{patient.gender?.toLowerCase() ?? '—'}</span>
+          </p>
+        ) : (
+          <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
+        )}
+      </div>
+
+      {/* Phone */}
+      <div>
+        {patient.phoneNumber ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">{patient.phoneNumber}</p>
+        ) : (
+          <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onClick}
+          className="text-xs font-medium px-2.5 py-1 rounded-md border border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors whitespace-nowrap"
+        >
+          View
+        </button>
+        <PermissionGate permission="patient.edit">
           <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            className="btn btn-primary btn-sm flex-1"
+            onClick={onEdit}
+            className="text-xs font-medium px-2.5 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            View Details
+            Edit
           </button>
-          <PermissionGate permission="patient.edit">
-            <button
-              onClick={onEdit}
-              className="btn btn-secondary btn-sm"
-            >
-              Edit
-            </button>
-          </PermissionGate>
+        </PermissionGate>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export function PatientList() {
+  const navigate = useNavigate();
+  const { myPatients, isLoading, selectPatient } = usePatient();
+
+  const handlePatientClick = (patient: Patient) => {
+    selectPatient(patient);
+    navigate(`/patients/${patient.patientId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <Spinner size="lg" />
+          <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Loading patients…</p>
         </div>
       </div>
     );
   }
 
-  // ─── Main Page ────────────────────────────────────────────────────────────────
-  export function PatientList() {
-    const navigate = useNavigate();
-    const { myPatients, isLoading, selectPatient } = usePatient();
+  return (
+    <div className="space-y-4">
 
-    const handlePatientClick = (patient: Patient) => {
-      selectPatient(patient);
-      navigate(`/patients/${patient.patientId}`);
-    };
-
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <Spinner size="lg" />
-            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading patients...</p>
-          </div>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
+            Patients
+          </h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
+            {myPatients.length > 0
+              ? `${myPatients.length} patient${myPatients.length !== 1 ? 's' : ''} under your care`
+              : 'Manage your patients and their care'}
+          </p>
         </div>
-      );
-    }
+        <PermissionGate permission="patient.view">
+          <button
+            onClick={() => navigate('/patients/new')}
+            className="btn btn-primary text-sm"
+          >
+            + Add patient
+          </button>
+        </PermissionGate>
+      </div>
 
-    return (
-      <div className="space-y-6">
+      {/* Empty state */}
+      {myPatients.length === 0 ? (
+        <div className="text-center py-16 border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900">
+          <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">No patients yet</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mb-5">
+            Add your first patient to start coordinating their care.
+          </p>
+          <button
+            onClick={() => navigate('/patients/new')}
+            className="btn btn-primary text-sm"
+          >
+            + Add patient
+          </button>
+        </div>
+      ) : (
+        <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
 
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Column headers */}
+          <div className="grid grid-cols-[2fr_1fr_1fr_120px] px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+            {['Patient', 'Age', 'Phone', ''].map((h) => (
+              <span key={h} className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                {h}
+              </span>
+            ))}
+          </div>
+
+          {/* Rows */}
           <div>
-            <h1 className="page-title">My Patients</h1>
-            <p className="page-subtitle">Manage your patients and their care</p>
-          </div>
-          <PermissionGate permission="patient.view">
-            <button
-              onClick={() => navigate('/patients/new')}
-              className="btn btn-primary"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Patient
-            </button>
-          </PermissionGate>
-        </div>
-
-        {/* Empty state */}
-        {myPatients.length === 0 ? (
-          <EmptyState
-            title="No patients yet"
-            description="Add your first patient to start coordinating their care."
-            action={{ label: 'Add Patient', onClick: () => navigate('/patients/new') }}
-          />
-        ) : (
-          // Patient grid — 1 col mobile, 2 col tablet, 3 col desktop
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {myPatients.map((patient) => (
-              <PatientCard
+              <PatientRow
                 key={patient.patientId}
                 patient={patient}
                 onClick={() => handlePatientClick(patient)}
@@ -140,7 +183,10 @@
               />
             ))}
           </div>
-        )}
-      </div>
-    );
-  }
+
+        </div>
+      )}
+
+    </div>
+  );
+}
