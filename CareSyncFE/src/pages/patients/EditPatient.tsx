@@ -1,10 +1,9 @@
-// src/pages/patients/EditPatient.tsx
-
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { patientApi } from '../../api/patient.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
+import { PermissionGate } from '../../components/common/PermissionGate';
 import { ImageUploader } from '../../components/ui/ImageUploader';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -18,14 +17,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
         <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</h3>
       </div>
-      <div className="px-5 py-4 space-y-4">
-        {children}
-      </div>
+      <div className="px-5 py-4 space-y-4">{children}</div>
     </div>
   );
 }
 
-export function EditPatient() {
+function EditPatientForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { refreshPatients } = usePatient();
@@ -41,9 +38,9 @@ export function EditPatient() {
     emergencyContactName: '',
     emergencyContactPhone: '',
   });
-  const [isLoading, setIsLoading]   = useState(true);
-  const [isSaving, setIsSaving]     = useState(false);
-  const [error, setError]           = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -52,12 +49,12 @@ export function EditPatient() {
       try {
         const patient = await patientApi.getPatient(Number(id));
         setForm({
-          fullName:              patient.fullName,
-          dateOfBirth:           patient.dateOfBirth,
-          gender:                patient.gender ?? 'MALE',
-          phoneNumber:           patient.phoneNumber ?? '',
-          address:               patient.address ?? '',
-          emergencyContactName:  patient.emergencyContactName ?? '',
+          fullName: patient.fullName,
+          dateOfBirth: patient.dateOfBirth,
+          gender: patient.gender ?? 'MALE',
+          phoneNumber: patient.phoneNumber ?? '',
+          address: patient.address ?? '',
+          emergencyContactName: patient.emergencyContactName ?? '',
           emergencyContactPhone: patient.emergencyContactPhone ?? '',
         });
         setProfileImageUrl(patient.profileImageUrl ?? null);
@@ -79,10 +76,7 @@ export function EditPatient() {
     setError('');
     setIsSaving(true);
     try {
-      await patientApi.updatePatient(Number(id), {
-        ...form,
-        profileImageUrl: profileImageUrl ?? undefined,
-      });
+      await patientApi.updatePatient(Number(id), { ...form, profileImageUrl: profileImageUrl ?? undefined });
       await refreshPatients();
       success('Patient updated successfully!');
       navigate(`/patients/${id}`);
@@ -95,22 +89,18 @@ export function EditPatient() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading patient...</p>
-        </div>
+  if (isLoading) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+      <div className="text-center">
+        <Spinner size="lg" />
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading patient...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="space-y-5">
-
-        {/* Header */}
         <div>
           <button
             onClick={() => navigate(`/patients/${id}`)}
@@ -121,32 +111,22 @@ export function EditPatient() {
             </svg>
             Back to patient
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-            Edit patient
-          </h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-            Update patient information
-          </p>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">Edit patient</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Update patient information</p>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-error-50 dark:bg-error-900/20 border border-error-100 dark:border-error-800 text-sm text-error-600 dark:text-error-400">
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-
-          {/* ── Profile photo ─────────────────────────────────────── */}
           <Section title="Profile photo">
-            <p className="text-xs text-gray-400 dark:text-gray-500 -mt-1">
-              Optional · helps caregivers visually identify the patient.
-            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 -mt-1">Optional · helps caregivers visually identify the patient.</p>
             <ImageUploader
               folder="patients"
               fileName={`patient_${form.fullName.replace(/\s+/g, '_') || id}`}
@@ -158,49 +138,45 @@ export function EditPatient() {
             />
           </Section>
 
-          {/* ── Basic information ─────────────────────────────────── */}
           <Section title="Basic information">
             <Input name="fullName" label="Full name" value={form.fullName} onChange={handleChange} required />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input name="dateOfBirth" label="Date of birth" type="date"
-                value={form.dateOfBirth} onChange={handleChange} required />
+              <Input name="dateOfBirth" label="Date of birth" type="date" value={form.dateOfBirth} onChange={handleChange} required />
               <Select name="gender" label="Gender" value={form.gender} onChange={handleChange}>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
                 <option value="OTHER">Other</option>
               </Select>
             </div>
-            <Input name="phoneNumber" label="Phone number" type="tel"
-              value={form.phoneNumber} onChange={handleChange} placeholder="+977-9801234567" />
-            <Textarea name="address" label="Address" value={form.address}
-              onChange={handleChange} rows={3} resize="none"
-              placeholder="Street, City, State, ZIP" />
+            <Input name="phoneNumber" label="Phone number" type="tel" value={form.phoneNumber} onChange={handleChange} placeholder="+977-9801234567" />
+            <Textarea name="address" label="Address" value={form.address} onChange={handleChange} rows={3} resize="none" placeholder="Street, City, State, ZIP" />
           </Section>
 
-          {/* ── Emergency contact ─────────────────────────────────── */}
           <Section title="Emergency contact">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input name="emergencyContactName" label="Contact name"
-                value={form.emergencyContactName} onChange={handleChange}
-                placeholder="Sita Sharma" />
-              <Input name="emergencyContactPhone" label="Contact phone" type="tel"
-                value={form.emergencyContactPhone} onChange={handleChange}
-                placeholder="+977-9801234567" />
+              <Input name="emergencyContactName" label="Contact name" value={form.emergencyContactName} onChange={handleChange} placeholder="Sita Sharma" />
+              <Input name="emergencyContactPhone" label="Contact phone" type="tel" value={form.emergencyContactPhone} onChange={handleChange} placeholder="+977-9801234567" />
             </div>
           </Section>
 
-          {/* ── Actions ───────────────────────────────────────────── */}
           <div className="flex gap-2 pt-1 pb-6">
-            <Button type="button" variant="secondary" onClick={() => navigate(`/patients/${id}`)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" isLoading={isSaving}>
-              Update patient
-            </Button>
+            <Button type="button" variant="secondary" onClick={() => navigate(`/patients/${id}`)}>Cancel</Button>
+            <Button type="submit" variant="primary" isLoading={isSaving}>Update patient</Button>
           </div>
-
         </form>
       </div>
     </div>
+  );
+}
+
+export function EditPatient() {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <PermissionGate
+      permission="patient.edit"
+      fallback={<Navigate to={`/patients/${id}`} replace />}
+    >
+      <EditPatientForm />
+    </PermissionGate>
   );
 }
