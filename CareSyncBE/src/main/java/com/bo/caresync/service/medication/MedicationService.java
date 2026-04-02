@@ -237,9 +237,6 @@ public class MedicationService {
         log.info("{} Successfully deleted schedule ID={}", methodName, scheduleId);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // ADMINISTRATION
-    // ─────────────────────────────────────────────────────────────
 
     @Transactional
     public MedicationAdministrationResponse logAdministration(LogMedicationRequest request) {
@@ -251,6 +248,25 @@ public class MedicationService {
         loginUserUtil.requirePermission(schedule.getPatientId(), "medication.administer");
 
         LocalDateTime now = LocalDateTime.now();
+
+        if (schedule.getTimeOfDay() != null) {
+            LocalDateTime scheduledDateTime = LocalDate.now().atTime(schedule.getTimeOfDay());
+            LocalDateTime earliestAllowed = scheduledDateTime.minusMinutes(5);
+            LocalDateTime latestAllowed = scheduledDateTime.plusMinutes(20);
+
+            if (now.isBefore(earliestAllowed)) {
+                throw new BaseException(ErrorCode.INVALID_INPUT,
+                        "Cannot log medication more than 5 minutes before the scheduled time of "
+                                + schedule.getTimeOfDay().format(DateTimeFormatter.ofPattern("hh:mm a")));
+            }
+
+            if (now.isAfter(latestAllowed)) {
+                throw new BaseException(ErrorCode.INVALID_INPUT,
+                        "Cannot log medication more than 20 minutes after the scheduled time of "
+                                + schedule.getTimeOfDay().format(DateTimeFormatter.ofPattern("hh:mm a")));
+            }
+        }
+
         LocalDateTime oneHourAgo = now.minusHours(1);
 
         Optional<MedicationAdministration> recentLog = administrationRepo

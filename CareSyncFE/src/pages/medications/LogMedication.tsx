@@ -10,6 +10,8 @@ import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Spinner } from '../../components/ui/Spinner';
+import { AlertDialog } from '../../components/ui/AlertDialog';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { cn } from '../../utils/cn';
 import type { Medication, MedicationSchedule, MedicationAdministration } from '../../types/medication.types';
 
@@ -20,7 +22,6 @@ const STATUS_OPTIONS = [
   { value: 'REFUSED',      label: 'Refused',       desc: 'Patient refused',         border: 'border-gray-300 dark:border-gray-600',     bg: 'bg-gray-50 dark:bg-gray-800/50' },
 ] as const;
 
-// ── Section wrapper — consistent card style ───────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
@@ -34,7 +35,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// ── Last given info ───────────────────────────────────────────────────────────
 function LastGivenInfo({ scheduleId, patientId }: { scheduleId: number | null; patientId: number }) {
   const [lastRecord, setLastRecord] = useState<MedicationAdministration | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +117,6 @@ function getTimeAgo(date: Date): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-// ── Confirmation screen ───────────────────────────────────────────────────────
 function ConfirmationScreen({
   patientName,
   medicationName,
@@ -146,7 +145,6 @@ function ConfirmationScreen({
 
   return (
     <div className="space-y-4">
-      {/* Success banner */}
       <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-success-50 dark:bg-success-900/30 border border-success-100 dark:border-success-800">
         <div className="w-8 h-8 rounded-full bg-success-100 dark:bg-success-900 flex items-center justify-center shrink-0">
           <svg className="w-4 h-4 text-success-600 dark:text-success-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,7 +157,6 @@ function ConfirmationScreen({
         </div>
       </div>
 
-      {/* Summary */}
       <div className="border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Summary</h3>
@@ -195,20 +192,22 @@ function ConfirmationScreen({
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export function LogMedication() {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedPatient } = usePatient();
   const { success, error: showError } = useNotification();
 
-  const [medications, setMedications]   = useState<Medication[]>([]);
-  const [schedules, setSchedules]       = useState<MedicationSchedule[]>([]);
+  const [medications, setMedications]     = useState<Medication[]>([]);
+  const [schedules, setSchedules]         = useState<MedicationSchedule[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError]               = useState('');
-  const [isDuplicate, setIsDuplicate]   = useState(false);
+  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [error, setError]                 = useState('');
+  const [isDuplicate, setIsDuplicate]     = useState(false);
   const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm]     = useState(false);
+  const [showAlert, setShowAlert]         = useState(false);
+  const [alertMessage, setAlertMessage]   = useState('');
 
   const [confirmed, setConfirmed] = useState<{
     patientName: string;
@@ -246,9 +245,9 @@ export function LogMedication() {
           if (s) {
             setForm((prev) => ({
               ...prev,
-              scheduleId:  s.scheduleId.toString(),
+              scheduleId:   s.scheduleId.toString(),
               medicationId: s.medicationId.toString(),
-              dosageGiven: s.dosage,
+              dosageGiven:  s.dosage,
             }));
           }
         }
@@ -280,31 +279,62 @@ export function LogMedication() {
   const getMedicationName = (medicationId: string) =>
     medications.find((m) => String(m.medicationId) === medicationId)?.medicationName ?? 'Unknown';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
+
+    const selectedSchedule = schedules.find(s => s.scheduleId === Number(form.scheduleId));
+    if (selectedSchedule?.timeOfDay) {
+      const [hours, minutes] = String(selectedSchedule.timeOfDay).slice(0, 5).split(':').map(Number);
+      const scheduledTime = new Date();
+      scheduledTime.setHours(hours, minutes, 0, 0);
+      const earliestAllowed = new Date(scheduledTime.getTime() - 5 * 60 * 1000);
+      const latestAllowed   = new Date(scheduledTime.getTime() + 10 * 60 * 1000);
+      const now = new Date();
+      const formatted = scheduledTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (now < earliestAllowed) {
+        setAlertMessage(`Cannot log medication more than 5 minutes before the scheduled time of ${formatted}`);
+        setShowAlert(true);
+        return;
+      }
+
+      if (now > latestAllowed) {
+        setAlertMessage(`Cannot log medication more than 10 minutes after the scheduled time of ${formatted}`);
+        setShowAlert(true);
+        return;
+      }
+    }
+
+    setShowConfirm(true);
+  };
+
+  const handleConfirmedSubmit = async () => {
+    if (!selectedPatient) return;
+    setShowConfirm(false);
     setError('');
     setIsDuplicate(false);
     setIsSubmitting(true);
+
     try {
       const result = await medicationApi.logAdministration({
-        patientId:    selectedPatient.patientId,
-        medicationId: Number(form.medicationId),
-        scheduleId:   form.scheduleId ? Number(form.scheduleId) : undefined,
-        actualTime:   form.actualTime,
-        dosageGiven:  form.dosageGiven,
-        status:       form.status,
-        notes:        form.notes || undefined,
-        sideEffects:  form.sideEffects || undefined,
+        patientId:     selectedPatient.patientId,
+        medicationId:  Number(form.medicationId),
+        scheduleId:    form.scheduleId ? Number(form.scheduleId) : undefined,
+        actualTime:    form.actualTime,
+        dosageGiven:   form.dosageGiven,
+        status:        form.status,
+        notes:         form.notes || undefined,
+        sideEffects:   form.sideEffects || undefined,
         proofImageUrl: proofImageUrl ?? undefined,
       });
       success('Medication logged successfully!');
       setConfirmed({
-        patientName:       selectedPatient.fullName,
-        medicationName:    getMedicationName(form.medicationId),
-        dosage:            form.dosageGiven,
-        status:            form.status,
-        administeredAt:    form.actualTime,
+        patientName:        selectedPatient.fullName,
+        medicationName:     getMedicationName(form.medicationId),
+        dosage:             form.dosageGiven,
+        status:             form.status,
+        administeredAt:     form.actualTime,
         administeredByName: result?.caregiverName ?? 'You',
       });
     } catch (err: any) {
@@ -396,8 +426,6 @@ export function LogMedication() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-
-        {/* Two-column layout on md+ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
           {/* Left col */}
@@ -540,12 +568,41 @@ export function LogMedication() {
           <Button type="button" variant="secondary" onClick={() => navigate('/medications')}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" isLoading={isSubmitting}>
+          <Button type="submit" variant="primary">
             Log medication
           </Button>
         </div>
-
       </form>
+
+      {/* Time validation alert */}
+      <AlertDialog
+        open={showAlert}
+        onClose={() => setShowAlert(false)}
+        title="Cannot log medication"
+        description={alertMessage}
+        variant="warning"
+        confirmLabel="OK"
+      />
+
+      {/* Pre-submit confirmation */}
+      <ConfirmDialog
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirmedSubmit}
+        title="Confirm medication log"
+        description={`Log ${getMedicationName(form.medicationId)} as ${form.status.charAt(0) + form.status.slice(1).toLowerCase()} for ${selectedPatient?.fullName}?`}
+        confirmLabel="Yes, log it"
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        isLoading={isSubmitting}
+        icon={
+          <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        }
+      />
     </div>
   );
 }
