@@ -1,5 +1,3 @@
-// src/pages/dashboard/Dashboard.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,14 +5,17 @@ import { usePatient } from '../../context/PatientContext';
 import { medicationApi } from '../../api/medication.api';
 import { activityApi } from '../../api/activity.api';
 import type { ActivityDTO } from '../../api/activity.api';
+import { PermissionGate } from '../../components/common/PermissionGate';
 import { Spinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { cn } from '../../utils/cn';
 import type { MedicationSchedule } from '../../types/medication.types';
 
-// ─── Stat Card ────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }: {
-  label: string; value: number; icon: React.ReactNode; color: string;
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
 }) {
   return (
     <div className="card flex items-center gap-4">
@@ -29,47 +30,42 @@ function StatCard({ label, value, icon, color }: {
   );
 }
 
-// ─── Quick Action ─────────────────────────────────────────────
 function QuickAction({ label, icon, onClick, color }: {
-  label: string; icon: React.ReactNode; onClick: () => void; color: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  color: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white dark:bg-gray-800
-                 border border-gray-200 dark:border-gray-700 hover:border-primary-400
-                 dark:hover:border-primary-500 transition-all duration-150"
+      className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 transition-all duration-150"
     >
-      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', color)}>
-        {icon}
-      </div>
-      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">
-        {label}
-      </span>
+      <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', color)}>{icon}</div>
+      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{label}</span>
     </button>
   );
 }
 
-// ─── Activity color dot ───────────────────────────────────────
 const COLOR_DOT: Record<ActivityDTO['color'], string> = {
   success: 'bg-success-500',
   warning: 'bg-warning-500',
-  error:   'bg-error-500',
-  info:    'bg-primary-400',
+  error: 'bg-error-500',
+  info: 'bg-primary-400',
 };
 
-// ─── Main Dashboard ───────────────────────────────────────────
 export function Dashboard() {
-  const { user }                        = useAuth();
+  const { user } = useAuth();
   const { selectedPatient, myPatients } = usePatient();
-  const navigate                        = useNavigate();
+  const navigate = useNavigate();
 
-  const [isLoading, setIsLoading]           = useState(true);
-  const [error, setError]                   = useState('');
-  const [schedules, setSchedules]           = useState<MedicationSchedule[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [schedules, setSchedules] = useState<MedicationSchedule[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityDTO[]>([]);
 
-  const firstName   = user?.fullName?.split(' ')[0] ?? 'there';
+  const firstName = user?.fullName?.split(' ')[0] ?? 'there';
+
   const getGreeting = () => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -82,14 +78,10 @@ export function Dashboard() {
       setIsLoading(true);
       setError('');
       try {
-        // getRecentActivity returns across all patients — no patientId needed
         const activityData = await activityApi.getRecentActivity(5).catch(() => []);
         setRecentActivity(activityData);
-
         if (selectedPatient?.patientId) {
-          const schedulesData = await medicationApi
-            .getPatientSchedules(selectedPatient.patientId)
-            .catch(() => []);
+          const schedulesData = await medicationApi.getPatientSchedules(selectedPatient.patientId).catch(() => []);
           setSchedules(schedulesData);
         } else {
           setSchedules([]);
@@ -120,23 +112,25 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
 
-      {/* Greeting */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="page-title">{getGreeting()}, {firstName}</h1>
           <p className="page-subtitle">
             {selectedPatient
               ? `Viewing care for ${selectedPatient.fullName}`
-              : "Here's what's happening with your care coordination today"
-            }
+              : "Here's what's happening with your care coordination today"}
           </p>
         </div>
-        <button onClick={() => navigate('/medications/log')} className="btn btn-primary self-start sm:self-auto">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Log Medication
-        </button>
+        {/* Only roles with medication.administer can log medication */}
+        <PermissionGate permission="medication.administer">
+          <button onClick={() => navigate('/medications/log')} className="btn btn-primary self-start sm:self-auto">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Log Medication
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Error */}
@@ -180,21 +174,28 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Medication Schedules */}
+        {/* Medication Schedules card */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">Medication Schedules</h3>
-            <button onClick={() => navigate('/medications/schedules')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">View all</button>
+            <button onClick={() => navigate('/medications/schedules')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
+              View all
+            </button>
           </div>
           {schedules.length === 0 ? (
-            <EmptyState
-              title="No schedules yet"
-              description={selectedPatient ? 'Create medication schedules for this patient.' : 'Select a patient first.'}
-              action={selectedPatient ? { label: 'Add schedule', onClick: () => navigate('/medications/new') } : undefined}
-            />
+            // Only show "Add schedule" action to roles with medication.create_schedule
+            <PermissionGate
+              permission="medication.create_schedule"
+              fallback={<EmptyState title="No schedules yet" description={selectedPatient ? 'No medication schedules for this patient.' : 'Select a patient first.'} />}
+            >
+              <EmptyState
+                title="No schedules yet"
+                description={selectedPatient ? 'Create medication schedules for this patient.' : 'Select a patient first.'}
+                action={selectedPatient ? { label: 'Add schedule', onClick: () => navigate('/medications/new') } : undefined}
+              />
+            </PermissionGate>
           ) : (
             <div className="space-y-3">
               {schedules.slice(0, 3).map((schedule) => (
@@ -204,8 +205,7 @@ export function Dashboard() {
                       {schedule.medicationName ?? `Medication #${schedule.medicationId}`}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {schedule.dosage} · {schedule.frequency}
-                      {schedule.timeOfDay ? ` · ${schedule.timeOfDay}` : ''}
+                      {schedule.dosage} · {schedule.frequency}{schedule.timeOfDay ? ` · ${schedule.timeOfDay}` : ''}
                     </p>
                   </div>
                   <span className={cn(
@@ -222,18 +222,26 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Family / Patients */}
+        {/* Family Status card */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">Family Status</h3>
-            <button onClick={() => navigate('/patients')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">Manage</button>
+            <button onClick={() => navigate('/patients')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
+              Manage
+            </button>
           </div>
           {myPatients.length === 0 ? (
-            <EmptyState
-              title="No patients yet"
-              description="Add your family members to start coordinating care."
-              action={{ label: 'Add patient', onClick: () => navigate('/patients/new') }}
-            />
+            // Only Admin and Primary CG can add patients
+            <PermissionGate
+              permission="patient.edit"
+              fallback={<EmptyState title="No patients yet" description="No patients have been assigned to your care." />}
+            >
+              <EmptyState
+                title="No patients yet"
+                description="Add your family members to start coordinating care."
+                action={{ label: 'Add patient', onClick: () => navigate('/patients/new') }}
+              />
+            </PermissionGate>
           ) : (
             <div className="space-y-3">
               {myPatients.slice(0, 4).map((patient) => (
@@ -253,9 +261,7 @@ export function Dashboard() {
                   <div className="flex items-center gap-1.5">
                     <span className={cn(
                       'w-2.5 h-2.5 rounded-full',
-                      selectedPatient?.patientId === patient.patientId
-                        ? 'bg-primary-500'
-                        : 'bg-success-500'
+                      selectedPatient?.patientId === patient.patientId ? 'bg-primary-500' : 'bg-success-500'
                     )} />
                     <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                       {selectedPatient?.patientId === patient.patientId ? 'Selected' : 'Active'}
@@ -267,30 +273,23 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Recent Activity — uses correct ActivityDTO fields */}
+        {/* Recent Activity card */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50">Recent Activity</h3>
-            <button onClick={() => navigate('/activity-log')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">View all</button>
+            <button onClick={() => navigate('/activity-log')} className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:underline">
+              View all
+            </button>
           </div>
           {recentActivity.length === 0 ? (
-            <EmptyState
-              title="No recent activity"
-              description="Activity will appear here as you log medications."
-            />
+            <EmptyState title="No recent activity" description="Activity will appear here as you log medications." />
           ) : (
             <div className="space-y-3">
               {recentActivity.slice(0, 5).map((item) => (
                 <div key={item.activityId} className="flex items-start gap-3">
-                  {/* Color dot instead of ActivityIcon — uses real color from backend */}
-                  <div className={cn(
-                    'w-2 h-2 rounded-full mt-2 flex-shrink-0',
-                    COLOR_DOT[item.color] ?? COLOR_DOT.info
-                  )} />
+                  <div className={cn('w-2 h-2 rounded-full mt-2 flex-shrink-0', COLOR_DOT[item.color] ?? COLOR_DOT.info)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
-                      {item.description}
-                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">{item.description}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-xs text-gray-400 dark:text-gray-500">
                         {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -309,20 +308,61 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions card */}
         <div className="card">
           <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <QuickAction label="Log Medication"   color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"  onClick={() => navigate('/medications/log')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>} />
-            <QuickAction label="Add Schedule"     color="bg-success-100 dark:bg-success-900 text-success-600 dark:text-success-400"   onClick={() => navigate('/medications/new')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} />
-            <QuickAction label="View Reports"     color="bg-warning-100 dark:bg-warning-900 text-warning-600 dark:text-warning-400"   onClick={() => navigate('/reports/adherence')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>} />
-            <QuickAction label="Invite Caregiver" color="bg-error-100 dark:bg-error-900 text-error-600 dark:text-error-400"           onClick={() => navigate('/caregivers/invite')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>} />
-            <QuickAction label="Add Patient"      color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"   onClick={() => navigate('/patients/new')}
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>} />
+
+            {/* medication.administer — Admin, Primary CG, Secondary CG */}
+            <PermissionGate permission="medication.administer">
+              <QuickAction
+                label="Log Medication"
+                color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+                onClick={() => navigate('/medications/log')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>}
+              />
+            </PermissionGate>
+
+            {/* medication.create_schedule — Admin, Primary CG, Healthcare Provider */}
+            <PermissionGate permission="medication.create_schedule">
+              <QuickAction
+                label="Add Schedule"
+                color="bg-success-100 dark:bg-success-900 text-success-600 dark:text-success-400"
+                onClick={() => navigate('/medications/new')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+              />
+            </PermissionGate>
+
+            {/* report.view — all roles */}
+            <PermissionGate permission="report.view">
+              <QuickAction
+                label="View Reports"
+                color="bg-warning-100 dark:bg-warning-900 text-warning-600 dark:text-warning-400"
+                onClick={() => navigate('/reports/adherence')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+              />
+            </PermissionGate>
+
+            {/* caregiver.invite — Admin, Primary CG only */}
+            <PermissionGate permission="caregiver.invite">
+              <QuickAction
+                label="Invite Caregiver"
+                color="bg-error-100 dark:bg-error-900 text-error-600 dark:text-error-400"
+                onClick={() => navigate('/caregivers/invite')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>}
+              />
+            </PermissionGate>
+
+            {/* patient.edit — Admin, Primary CG only */}
+            <PermissionGate permission="patient.edit">
+              <QuickAction
+                label="Add Patient"
+                color="bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400"
+                onClick={() => navigate('/patients/new')}
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+              />
+            </PermissionGate>
+
           </div>
         </div>
 
