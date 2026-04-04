@@ -18,4 +18,11 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
     List<RolePermission> findByRoleIdAndIsGrantedAndRecordStatus(
             Long roleId, Boolean isGranted, String recordStatus
     );
+
+    List<RolePermission> findByRoleIdInAndIsGrantedAndRecordStatus(
+            List<Long> roleIds,
+            Boolean isGranted,
+            String recordStatus
+    );
+
 }
