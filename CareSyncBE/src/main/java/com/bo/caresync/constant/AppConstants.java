@@ -34,6 +34,7 @@ public class AppConstants {
 
     public static class RecordStatus {
         private RecordStatus() {}
+        public static final String PENDING = "PENDING";
         public static final String ACTIVE = "Y";
         public static final String INACTIVE = "N";
     }
