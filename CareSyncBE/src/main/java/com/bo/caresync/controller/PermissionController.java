@@ -30,4 +30,11 @@ public class PermissionController extends BaseController {
         );
         return successResponse("Permissions retrieved successfully", response);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyRolePermissions() {
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+        PermissionResponse response = permissionService.getMyRolePermissions(currentUserId);
+        return successResponse("Role permissions retrieved successfully", response);
+    }
 }
