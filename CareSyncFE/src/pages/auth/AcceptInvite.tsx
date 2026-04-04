@@ -7,7 +7,10 @@ import { Button } from '../../components/ui/Button';
 export function AcceptInvite() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') ?? '';
+
+  // searchParams.get() auto-decodes the token — re-encode before sending to backend
+  const rawToken = searchParams.get('token') ?? '';
+  const token = encodeURIComponent(rawToken);
 
   const [form, setForm] = useState({
     password: '',
@@ -33,7 +36,7 @@ export function AcceptInvite() {
       setError('Password must be at least 6 characters.');
       return;
     }
-    if (!token) {
+    if (!rawToken) {
       setError('Invalid or missing invite token. Please ask to be re-invited.');
       return;
     }
@@ -70,7 +73,6 @@ export function AcceptInvite() {
         </div>
 
         {done ? (
-          // ── Success state ──
           <div className="text-center space-y-5">
             <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto">
               <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +90,6 @@ export function AcceptInvite() {
             </Button>
           </div>
         ) : (
-          // ── Form state ──
           <>
             <div className="mb-2">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Accept Invitation</h2>
@@ -97,7 +98,6 @@ export function AcceptInvite() {
               </p>
             </div>
 
-            {/* Info banner */}
             <div className="flex gap-3 p-3.5 mb-5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl">
               <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -141,7 +141,6 @@ export function AcceptInvite() {
                 id="phoneNumber"
                 name="phoneNumber"
                 type="tel"
-                // label={<>Phone Number <span className="text-gray-400 font-normal">(optional)</span></>}
                 placeholder="e.g. +977 98XXXXXXXX"
                 value={form.phoneNumber}
                 onChange={handleChange}

@@ -7,7 +7,10 @@ import { Button } from '../../components/ui/Button';
 export function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') ?? '';
+
+  // searchParams.get() auto-decodes the token — re-encode before sending to backend
+  const rawToken = searchParams.get('token') ?? '';
+  const token = encodeURIComponent(rawToken);
 
   const [form, setForm] = useState({ password: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +32,7 @@ export function ResetPassword() {
       setError('Password must be at least 6 characters.');
       return;
     }
-    if (!token) {
+    if (!rawToken) {
       setError('Invalid or missing reset token. Please request a new link.');
       return;
     }
@@ -65,7 +68,6 @@ export function ResetPassword() {
         </div>
 
         {done ? (
-          // ── Success state ──
           <div className="text-center space-y-5">
             <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto">
               <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +85,6 @@ export function ResetPassword() {
             </Button>
           </div>
         ) : (
-          // ── Form state ──
           <>
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Set new password</h2>
