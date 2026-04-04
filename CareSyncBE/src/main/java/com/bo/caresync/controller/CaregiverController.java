@@ -1,6 +1,7 @@
 package com.bo.caresync.controller;
 
 import com.bo.caresync.constant.MessageConstants;
+import com.bo.caresync.dto.request.auth.AcceptInviteRequest;
 import com.bo.caresync.dto.request.caregiver.GrantPermissionRequest;
 import com.bo.caresync.dto.request.caregiver.InviteCaregiverRequest;
 import com.bo.caresync.dto.request.caregiver.UpdateCaregiverRoleRequest;
@@ -35,6 +36,12 @@ public class CaregiverController extends BaseController {
     public ResponseEntity<?> inviteCaregiver( @RequestBody InviteCaregiverRequest request) {
         caregiverService.inviteCaregiver(request);
         return successResponse("Caregiver invited successfully", null);
+    }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<?> acceptInvite(@RequestBody AcceptInviteRequest request) {
+        caregiverService.acceptInvite(request);
+        return ResponseEntity.ok("Account activated successfully. You can now log in.");
     }
 
     @DeleteMapping("/patient/{patientId}/caregiver/{caregiverId}")

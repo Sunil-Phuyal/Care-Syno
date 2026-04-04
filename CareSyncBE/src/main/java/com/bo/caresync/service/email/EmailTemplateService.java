@@ -40,30 +40,30 @@ public class EmailTemplateService {
     }
 
     public String getCaregiverInvitationBody(String inviterName, String patientName,
-                                             String email, String tempPassword) {
+                                             String email, String inviteLink) {
         return String.format("""
-            Hello,
-            
-            %s has invited you to join the care team for %s on CareSync.
-            
-            You've been assigned the role: %s
-            
-            Your temporary login credentials:
-            Email: %s
-            Password: %s
-            
-            Please login and change your password immediately: %s/login
-            
-            About CareSync:
-            CareSync helps families coordinate medication management for elderly care. You can now:
-            - View medication schedules
-            - Log medication administration
-            - Track adherence
-            - Coordinate with other caregivers
-            
-            Best regards,
-            The CareSync Team
-            """, inviterName, patientName, email, tempPassword, frontendUrl);
+        Hello,
+        
+        %s has invited you to join the care team for %s on CareSync.
+        
+        Your account has been created with this email: %s
+        
+        Click the link below to set your password and activate your account:
+        %s
+        
+        This link will expire in 24 hours.
+        
+        Once activated, you will be able to:
+        - View medication schedules
+        - Log medication administration
+        - Track adherence
+        - Coordinate with other caregivers
+        
+        If you did not expect this invitation, please ignore this email.
+        
+        Best regards,
+        The CareSync Team
+        """, inviterName, patientName, email, inviteLink);
     }
 
     /**
@@ -309,5 +309,23 @@ public class EmailTemplateService {
         body.append("This is an automated notification. Please do not reply to this email.");
 
         return body.toString();
+    }
+
+    public String getForgotPasswordEmailBody(String fullName, String resetLink, long expirationHours) {
+        return """
+            Hi %s,
+            
+            We received a request to reset your CareSync password.
+            
+            Click the link below to reset your password:
+            %s
+            
+            This link will expire in %d hour(s).
+            
+            If you did not request a password reset, please ignore this email.
+            Your password will remain unchanged.
+            
+            - CareSync Team
+            """.formatted(fullName, resetLink, expirationHours);
     }
 }

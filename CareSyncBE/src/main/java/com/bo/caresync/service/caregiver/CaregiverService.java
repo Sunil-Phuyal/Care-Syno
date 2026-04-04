@@ -2,6 +2,7 @@ package com.bo.caresync.service.caregiver;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
+import com.bo.caresync.dto.request.auth.AcceptInviteRequest;
 import com.bo.caresync.dto.request.caregiver.GrantPermissionRequest;
 import com.bo.caresync.dto.request.caregiver.InviteCaregiverRequest;
 import com.bo.caresync.dto.request.caregiver.UpdateCaregiverRoleRequest;
@@ -16,6 +17,7 @@ import com.bo.caresync.entity.user.UserRole;
 import com.bo.caresync.enums.ErrorCode;
 import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
+import com.bo.caresync.service.authentication.ResetLinkService;
 import com.bo.caresync.service.email.EmailService;
 import com.bo.caresync.service.email.EmailTemplateService;
 import com.bo.caresync.utils.AppUtil;
@@ -26,10 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +54,7 @@ public class CaregiverService {
     private final EmailService emailService;
     private final EmailTemplateService  emailTemplateService;
     private final String className = this.getClass().getSimpleName();
+    private final ResetLinkService resetLinkService;
 
 
     @Transactional(readOnly = true)
@@ -109,24 +109,20 @@ public class CaregiverService {
         // Check if user already exists
         Optional<User> existingUser = userRepo.findByEmail(request.getEmail());
         User caregiver;
-        String tempPassword = null;
         boolean isNewUser = false;
 
         if (existingUser.isPresent()) {
-            // User exists
             caregiver = existingUser.get();
             log.info("{} User already exists: {}", methodName, request.getEmail());
-
         } else {
-            // Create new user
+            // Create new user — NO temp password, account pending until they accept invite
             isNewUser = true;
-            tempPassword = UUID.randomUUID().toString();
 
             caregiver = new User();
             caregiver.setEmail(request.getEmail());
             caregiver.setFullName(request.getFullName());
-            caregiver.setPasswordHash(passwordEncoder.encode(tempPassword));
-            caregiver.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+            caregiver.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+            caregiver.setRecordStatus(AppConstants.RecordStatus.PENDING);
             caregiver.setIsEmailVerified(false);
             caregiver = userRepo.save(caregiver);
 
@@ -136,31 +132,32 @@ public class CaregiverService {
             userRole.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
             userRoleRepo.save(userRole);
 
-            log.info("{} Created new user: {}", methodName, request.getEmail());
+            log.info("{} Created new pending caregiver user: {}", methodName, request.getEmail());
         }
-
-        // Check if already linked to this patient
         Optional<PatientCaregiver> existingLink = caregiverRepo
-                .findByPatientIdAndCaregiverUserIdAndRecordStatus(request.getPatientId(), caregiver.getUserId(),AppConstants.RecordStatus.ACTIVE);
+                .findByPatientIdAndCaregiverUserIdAndRecordStatus(
+                        request.getPatientId(),
+                        caregiver.getUserId(),
+                        AppConstants.RecordStatus.ACTIVE
+                );
 
-        if (existingLink.isPresent() &&
-                existingLink.get().getRecordStatus().equals(AppConstants.RecordStatus.ACTIVE)) {
+        if (existingLink.isPresent()) {
             throw new BaseException(ErrorCode.RESOURCE_ALREADY_EXISTS,
                     "This caregiver is already linked to the patient");
         }
+        Optional<PatientCaregiver> anyExistingLink = caregiverRepo
+                .findByPatientIdAndCaregiverUserIdAndRecordStatus(request.getPatientId(), caregiver.getUserId(), AppConstants.RecordStatus.ACTIVE);
 
-        // If link exists but was deleted, reactivate it
         PatientCaregiver link;
-        if (existingLink.isPresent()) {
-            // Reactivate deleted link
-            link = existingLink.get();
+        if (anyExistingLink.isPresent()) {
+            // Reactivate
+            link = anyExistingLink.get();
             link.setRoleId(request.getRoleId());
             link.setRelationship(request.getRelationship());
             link.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
             link.setModifiedAt(null);
             link.setModifiedBy(null);
         } else {
-            // Create new patient-caregiver link
             link = new PatientCaregiver();
             link.setPatientId(request.getPatientId());
             link.setCaregiverUserId(caregiver.getUserId());
@@ -173,36 +170,25 @@ public class CaregiverService {
 
         // Send email invitation
         try {
-            // Get inviter name
             String inviterName = loginUserUtil.getCurrentUser().getFullName();
-
-            // Get patient name (best effort)
             String patientName = "the patient";
-            try {
-                // Assuming you have PatientRepository injected
-                // If not available, just use "the patient"
-                // Optional<Patient> patientOpt = patientRepo.findById(request.getPatientId());
-                // if (patientOpt.isPresent()) {
-                //     patientName = patientOpt.get().getFullName();
-                // }
-            } catch (Exception ex) {
-                log.debug("{} Could not fetch patient name, using default", methodName);
-            }
 
             String subject = "Invitation to CareSync - Care Team";
             String body;
 
-            if (isNewUser && tempPassword != null) {
+            if (isNewUser) {
+                // Generate secure invite link
+                String inviteLink = resetLinkService.generateLink(caregiver.getUserId(), "INVITE");
+
                 body = emailTemplateService.getCaregiverInvitationBody(
                         inviterName,
                         patientName,
                         request.getEmail(),
-                        tempPassword
+                        inviteLink
                 );
             } else {
-                // Existing user - send notification only
                 body = emailTemplateService.getCaregiverAddedBody(
-                        request.getFullName(),  // Safe - from request
+                        request.getFullName(),
                         inviterName,
                         patientName
                 );
@@ -213,7 +199,6 @@ public class CaregiverService {
 
         } catch (Exception e) {
             log.warn("{} Failed to send invitation email: {}", methodName, e.getMessage());
-            // Don't fail the operation if email fails
         }
 
         log.info("{} Successfully invited caregiver {} to patient {}",
@@ -326,6 +311,46 @@ public class CaregiverService {
                 request.getIsGranted() ? "granted" : "denied",
                 request.getCaregiverUserId(),
                 request.getPatientId());
+    }
+
+    @Transactional
+    public void acceptInvite(AcceptInviteRequest request) {
+        String methodName = "acceptInvite";
+
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BaseException(ErrorCode.VALIDATION_ERROR, "Passwords do not match");
+        }
+
+        // Validate and decrypt token
+        Map<String, String> payload;
+        try {
+            payload = resetLinkService.validateAndDecrypt(request.getToken());
+        } catch (Exception e) {
+            throw new BaseException(ErrorCode.INVALID_TOKEN, e.getMessage());
+        }
+
+        // Check this is an INVITE token, not a forgot-password token
+        String linkType = payload.get("linkType");
+        if (!"INVITE".equals(linkType)) {
+            throw new BaseException(ErrorCode.INVALID_TOKEN, "Invalid invitation link");
+        }
+
+        Long userId = Long.parseLong(payload.get("userId"));
+        String tokenId = payload.get("tokenId");
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setIsEmailVerified(true);
+        user.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        userRepo.save(user);
+        resetLinkService.markTokenAsUsed(tokenId);
+
+        log.info("{} Caregiver userId={} accepted invite and set password", methodName, userId);
     }
 
     private CaregiverResponse toCaregiverResponse(User user, PatientCaregiver link) {

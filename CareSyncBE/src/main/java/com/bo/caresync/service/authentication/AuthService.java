@@ -1,11 +1,8 @@
-package com.bo.caresync.service;
+package com.bo.caresync.service.authentication;
 
 import com.bo.caresync.constant.AppConstants;
 import com.bo.caresync.constant.MessageConstants;
-import com.bo.caresync.dto.request.auth.ChangePasswordRequest;
-import com.bo.caresync.dto.request.auth.RegisterRequest;
-import com.bo.caresync.dto.request.auth.LoginRequest;
-import com.bo.caresync.dto.request.auth.UpdateProfileRequest;
+import com.bo.caresync.dto.request.auth.*;
 import com.bo.caresync.dto.response.auth.LoginResponse;
 import com.bo.caresync.dto.response.auth.UserResponse;
 import com.bo.caresync.entity.auth.Role;
@@ -28,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +47,7 @@ public class AuthService {
     private final EmailTemplateService emailTemplateService;
     private final LoginUserUtil loginUserUtil;
     private final String className = this.getClass().getSimpleName();
+    private final ResetLinkService resetLinkService;
 
 
     @Transactional
@@ -222,6 +221,119 @@ public class AuthService {
             log.warn("{} Failed to send password change email: {}", methodName, e.getMessage());
         }
         log.info("{} Successfully changed password for userId={}", methodName, currentUserId);
+    }
+
+    /**
+     * Forgot Password - Step 1
+     * Accepts email, generates secure reset link, sends email
+     */
+    @Transactional
+    public void forgotPassword(String email) {
+        String methodName = AppUtil.getMethodName();
+        log.debug("{} {} Forgot password request for email={}", className, methodName, email);
+
+        // Always respond with success even if email not found (security best practice)
+        // So attacker can't enumerate valid emails
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            log.warn("{} {} Forgot password - email not found: {}", className, methodName, email);
+            return; // silent return, don't expose that email doesn't exist
+        }
+
+        // Only allow ACTIVE users to reset password
+        if (!AppConstants.RecordStatus.ACTIVE.equals(user.getRecordStatus())) {
+            log.warn("{} {} Forgot password - user not active: {}", className, methodName, email);
+            return;
+        }
+
+        try {
+            String resetLink = resetLinkService.generateLink(user.getUserId(), "FORGOT_PASSWORD");
+
+            emailService.sendSimpleEmail(
+                    user.getEmail(),
+                    "Reset Your Password - CareSync",
+                    emailTemplateService.getForgotPasswordEmailBody(
+                            user.getFullName(),
+                            resetLink,
+                            resetLinkService.getResetLinkExpiration()
+                    )
+            );
+
+            log.info("{} {} Reset link sent to userId={}", className, methodName, user.getUserId());
+
+        } catch (Exception e) {
+            log.error("{} {} Failed to send reset link for email={}: {}",
+                    className, methodName, email, e.getMessage());
+            // Don't expose error to caller
+        }
+    }
+
+    /**
+     * Forgot Password - Step 2
+     * Validates token, sets new password
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String methodName = AppUtil.getMethodName();
+        log.debug("{} {} Reset password attempt", className, methodName);
+
+        // Validate passwords match
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BaseException(ErrorCode.VALIDATION_ERROR, "Passwords do not match");
+        }
+
+        // Validate and decrypt token
+        Map<String, String> payload;
+        try {
+            payload = resetLinkService.validateAndDecrypt(request.getToken());
+        } catch (Exception e) {
+            throw new BaseException(ErrorCode.INVALID_TOKEN, e.getMessage());
+        }
+
+        // Make sure this is a forgot-password token, not an invite token
+        String linkType = payload.get("linkType");
+        if (!"FORGOT_PASSWORD".equals(linkType)) {
+            throw new BaseException(ErrorCode.INVALID_TOKEN, "Invalid reset link");
+        }
+
+        Long userId = Long.parseLong(payload.get("userId"));
+        String tokenId = payload.get("tokenId");
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BaseException(ErrorCode.USER_NOT_FOUND));
+
+        // Must be active user
+        if (!AppConstants.RecordStatus.ACTIVE.equals(user.getRecordStatus())) {
+            throw new BaseException(ErrorCode.VALIDATION_ERROR, "Account is not active");
+        }
+
+        // New password must be different from current
+        if (passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new BaseException(ErrorCode.INVALID_INPUT,
+                    "New password must be different from your current password");
+        }
+
+        // Set new password
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+
+        // Mark token as used — can't reuse the link
+        resetLinkService.markTokenAsUsed(tokenId);
+
+        // Send confirmation email
+        try {
+            emailService.sendSimpleEmail(
+                    user.getEmail(),
+                    "Password Reset Successful - CareSync",
+                    emailTemplateService.getPasswordChangedBody(user.getFullName())
+            );
+        } catch (Exception e) {
+            log.warn("{} {} Failed to send password reset confirmation email: {}",
+                    className, methodName, e.getMessage());
+        }
+
+        log.info("{} {} Password reset successfully for userId={}", className, methodName, userId);
     }
 
     @Transactional(readOnly = true)
