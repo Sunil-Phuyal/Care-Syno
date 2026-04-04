@@ -46,7 +46,20 @@ export const caregiverApi = {
       patientId:        data.patientId,
       caregiverUserId:  data.caregiverUserId,
       permissionCode:   data.permissionCode,
-      isGranted:        data.granted,       
+      isGranted:        data.granted,
     });
+  },
+
+  /**
+   * Accept a caregiver invite using a token
+   * POST /api/v1/caregivers/accept-invite
+   */
+  acceptInvite: async (data: {
+    token: string;
+    password: string;
+    confirmPassword: string;
+    phoneNumber?: string;
+  }): Promise<void> => {
+    await api.post('/caregivers/accept-invite', data);
   },
 };
