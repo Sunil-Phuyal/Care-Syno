@@ -7,7 +7,6 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 
-// ── Feature list shown on the left panel ──
 const FEATURES = [
   'Schedule and coordinate care tasks seamlessly across your family network',
   'Share real-time updates and communicate with all family members',
@@ -15,14 +14,9 @@ const FEATURES = [
   'Emergency contact management with instant notifications',
 ];
 
-// ── Left side panel — same in Login and Register ──
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex flex-col justify-between
-                    bg-primary-50 dark:bg-gray-800
-                    p-10 xl:p-14">
-
-      {/* Logo + app name */}
+    <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,25 +27,18 @@ function LeftPanel() {
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
       </div>
 
-      {/* Main content */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">
-          Care Sync
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">Care Sync</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
           Connect, coordinate, and care for your loved ones together with our
           comprehensive family caregiving platform designed for modern healthcare needs.
         </p>
-
-        {/* Feature list */}
         <ul className="space-y-4">
           {FEATURES.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              {/* Teal circle checkmark */}
               <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3}
-                    d="M5 13l4 4L19 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
@@ -60,7 +47,6 @@ function LeftPanel() {
         </ul>
       </div>
 
-      {/* HIPAA badge at bottom */}
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-700 rounded-xl border border-primary-100 dark:border-gray-600">
         <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,37 +55,25 @@ function LeftPanel() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-            HIPAA Compliant & Secure
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Enterprise-grade security for your family's healthcare data
-          </p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant & Secure</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security for your family's healthcare data</p>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Main Login page ──
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
+  const [form, setForm] = useState({ email: '', password: '', rememberMe: false });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,15 +92,11 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
-
-      {/* Left panel — hidden on mobile */}
       <LeftPanel />
 
-      {/* Right side — login form */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
 
-          {/* Mobile logo — only shows when left panel is hidden */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,46 +107,31 @@ export function Login() {
             <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
           </div>
 
-          {/* Sign In / Sign Up tab switcher — like Figma */}
           <div className="flex mb-8 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
-            <span className="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-700
-                             text-gray-900 dark:text-gray-50 font-medium text-sm text-center
-                             shadow-sm">
+            <span className="flex-1 py-2 px-4 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-50 font-medium text-sm text-center shadow-sm">
               Sign In
             </span>
-            <Link
-              to="/register"
-              className="flex-1 py-2 px-4 rounded-lg text-gray-500 dark:text-gray-400
-                         font-medium text-sm text-center
-                         hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-            >
+            <Link to="/register" className="flex-1 py-2 px-4 rounded-lg text-gray-500 dark:text-gray-400 font-medium text-sm text-center hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
               Sign Up
             </Link>
           </div>
 
-          {/* Heading */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
-              Welcome back
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Welcome back</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Sign in to your caregiver account and continue caring for your loved ones
             </p>
           </div>
 
-          {/* Error message */}
           {error && (
-            <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20
-                            border border-red-200 dark:border-red-800 rounded-xl">
+            <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
               <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
               id="email"
@@ -188,7 +143,6 @@ export function Login() {
               onChange={handleChange}
               required
             />
-
             <Input
               id="password"
               name="password"
@@ -197,63 +151,36 @@ export function Login() {
               placeholder="Enter your password"
               value={form.password}
               onChange={handleChange}
+              showPasswordToggle 
               required
             />
 
-            {/* Remember me + Forgot password */}
             <div className="flex items-center justify-between">
-              <Checkbox
-                id="rememberMe"
-                name="rememberMe"
-                label="Remember me"
-                checked={form.rememberMe}
-                onChange={handleChange}
-              />
-              <Link
-                to="/forgot-password"
-                className="text-sm text-primary-600 dark:text-primary-400
-                           hover:text-primary-700 dark:hover:text-primary-300
-                           font-medium transition-colors"
-              >
+              <Checkbox id="rememberMe" name="rememberMe" label="Remember me" checked={form.rememberMe} onChange={handleChange} />
+              <Link to="/forgot-password" className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors">
                 Forgot password?
               </Link>
             </div>
 
-            {/* Submit button */}
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              isLoading={isLoading}
-            >
+            <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
               Sign In to Your Account
             </Button>
           </form>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
           </div>
 
-          {/* Invite family button — like Figma */}
-          <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4
-                             border border-gray-300 dark:border-gray-600 rounded-xl
-                             text-sm font-medium text-gray-700 dark:text-gray-300
-                             hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <span className="w-2 h-2 bg-primary-500 rounded-full" />
             Invite Family Caregivers
           </button>
 
-          {/* Sign up link */}
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="text-primary-600 dark:text-primary-400 font-medium
-                         hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-            >
+            <Link to="/register" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
               Sign up here
             </Link>
           </p>
