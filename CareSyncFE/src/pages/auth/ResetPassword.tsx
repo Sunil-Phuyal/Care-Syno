@@ -4,12 +4,9 @@ import { authApi } from '../../api/auth.api';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
-// ── Left panel — consistent with Login/Register/AcceptInvite ──
 function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
-
-      {/* Logo */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,18 +16,11 @@ function LeftPanel() {
         </div>
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
       </div>
-
-      {/* Main content */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">
-          Reset Your Password
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">Reset Your Password</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
-          Choose a strong new password to keep your CareSync account and your
-          family's healthcare data safe and secure.
+          Choose a strong new password to keep your CareSync account and your family's healthcare data safe and secure.
         </p>
-
-        {/* Tips list */}
         <ul className="space-y-4">
           {[
             'Use at least 6 characters for a stronger password',
@@ -49,8 +39,6 @@ function LeftPanel() {
           ))}
         </ul>
       </div>
-
-      {/* HIPAA badge */}
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-700 rounded-xl border border-primary-100 dark:border-gray-600">
         <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,11 +55,9 @@ function LeftPanel() {
   );
 }
 
-// ── Main ResetPassword page ──
 export function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
   const rawToken = searchParams.get('token') ?? '';
   const token = encodeURIComponent(rawToken);
 
@@ -86,27 +72,12 @@ export function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    if (!rawToken) {
-      setError('Invalid or missing reset token. Please request a new link.');
-      return;
-    }
-
+    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!rawToken) { setError('Invalid or missing reset token. Please request a new link.'); return; }
     setIsLoading(true);
     try {
-      await authApi.resetPassword({
-        token,
-        password: form.password,
-        confirmPassword: form.confirmPassword,
-      });
+      await authApi.resetPassword({ token, password: form.password, confirmPassword: form.confirmPassword });
       setDone(true);
     } catch (err: any) {
       setError(err.message || 'Failed to reset password. The link may have expired.');
@@ -117,15 +88,9 @@ export function ResetPassword() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
-
-      {/* Left panel — hidden on mobile */}
       <LeftPanel />
-
-      {/* Right side — form */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
-
-          {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,7 +102,6 @@ export function ResetPassword() {
           </div>
 
           {done ? (
-            /* ── Success state ── */
             <div className="text-center space-y-5">
               <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto">
                 <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,35 +114,26 @@ export function ResetPassword() {
                   Your password has been changed successfully. You can now sign in with your new password.
                 </p>
               </div>
-              <Button variant="primary" fullWidth onClick={() => navigate('/login')}>
-                Go to Sign In
-              </Button>
+              <Button variant="primary" fullWidth onClick={() => navigate('/login')}>Go to Sign In</Button>
             </div>
           ) : (
-            /* ── Form state ── */
             <>
-              {/* Heading */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
-                  Set new password
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Set new password</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Choose a strong password for your CareSync account
                 </p>
               </div>
 
-              {/* Error message */}
               {error && (
                 <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                   <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
                 </div>
               )}
 
-              {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <Input
                   id="password"
@@ -188,6 +143,7 @@ export function ResetPassword() {
                   placeholder="Enter your new password"
                   value={form.password}
                   onChange={handleChange}
+                  showPasswordToggle
                   required
                 />
                 <Input
@@ -198,6 +154,7 @@ export function ResetPassword() {
                   placeholder="Confirm your new password"
                   value={form.confirmPassword}
                   onChange={handleChange}
+                  showPasswordToggle
                   required
                 />
                 <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
@@ -205,13 +162,9 @@ export function ResetPassword() {
                 </Button>
               </form>
 
-              {/* Footer link */}
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                 Remember your password?{' '}
-                <Link
-                  to="/login"
-                  className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-                >
+                <Link to="/login" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
                   Sign in here
                 </Link>
               </p>
