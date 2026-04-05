@@ -12,9 +12,9 @@ interface PermissionProviderProps {
 }
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
-  const [currentPatientId, setCurrentPatientId]               = useState<number | null>(null);
+  const [currentPatientId, setCurrentPatientId]                   = useState<number | null>(null);
   const [currentPatientPermissions, setCurrentPatientPermissions] = useState<PermissionMap | null>(null);
-  const [isLoading, setIsLoading]                             = useState(false);
+  const [isLoading, setIsLoading]                                 = useState(false);
 
   // Register loadPermissions with PatientContext so it gets called
   // automatically when a patient is selected or auto-selected
@@ -22,15 +22,46 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
     _registerPermissionLoader(loadPermissions);
   }, []);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // On mount: load role-based permissions from /permissions/me
+  // This covers new users who have no patients yet.
+  // When a patient is selected, loadPermissions() overrides this with
+  // real patient-specific permissions from /permissions/patient/{id}
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const loadRoleFallback = async () => {
+      setIsLoading(true);
+      try {
+        const response = await permissionApi.getMyRolePermissions();
+        // Only set if no patient permissions are loaded yet
+        // (avoids race condition if patient auto-selects fast)
+        setCurrentPatientPermissions((prev) => {
+          if (prev === null) {
+            console.log('ℹ️ No patient selected — loaded role-based permissions');
+            return response.permissions;
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.error('Failed to load role permissions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRoleFallback();
+  }, []);
+
   const loadPermissions = async (patientId: number) => {
     setIsLoading(true);
     try {
       const response = await permissionApi.getPatientPermissions(patientId);
       setCurrentPatientId(patientId);
+      // Patient-specific permissions override the role fallback
       setCurrentPatientPermissions(response.permissions);
       console.log('✅ Permissions loaded for patient:', patientId, response.permissions);
     } catch (error) {
-      console.error('Failed to load permissions:', error);
+      console.error('Failed to load patient permissions:', error);
       setCurrentPatientId(null);
       setCurrentPatientPermissions(null);
     } finally {

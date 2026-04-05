@@ -1,17 +1,16 @@
 package com.bo.caresync.controller;
 
 import com.bo.caresync.constant.MessageConstants;
-import com.bo.caresync.dto.request.auth.ChangePasswordRequest;
-import com.bo.caresync.dto.request.auth.RegisterRequest;
-import com.bo.caresync.dto.request.auth.LoginRequest;
-import com.bo.caresync.dto.request.auth.UpdateProfileRequest;
+import com.bo.caresync.dto.request.auth.*;
 import com.bo.caresync.dto.response.auth.LoginResponse;
 import com.bo.caresync.dto.response.auth.UserResponse;
-import com.bo.caresync.service.AuthService;
+import com.bo.caresync.service.authentication.AuthService;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * @author Sunil Phuyal
@@ -59,5 +58,17 @@ public class AuthController extends BaseController {
     public ResponseEntity<?> changePassword( @RequestBody ChangePasswordRequest request) {
         authService.changePassword(request);
         return successResponse("Password changed successfully", null);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        authService.forgotPassword(request.get("email"));
+        return successResponse("If this email is registered, a reset link has been sent.",null);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return successResponse("Password reset successfully. You can now log in.",null);
     }
 }

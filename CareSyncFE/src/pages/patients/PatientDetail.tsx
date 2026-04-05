@@ -1,5 +1,3 @@
-// src/pages/patients/PatientDetail.tsx
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { patientApi } from '../../api/patient.api';
@@ -12,32 +10,27 @@ import type { Patient } from '../../types/patient.types';
 
 type Tab = 'overview' | 'medications' | 'team' | 'reports';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'overview',    label: 'Overview' },
+const TABS = [
+  { key: 'overview', label: 'Overview' },
   { key: 'medications', label: 'Medications' },
-  { key: 'team',        label: 'Care team' },
-  { key: 'reports',     label: 'Reports' },
+  { key: 'team', label: 'Care team' },
+  { key: 'reports', label: 'Reports' },
 ];
 
-// ── Initials avatar ───────────────────────────────────────────────────────────
 function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
-  const initials = name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+  const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   return (
     <div className={cn(
       'rounded-full bg-primary-100 dark:bg-primary-900/60 flex items-center justify-center shrink-0',
       size === 'lg' ? 'w-12 h-12' : 'w-9 h-9'
     )}>
-      <span className={cn(
-        'font-medium text-primary-700 dark:text-primary-300',
-        size === 'lg' ? 'text-base' : 'text-xs'
-      )}>
+      <span className={cn('font-medium text-primary-700 dark:text-primary-300', size === 'lg' ? 'text-base' : 'text-xs')}>
         {initials}
       </span>
     </div>
   );
 }
 
-// ── Field row ─────────────────────────────────────────────────────────────────
 function Field({ label, value }: { label: string; value?: string | number }) {
   if (!value) return null;
   return (
@@ -48,7 +41,6 @@ function Field({ label, value }: { label: string; value?: string | number }) {
   );
 }
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
@@ -60,12 +52,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-// ── Empty tab placeholder ─────────────────────────────────────────────────────
-function TabEmpty({ message, action, onAction }: {
-  message: string;
-  action: string;
-  onAction: () => void;
-}) {
+function TabEmpty({ message, action, onAction }: { message: string; action: string; onAction: () => void }) {
   return (
     <div className="text-center py-16 border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900">
       <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">{message}</p>
@@ -74,15 +61,14 @@ function TabEmpty({ message, action, onAction }: {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export function PatientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const canDelete = usePermission('patient.delete');
 
-  const [patient, setPatient]     = useState<Patient | null>(null);
+  const [patient, setPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]         = useState('');
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -114,34 +100,24 @@ export function PatientDetail() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Loading patient…</p>
-        </div>
+  if (isLoading) return (
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-center">
+        <Spinner size="lg" />
+        <p className="mt-3 text-sm text-gray-400 dark:text-gray-500">Loading patient…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (error || !patient) {
-    return (
-      <div className="text-center py-16">
-        <p className="text-sm text-error-600 dark:text-error-400 mb-4">
-          {error || 'Patient not found'}
-        </p>
-        <button onClick={() => navigate('/patients')} className="btn btn-primary text-sm">
-          Back to patients
-        </button>
-      </div>
-    );
-  }
+  if (error || !patient) return (
+    <div className="text-center py-16">
+      <p className="text-sm text-error-600 dark:text-error-400 mb-4">{error || 'Patient not found'}</p>
+      <button onClick={() => navigate('/patients')} className="btn btn-primary text-sm">Back to patients</button>
+    </div>
+  );
 
   return (
     <div className="space-y-5">
-
-      {/* Back */}
       <button
         onClick={() => navigate('/patients')}
         className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -152,14 +128,11 @@ export function PatientDetail() {
         Back to patients
       </button>
 
-      {/* Patient header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Avatar name={patient.fullName} size="lg" />
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
-              {patient.fullName}
-            </h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 tracking-tight">{patient.fullName}</h1>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
               {[
                 patient.age ? `${patient.age} yrs` : null,
@@ -169,13 +142,9 @@ export function PatientDetail() {
             </p>
           </div>
         </div>
-
         <div className="flex gap-2">
           <PermissionGate permission="patient.edit">
-            <button
-              onClick={() => navigate(`/patients/${id}/edit`)}
-              className="btn btn-secondary text-sm"
-            >
+            <button onClick={() => navigate(`/patients/${id}/edit`)} className="btn btn-secondary text-sm">
               Edit patient
             </button>
           </PermissionGate>
@@ -191,12 +160,11 @@ export function PatientDetail() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-100 dark:border-gray-800">
-        {TABS.map((tab) => (
+        {TABS.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => setActiveTab(tab.key as Tab)}
             className={cn(
               'px-3 pb-2.5 pt-0.5 text-sm transition-colors border-b-2 -mb-px',
               activeTab === tab.key
@@ -209,55 +177,32 @@ export function PatientDetail() {
         ))}
       </div>
 
-      {/* ── Overview ── */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
           <Section title="Personal information">
             <Field label="Date of birth" value={patient.dateOfBirth ? formatters.date(patient.dateOfBirth) : undefined} />
-            <Field label="Age"           value={patient.age ? `${patient.age} years old` : undefined} />
-            <Field label="Gender"        value={patient.gender ? patient.gender.charAt(0) + patient.gender.slice(1).toLowerCase() : undefined} />
-            <Field label="Phone"         value={patient.phoneNumber} />
-            <Field label="Address"       value={patient.address} />
+            <Field label="Age" value={patient.age ? `${patient.age} years old` : undefined} />
+            <Field label="Gender" value={patient.gender ? patient.gender.charAt(0) + patient.gender.slice(1).toLowerCase() : undefined} />
+            <Field label="Phone" value={patient.phoneNumber} />
+            <Field label="Address" value={patient.address} />
           </Section>
-
           {(patient.emergencyContactName || patient.emergencyContactPhone) && (
             <Section title="Emergency contact">
-              <Field label="Name"  value={patient.emergencyContactName} />
+              <Field label="Name" value={patient.emergencyContactName} />
               <Field label="Phone" value={patient.emergencyContactPhone} />
             </Section>
           )}
-
         </div>
       )}
-
-      {/* ── Medications ── */}
       {activeTab === 'medications' && (
-        <TabEmpty
-          message="Medications for this patient will appear here."
-          action="View all medications"
-          onAction={() => navigate('/medications')}
-        />
+        <TabEmpty message="Medications for this patient will appear here." action="View all medications" onAction={() => navigate('/medications')} />
       )}
-
-      {/* ── Care team ── */}
       {activeTab === 'team' && (
-        <TabEmpty
-          message="Care team members for this patient will appear here."
-          action="Manage caregivers"
-          onAction={() => navigate('/caregivers')}
-        />
+        <TabEmpty message="Care team members for this patient will appear here." action="Manage caregivers" onAction={() => navigate('/caregivers')} />
       )}
-
-      {/* ── Reports ── */}
       {activeTab === 'reports' && (
-        <TabEmpty
-          message="Reports for this patient will appear here."
-          action="View reports"
-          onAction={() => navigate('/reports/adherence')}
-        />
+        <TabEmpty message="Reports for this patient will appear here." action="View reports" onAction={() => navigate('/reports/adherence')} />
       )}
-
     </div>
   );
 }

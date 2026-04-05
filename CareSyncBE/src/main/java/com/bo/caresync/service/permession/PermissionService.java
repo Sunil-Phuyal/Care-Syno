@@ -9,6 +9,7 @@ import com.bo.caresync.entity.auth.RolePermission;
 import com.bo.caresync.entity.patient.Patient;
 import com.bo.caresync.entity.patient.PatientCaregiver;
 import com.bo.caresync.entity.patient.PatientCaregiverPermission;
+import com.bo.caresync.entity.user.UserRole;
 import com.bo.caresync.enums.ErrorCode;
 import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
@@ -19,10 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Sunil Phuyal
@@ -189,4 +188,77 @@ public class PermissionService {
 
 
     }
+
+    @Transactional(readOnly = true)
+    public PermissionResponse getMyRolePermissions(Long userId) {
+        String methodName = AppUtil.getMethodName();
+        log.debug("{} Getting role-based permissions for userId={}", methodName, userId);
+
+        // Step 1: Get user's roles from user_roles table
+        List<UserRole> userRoles = userRoleRepo.findByUserId(userId);
+
+        if (userRoles.isEmpty()) {
+            log.warn("{} No roles found for userId={}", methodName, userId);
+            // Return empty permissions rather than throwing
+            return PermissionResponse.builder()
+                    .userId(userId)
+                    .patientId(null)
+                    .patientName(null)
+                    .roleId(null)
+                    .roleName(null)
+                    .roleDisplayName(null)
+                    .permissions(new HashMap<>())
+                    .build();
+        }
+
+        // Step 2: Get all permissions from DB
+        List<Permission> allPermissions = permissionRepo.findByRecordStatus(
+                AppConstants.RecordStatus.ACTIVE
+        );
+
+        // Step 3: Collect all role IDs for this user
+        List<Long> roleIds = userRoles.stream()
+                .map(UserRole::getRoleId)
+                .collect(Collectors.toList());
+
+        // Step 4: Get all role_permissions for those roles
+        // Most permissive wins — if ANY role grants a permission, it's granted
+        List<RolePermission> allRolePermissions = rolePermissionRepo
+                .findByRoleIdInAndIsGrantedAndRecordStatus(
+                        roleIds,
+                        true,
+                        AppConstants.RecordStatus.ACTIVE
+                );
+
+        Set<Long> grantedPermissionIds = allRolePermissions.stream()
+                .map(RolePermission::getPermissionId)
+                .collect(Collectors.toSet());
+
+        // Step 5: Build permission map
+        Map<String, Boolean> permissionMap = new HashMap<>();
+        for (Permission permission : allPermissions) {
+            permissionMap.put(
+                    permission.getPermissionCode(),
+                    grantedPermissionIds.contains(permission.getPermissionId())
+            );
+        }
+
+        log.info("{} Loaded {} role-based permissions for userId={}",
+                methodName, permissionMap.size(), userId);
+
+        // Step 6: Use primary role for response metadata
+        Long primaryRoleId = roleIds.get(0);
+        Role primaryRole = roleRepo.findById(primaryRoleId)
+                .orElse(null);
+
+        return PermissionResponse.builder()
+                .userId(userId)
+                .patientId(null)
+                .patientName(null)
+                .roleId(primaryRoleId)
+                .roleName(primaryRole != null ? primaryRole.getRoleName() : null)
+                .roleDisplayName(primaryRole != null ? primaryRole.getDisplayName() : null)
+                .permissions(permissionMap)
+                .build();
+}
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { caregiverApi } from '../../api/caregiver.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
+import { PermissionGate } from '../../components/common/PermissionGate';
 import { Input } from '../../components/ui/Input';
 import { cn } from '../../utils/cn';
 
@@ -130,7 +131,6 @@ function RoleOption({
         )}>
           {selected && <div className="w-2 h-2 rounded-full bg-primary-500" />}
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-0.5">
             <span className={cn(
@@ -143,7 +143,6 @@ function RoleOption({
               {role.subtitle}
             </span>
           </div>
-
           {selected && (
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {role.permissions.map((p, i) => (
@@ -168,7 +167,7 @@ function RoleOption({
   );
 }
 
-export function InviteCaregiver() {
+function InviteCaregiverForm() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
   const { success, error: showError } = useNotification();
@@ -216,15 +215,15 @@ export function InviteCaregiver() {
     return (
       <div className="card text-center py-16">
         <p className="text-gray-500 dark:text-gray-400 mb-6">Please select a patient first.</p>
-        <button onClick={() => navigate('/patients')} className="btn btn-primary">Go to Patients</button>
+        <button onClick={() => navigate('/patients')} className="btn btn-primary">
+          Go to Patients
+        </button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-
-      {/* Header */}
       <div>
         <button
           onClick={() => navigate('/caregivers')}
@@ -242,12 +241,10 @@ export function InviteCaregiver() {
         </p>
       </div>
 
-      {/* Step bar */}
       <div className="card py-5">
         <StepBar current={step} />
       </div>
 
-      {/* Error */}
       {error && (
         <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +254,6 @@ export function InviteCaregiver() {
         </div>
       )}
 
-      {/* ── STEP 1 ── */}
       {step === 1 && (
         <div className="card space-y-5">
           <div>
@@ -266,40 +262,21 @@ export function InviteCaregiver() {
               Enter the contact information of the person you want to invite.
             </p>
           </div>
-
           <div className="flex gap-3 p-3.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl">
             <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
             <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-              If this person does not have an account yet, one will be created and they will receive login credentials by email.
+              If this person does not have an account yet, one will be created and they will receive a secure invitation link to set their own password.
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              name="fullName"
-              label="Full name"
-              value={form.fullName}
-              onChange={handleChange}
-              placeholder="e.g. Krishna Sharma"
-              required
-            />
-            <Input
-              name="email"
-              label="Email address"
-              type="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="name@example.com"
-              required
-            />
+            <Input name="fullName" label="Full name" value={form.fullName} onChange={handleChange} placeholder="e.g. Krishna Sharma" required />
+            <Input name="email" label="Email address" type="email" value={form.email} onChange={handleChange} placeholder="name@example.com" required />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Relationship{' '}
-              <span className="text-gray-400 font-normal">(optional)</span>
+              Relationship <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <div className="relative">
               <select
@@ -319,7 +296,6 @@ export function InviteCaregiver() {
               </div>
             </div>
           </div>
-
           <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
             <button
               type="button"
@@ -336,7 +312,6 @@ export function InviteCaregiver() {
         </div>
       )}
 
-      {/* ── STEP 2 ── */}
       {step === 2 && (
         <div className="card space-y-5">
           <div>
@@ -347,7 +322,6 @@ export function InviteCaregiver() {
               can see and do. You can update this later.
             </p>
           </div>
-
           <div className="space-y-3">
             {ROLES.map((role) => (
               <RoleOption
@@ -358,11 +332,8 @@ export function InviteCaregiver() {
               />
             ))}
           </div>
-
           <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" onClick={() => setStep(1)} className="btn btn-secondary">
-              Back
-            </button>
+            <button type="button" onClick={() => setStep(1)} className="btn btn-secondary">Back</button>
             <button type="button" onClick={() => setStep(3)} className="btn btn-primary">
               Continue
               <svg className="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,7 +344,6 @@ export function InviteCaregiver() {
         </div>
       )}
 
-      {/* ── STEP 3 ── */}
       {step === 3 && (
         <div className="card space-y-5">
           <div>
@@ -382,9 +352,7 @@ export function InviteCaregiver() {
               Confirm the details before sending the invitation.
             </p>
           </div>
-
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
-            {/* Person */}
             <div className="flex items-center gap-3 p-4">
               <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-sm font-semibold text-primary-700 dark:text-primary-300 flex-shrink-0">
                 {form.fullName.charAt(0).toUpperCase()}
@@ -398,32 +366,20 @@ export function InviteCaregiver() {
                   </p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium flex-shrink-0"
-              >
+              <button type="button" onClick={() => setStep(1)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium flex-shrink-0">
                 Edit
               </button>
             </div>
-
-            {/* Role */}
             <div className="flex items-center justify-between gap-3 p-4">
               <div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Role</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">{selectedRole.title}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{selectedRole.subtitle}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium"
-              >
+              <button type="button" onClick={() => setStep(2)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline font-medium">
                 Change
               </button>
             </div>
-
-            {/* Patient */}
             <div className="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50">
               <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -434,23 +390,17 @@ export function InviteCaregiver() {
               </p>
             </div>
           </div>
-
-          {/* Email note */}
           <div className="flex gap-3 p-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
             <svg className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
               An invitation email will be sent to{' '}
-              <span className="font-medium text-gray-700 dark:text-gray-300">{form.email}</span>.
-              They can join the care team immediately after logging in.
+              <span className="font-medium text-gray-700 dark:text-gray-300">{form.email}</span>. They can join the care team immediately after logging in.
             </p>
           </div>
-
           <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-            <button type="button" onClick={() => setStep(2)} className="btn btn-secondary">
-              Back
-            </button>
+            <button type="button" onClick={() => setStep(2)} className="btn btn-secondary">Back</button>
             <button
               type="button"
               onClick={handleSubmit}
@@ -478,5 +428,18 @@ export function InviteCaregiver() {
         </div>
       )}
     </div>
+  );
+}
+
+// PermissionGate wraps the whole page —
+// Secondary CG and Healthcare Provider are redirected away
+export function InviteCaregiver() {
+  return (
+    <PermissionGate
+      permission="caregiver.invite"
+      fallback={<Navigate to="/caregivers" replace />}
+    >
+      <InviteCaregiverForm />
+    </PermissionGate>
   );
 }
