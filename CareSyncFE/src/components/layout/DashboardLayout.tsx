@@ -7,6 +7,7 @@ import { useAlerts } from '../../context/AlertContext';
 import { useNotificationScheduler } from '../../hooks/useNotificationScheduler';
 import { LogoutConfirmDialog } from '../ui/ConfirmDialog';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 import { cn } from '../../utils/cn';
 
 const NAV_ITEMS = [
@@ -61,10 +62,12 @@ function getPageInfo(pathname: string) {
 
 function LogoIcon({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
   return (
-    <div className={cn('bg-primary-500 rounded-xl flex items-center justify-center flex-shrink-0', size === 'lg' ? 'w-14 h-14' : 'w-8 h-8')}>
-      <svg className={cn('text-white', size === 'lg' ? 'w-8 h-8' : 'w-4 h-4')} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-      </svg>
+    <div className={cn('flex items-center justify-center flex-shrink-0', size === 'lg' ? 'w-14 h-14' : 'w-8 h-8')}>
+      <img
+        src={careSyncLogo}
+        alt="CareSync"
+        className={size === 'lg' ? 'w-14 h-14' : 'w-8 h-8'}
+      />
     </div>
   );
 }
