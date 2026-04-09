@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
+import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 const FEATURES = [
   'Schedule and coordinate care tasks seamlessly across your family network',
@@ -18,12 +19,7 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </div>
+        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
       </div>
 
@@ -36,11 +32,7 @@ function LeftPanel() {
         <ul className="space-y-4">
           {FEATURES.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+              <div className="w-4 h-4 rounded-full border-4 border-primary-500 flex-shrink-0 mt-0.5" />
               <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
             </li>
           ))}

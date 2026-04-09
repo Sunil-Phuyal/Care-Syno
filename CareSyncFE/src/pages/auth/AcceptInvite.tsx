@@ -3,19 +3,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { caregiverApi } from '../../api/caregiver.api';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </div>
+        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
       </div>
+
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">You're Invited</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
@@ -29,16 +26,13 @@ function LeftPanel() {
             'Get notified for medications, appointments, and emergencies',
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-3">
-              <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+              <div className="w-4 h-4 rounded-full border-4 border-primary-500 flex-shrink-0 mt-0.5" />
               <span className="text-sm text-gray-700 dark:text-gray-300">{step}</span>
             </li>
           ))}
         </ul>
       </div>
+
       <div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-700 rounded-xl border border-primary-100 dark:border-gray-600">
         <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

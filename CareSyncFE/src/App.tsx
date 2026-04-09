@@ -6,7 +6,7 @@ import { AuthProvider }         from './context/AuthContext';
 import { PermissionProvider }   from './context/PermissionContext';
 import { PatientProvider }      from './context/PatientContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { AlertProvider }        from './context/AlertContext';   // ← NEW
+import { AlertProvider }        from './context/AlertContext';  
 import { ProtectedRoute }       from './components/auth/ProtectedRoute';
 import { DashboardLayout }      from './components/layout/DashboardLayout';
 import { Login }                from './pages/auth/Login';
