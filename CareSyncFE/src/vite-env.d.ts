@@ -9,7 +9,6 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// Vite's client.d.ts already covers `*.svg` — only add the ?url variant
 declare module '*.svg?url' {
   const src: string;
   export default src;

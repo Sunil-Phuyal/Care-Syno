@@ -21,7 +21,7 @@ export interface CreatePatientRequest {
   address?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
-  profileImageUrl?: string;        // ← image upload
+  profileImageUrl?: string;        
 }
 
 export interface UpdatePatientRequest extends CreatePatientRequest {}

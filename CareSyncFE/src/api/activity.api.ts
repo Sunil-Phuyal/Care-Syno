@@ -3,35 +3,19 @@
 import { api } from '../lib/axios';
 import type { ApiResponse } from '../types/common.types';
 
-// ─────────────────────────────────────────────────────────────
-// ActivityDTO — matches backend ActivityService.toActivityDTO()
-// Field names must match exactly what the backend builder sets.
-//
-// Backend fields:
-//   activityId, activityType, description, performedByName,
-//   performedByEmail, patientName, patientId, timestamp,
-//   icon, color
-// ─────────────────────────────────────────────────────────────
 export interface ActivityDTO {
   activityId:        number;
-  activityType:      string;   // e.g. "MEDICATION_ADMINISTERED", "MEDICATION_MISSED"
+  activityType:      string;   
   description:       string;
   performedByName:   string;
   performedByEmail:  string;
   patientName:       string;
   patientId:         number;
-  timestamp:         string;   // ISO string from LocalDateTime
+  timestamp:         string;   
   icon:              string;
   color:             'success' | 'warning' | 'error' | 'info';
 }
 
-// ─────────────────────────────────────────────────────────────
-// API functions — params match backend controller exactly
-//
-// Backend endpoints:
-//   GET /api/v1/activity/recent?limit=20
-//   GET /api/v1/activity?patientId=X&limit=50
-// ─────────────────────────────────────────────────────────────
 export const activityApi = {
 
   /**

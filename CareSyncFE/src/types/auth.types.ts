@@ -33,7 +33,7 @@ export interface LoginResponse {
 export interface UpdateProfileRequest {
   fullName?: string;
   phone?: string;
-  profileImageUrl?: string;       // ← new
+  profileImageUrl?: string;       
 }
 
 export interface AuthContextType {
