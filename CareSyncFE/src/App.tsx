@@ -6,7 +6,7 @@ import { AuthProvider }         from './context/AuthContext';
 import { PermissionProvider }   from './context/PermissionContext';
 import { PatientProvider }      from './context/PatientContext';
 import { NotificationProvider } from './context/NotificationContext';
-import { AlertProvider }        from './context/AlertContext';   // ← NEW
+import { AlertProvider }        from './context/AlertContext';  
 import { ProtectedRoute }       from './components/auth/ProtectedRoute';
 import { DashboardLayout }      from './components/layout/DashboardLayout';
 import { Login }                from './pages/auth/Login';
@@ -55,8 +55,8 @@ function App() {
                     <Route path="/login"           element={<Login />} />
                     <Route path="/register"        element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password"  element={<ResetPassword />} />   {/* ?token=xxx */}
-                    <Route path="/accept-invite"   element={<AcceptInvite />} />    {/* ?token=xxx */}
+                    <Route path="/reset-password"  element={<ResetPassword />} />   
+                    <Route path="/accept-invite"   element={<AcceptInvite />} />    
 
                     {/* Protected routes */}
                     <Route path="/*" element={

@@ -12,7 +12,7 @@ export interface Caregiver {
   invitedAt: string;
   acceptedAt?: string;
   status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
-  relationship?: string; // returned by backend; optional for primary caregiver
+  relationship?: string; 
 }
 
 export interface InviteCaregiverRequest {

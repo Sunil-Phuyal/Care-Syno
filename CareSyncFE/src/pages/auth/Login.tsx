@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
+import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 const FEATURES = [
   'Schedule and coordinate care tasks seamlessly across your family network',
@@ -17,14 +18,8 @@ const FEATURES = [
 function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
-        </div>
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+      <div className="flex flex-col items-start">
+       <img src={careSyncLogo} alt="CareSync" className="w-48 h-48 drop-shadow-md" />
       </div>
 
       <div>
@@ -36,11 +31,7 @@ function LeftPanel() {
         <ul className="space-y-4">
           {FEATURES.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+              <div className="w-4 h-4 rounded-full border-4 border-primary-500 flex-shrink-0 mt-0.5" />
               <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
             </li>
           ))}
@@ -151,7 +142,7 @@ export function Login() {
               placeholder="Enter your password"
               value={form.password}
               onChange={handleChange}
-              showPasswordToggle 
+              showPasswordToggle
               required
             />
 
@@ -167,23 +158,13 @@ export function Login() {
             </Button>
           </form>
 
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-            <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          </div>
-
-          <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <span className="w-2 h-2 bg-primary-500 rounded-full" />
-            Invite Family Caregivers
-          </button>
-
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
               Sign up here
             </Link>
           </p>
+
         </div>
       </div>
     </div>
