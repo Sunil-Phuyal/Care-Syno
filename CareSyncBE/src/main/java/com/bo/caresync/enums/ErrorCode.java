@@ -56,7 +56,8 @@ public enum ErrorCode implements IErrorCode {
     INVALID_FILE_TYPE(400, "Invalid file type"),
     MEDICATION_NOT_FOUND(404, "Medication not found"),
 
-    DUPLICATE_ENTRY(409, "Entry already exists"), INVALID_TOKEN(400,"Invalid token" ),
+    DUPLICATE_ENTRY(409, "Entry already exists"),
+    INVALID_TOKEN(400,"Invalid token" ),
     TOKEN_ALREADY_USED(406,"Token is already used" );
 
     private final int httpStatus;

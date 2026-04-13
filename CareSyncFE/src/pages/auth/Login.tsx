@@ -18,9 +18,8 @@ const FEATURES = [
 function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
-      <div className="flex items-center gap-3">
-        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+      <div className="flex flex-col items-start">
+       <img src={careSyncLogo} alt="CareSync" className="w-48 h-48 drop-shadow-md" />
       </div>
 
       <div>
@@ -143,7 +142,7 @@ export function Login() {
               placeholder="Enter your password"
               value={form.password}
               onChange={handleChange}
-              showPasswordToggle 
+              showPasswordToggle
               required
             />
 
@@ -159,23 +158,13 @@ export function Login() {
             </Button>
           </form>
 
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-            <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          </div>
-
-          <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <span className="w-2 h-2 bg-primary-500 rounded-full" />
-            Invite Family Caregivers
-          </button>
-
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
               Sign up here
             </Link>
           </p>
+
         </div>
       </div>
     </div>

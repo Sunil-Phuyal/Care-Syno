@@ -55,8 +55,8 @@ function App() {
                     <Route path="/login"           element={<Login />} />
                     <Route path="/register"        element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/reset-password"  element={<ResetPassword />} />   {/* ?token=xxx */}
-                    <Route path="/accept-invite"   element={<AcceptInvite />} />    {/* ?token=xxx */}
+                    <Route path="/reset-password"  element={<ResetPassword />} />   
+                    <Route path="/accept-invite"   element={<AcceptInvite />} />    
 
                     {/* Protected routes */}
                     <Route path="/*" element={
