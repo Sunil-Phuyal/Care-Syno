@@ -18,8 +18,8 @@ const FEATURES = [
 function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
-      <div className="flex items-center gap-3">
-        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
+      <div className="flex flex-col items-start gap-5">
+        <img src={careSyncLogo} alt="CareSync" className="w-20 h-20" />
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
       </div>
 
@@ -167,7 +167,7 @@ export function Register() {
               placeholder="Create a secure password"
               value={form.password}
               onChange={handleChange}
-              showPasswordToggle  
+              showPasswordToggle
               required
             />
             <Input
@@ -178,7 +178,7 @@ export function Register() {
               placeholder="Confirm your password"
               value={form.confirmPassword}
               onChange={handleChange}
-              showPasswordToggle 
+              showPasswordToggle
               required
             />
 
@@ -202,20 +202,9 @@ export function Register() {
             />
 
             <Button type="submit" variant="primary" fullWidth isLoading={isLoading}>
-              Create Your Caregiver Account
+              Create Caregiver Account
             </Button>
           </form>
-
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-            <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          </div>
-
-          <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <span className="w-2 h-2 bg-orange-400 rounded-full" />
-            Continue with Google
-          </button>
 
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Already have an account?{' '}
@@ -223,6 +212,7 @@ export function Register() {
               Sign in here
             </Link>
           </p>
+
         </div>
       </div>
     </div>

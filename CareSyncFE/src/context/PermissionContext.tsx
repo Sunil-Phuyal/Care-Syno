@@ -37,7 +37,7 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         // (avoids race condition if patient auto-selects fast)
         setCurrentPatientPermissions((prev) => {
           if (prev === null) {
-            console.log('ℹ️ No patient selected — loaded role-based permissions');
+            console.log(' No patient selected — loaded role-based permissions');
             return response.permissions;
           }
           return prev;
