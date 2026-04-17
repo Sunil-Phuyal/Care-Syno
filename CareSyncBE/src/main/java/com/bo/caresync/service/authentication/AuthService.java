@@ -80,12 +80,8 @@ public class AuthService {
         userRole.setRoleId(primaryRole.getRoleId());
         userRole.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
         userRole.setCreatedBy(AppConstants.Auditor.SYSTEM_USER);
-
         userRoleRepository.save(userRole);
-
         log.info("{} User registered successfully: {}", methodName, savedUser.getEmail());
-
-        // Send welcome email
         String emailBody = emailTemplateService.getWelcomeEmailBody(
                 savedUser.getFullName(),
                 savedUser.getEmail()

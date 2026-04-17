@@ -14,6 +14,7 @@ import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
 import com.bo.caresync.service.email.EmailService;
 import com.bo.caresync.service.email.EmailTemplateService;
+import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -110,14 +111,9 @@ public class MedicationService {
                 .addedAt(medication.getCreatedAt())
                 .build();
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // SCHEDULE CRUD
-    // ─────────────────────────────────────────────────────────────
-
     @Transactional
     public MedicationScheduleResponse createMedicationSchedule(CreateMedicationScheduleRequest request) {
-        String methodName = "createMedicationSchedule";
+        String methodName = AppUtil.getMethodName();
 
         log.debug("{} Creating medication schedule for patient {}", methodName, request.getPatientId());
         loginUserUtil.requirePermission(request.getPatientId(), "medication.create_schedule");
@@ -340,10 +336,6 @@ public class MedicationService {
 
         return history;
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // TODAY / UPCOMING
-    // ─────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
     public List<TodayScheduleDTO> getTodaySchedules(Long patientId) {

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ToastProps {
   message: string;
@@ -8,33 +8,50 @@ interface ToastProps {
 }
 
 export function Toast({ message, type = 'info', onClose, duration = 3000 }: ToastProps) {
+  const [exiting, setExiting] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
+    const exitTimer = setTimeout(() => setExiting(true), duration - 300);
+    const closeTimer = setTimeout(onClose, duration);
+    return () => {
+      clearTimeout(exitTimer);
+      clearTimeout(closeTimer);
+    };
   }, [duration, onClose]);
 
-  const styles = {
-    success: 'bg-success-50 border-success-200 text-success-800',
-    error: 'bg-error-50 border-error-200 text-error-800',
-    warning: 'bg-warning-50 border-warning-200 text-warning-800',
-    info: 'bg-blue-50 border-blue-200 text-blue-800',
+  const handleClose = () => {
+    setExiting(true);
+    setTimeout(onClose, 300);
   };
 
-  const icons = {
-    success: '✅',
-    error: '❌',
-    warning: '⚠️',
-    info: 'ℹ️',
-  };
+  const accent = {
+    success: 'bg-teal-500',
+    error:   'bg-error-500',
+    warning: 'bg-warning-500',
+    info:    'bg-gray-400',
+  }[type];
 
   return (
-    <div className={`fixed top-20 right-4 z-50 animate-slide-in-right max-w-sm`}>
-      <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${styles[type]}`}>
-        <span className="text-xl">{icons[type]}</span>
-        <p className="flex-1 text-sm font-medium">{message}</p>
+    <div
+      className={`
+        fixed bottom-5 right-5 z-50
+        transition-all duration-300 ease-in-out
+        ${exiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-slide-in-right'}
+      `}
+    >
+      <div className="flex items-stretch bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md overflow-hidden min-w-[280px] max-w-sm">
+        {/* Left accent bar */}
+        <div className={`w-1 shrink-0 ${accent}`} />
+
+        {/* Message */}
+        <p className="flex-1 px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 leading-snug">
+          {message}
+        </p>
+
+        {/* Dismiss */}
         <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700"
+          onClick={handleClose}
+          className="px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors duration-150 text-xs font-medium self-stretch"
         >
           ✕
         </button>
