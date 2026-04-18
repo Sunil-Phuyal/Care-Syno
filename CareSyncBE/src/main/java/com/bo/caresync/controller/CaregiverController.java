@@ -41,7 +41,7 @@ public class CaregiverController extends BaseController {
     @PostMapping("/accept-invite")
     public ResponseEntity<?> acceptInvite(@RequestBody AcceptInviteRequest request) {
         caregiverService.acceptInvite(request);
-        return ResponseEntity.ok("Account activated successfully. You can now log in.");
+        return successResponse("Account activated successfully. You can now log in.",null);
     }
 
     @DeleteMapping("/patient/{patientId}/caregiver/{caregiverId}")
