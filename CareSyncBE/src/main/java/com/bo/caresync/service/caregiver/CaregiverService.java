@@ -315,21 +315,17 @@ public class CaregiverService {
 
     @Transactional
     public void acceptInvite(AcceptInviteRequest request) {
-        String methodName = "acceptInvite";
+        String methodName = AppUtil.getMethodName();
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new BaseException(ErrorCode.VALIDATION_ERROR, "Passwords do not match");
         }
-
-        // Validate and decrypt token
         Map<String, String> payload;
         try {
             payload = resetLinkService.validateAndDecrypt(request.getToken());
         } catch (Exception e) {
             throw new BaseException(ErrorCode.INVALID_TOKEN, e.getMessage());
         }
-
-        // Check this is an INVITE token, not a forgot-password token
         String linkType = payload.get("linkType");
         if (!"INVITE".equals(linkType)) {
             throw new BaseException(ErrorCode.INVALID_TOKEN, "Invalid invitation link");
