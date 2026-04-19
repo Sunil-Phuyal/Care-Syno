@@ -32,13 +32,13 @@ export function Toast({ message, type = 'info', onClose, duration = 3000 }: Toas
   }[type];
 
   return (
-    <div
-      className={`
-        fixed bottom-5 right-5 z-50
-        transition-all duration-300 ease-in-out
-        ${exiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-slide-in-right'}
-      `}
-    >
+   <div
+  className={`
+    fixed top-5 right-5 z-50
+    transition-all duration-300 ease-in-out
+    ${exiting ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0 animate-slide-in-right'}
+  `}
+>
       <div className="flex items-stretch bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md overflow-hidden min-w-[280px] max-w-sm">
         {/* Left accent bar */}
         <div className={`w-1 shrink-0 ${accent}`} />
