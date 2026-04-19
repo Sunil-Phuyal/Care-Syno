@@ -104,11 +104,7 @@ function StepBar({ current }: { current: number }) {
   );
 }
 
-function RoleOption({
-  role,
-  selected,
-  onSelect,
-}: {
+function RoleOption({ role, selected, onSelect }: {
   role: typeof ROLES[0];
   selected: boolean;
   onSelect: () => void;
@@ -173,14 +169,8 @@ function InviteCaregiverForm() {
   const { success, error: showError } = useNotification();
 
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    email: '',
-    fullName: '',
-    roleId: '11113',
-    relationship: '',
-  });
+  const [form, setForm] = useState({ email: '', fullName: '', roleId: '11113', relationship: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -190,7 +180,6 @@ function InviteCaregiverForm() {
 
   const handleSubmit = async () => {
     if (!selectedPatient) return;
-    setError('');
     setIsLoading(true);
     try {
       await caregiverApi.inviteCaregiver({
@@ -203,9 +192,7 @@ function InviteCaregiverForm() {
       success('Invitation sent successfully!');
       navigate('/caregivers');
     } catch (err: any) {
-      const msg = err.message || 'Failed to send invitation';
-      showError(msg);
-      setError(msg);
+      showError(err.message || 'Failed to send invitation. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -215,9 +202,7 @@ function InviteCaregiverForm() {
     return (
       <div className="card text-center py-16">
         <p className="text-gray-500 dark:text-gray-400 mb-6">Please select a patient first.</p>
-        <button onClick={() => navigate('/patients')} className="btn btn-primary">
-          Go to Patients
-        </button>
+        <button onClick={() => navigate('/patients')} className="btn btn-primary">Go to Patients</button>
       </div>
     );
   }
@@ -244,15 +229,6 @@ function InviteCaregiverForm() {
       <div className="card py-5">
         <StepBar current={step} />
       </div>
-
-      {error && (
-        <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {error}
-        </div>
-      )}
 
       {step === 1 && (
         <div className="card space-y-5">
@@ -431,8 +407,6 @@ function InviteCaregiverForm() {
   );
 }
 
-// PermissionGate wraps the whole page —
-// Secondary CG and Healthcare Provider are redirected away
 export function InviteCaregiver() {
   return (
     <PermissionGate
