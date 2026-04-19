@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../../api/auth.api';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 function LeftPanel() {
@@ -57,24 +58,35 @@ export function ResetPassword() {
 
   const [form, setForm] = useState({ password: '', confirmPassword: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!rawToken) { setError('Invalid or missing reset token. Please request a new link.'); return; }
+    setToast(null);
+
+    if (form.password !== form.confirmPassword) {
+      setToast({ message: 'Passwords do not match.', type: 'warning' });
+      return;
+    }
+    if (form.password.length < 6) {
+      setToast({ message: 'Password must be at least 6 characters.', type: 'warning' });
+      return;
+    }
+    if (!rawToken) {
+      setToast({ message: 'Invalid or missing reset token. Please request a new link.', type: 'error' });
+      return;
+    }
+
     setIsLoading(true);
     try {
       await authApi.resetPassword({ token, password: form.password, confirmPassword: form.confirmPassword });
       setDone(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password. The link may have expired.');
+      setToast({ message: err.message || 'Failed to reset password. The link may have expired.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -83,8 +95,19 @@ export function ResetPassword() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
       <LeftPanel />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
+
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
+
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -108,7 +131,9 @@ export function ResetPassword() {
                   Your password has been changed successfully. You can now sign in with your new password.
                 </p>
               </div>
-              <Button variant="primary" fullWidth onClick={() => navigate('/login')}>Go to Sign In</Button>
+              <Button variant="primary" fullWidth onClick={() => navigate('/login')}>
+                Go to Sign In
+              </Button>
             </div>
           ) : (
             <>
@@ -118,15 +143,6 @@ export function ResetPassword() {
                   Choose a strong password for your CareSync account
                 </p>
               </div>
-
-              {error && (
-                <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <Input
