@@ -11,7 +11,6 @@ import { PERMISSION_CODES } from '../../utils/constants';
 import { cn } from '../../utils/cn';
 import type { PermissionResponse } from '../../types/permission.types';
 
-// ─── Permission group config ──────────────────────────────────────────────────
 const PERMISSION_GROUPS: {
   id: string;
   label: string;
@@ -46,14 +45,14 @@ const PERMISSION_GROUPS: {
       </svg>
     ),
     permissions: [
-      { code: PERMISSION_CODES.MEDICATION_VIEW,              label: 'View medications',      description: 'See current medication list and active schedules.' },
-      { code: PERMISSION_CODES.MEDICATION_CREATE_SCHEDULE,   label: 'Create schedule',       description: 'Set up new medication schedules and dosing times.' },
-      { code: PERMISSION_CODES.MEDICATION_EDIT_SCHEDULE,     label: 'Edit schedule',         description: 'Modify existing schedules, dosages, or frequencies.' },
-      { code: PERMISSION_CODES.MEDICATION_DELETE_SCHEDULE,   label: 'Delete schedule',       description: 'Remove a medication schedule entirely.' },
-      { code: PERMISSION_CODES.MEDICATION_ADMINISTER,        label: 'Administer medication', description: 'Mark oral medications as given for a scheduled dose.' },
-      { code: PERMISSION_CODES.MEDICATION_ADMINISTER_INJECTION, label: 'Give injections',   description: 'Record and administer injectable medications.' },
-      { code: PERMISSION_CODES.MEDICATION_SKIP,              label: 'Skip dose',             description: 'Log a dose as skipped with a reason.' },
-      { code: PERMISSION_CODES.MEDICATION_VIEW_HISTORY,      label: 'View history',          description: 'Access the full administration history and logs.' },
+      { code: PERMISSION_CODES.MEDICATION_VIEW,                 label: 'View medications',      description: 'See current medication list and active schedules.' },
+      { code: PERMISSION_CODES.MEDICATION_CREATE_SCHEDULE,      label: 'Create schedule',       description: 'Set up new medication schedules and dosing times.' },
+      { code: PERMISSION_CODES.MEDICATION_EDIT_SCHEDULE,        label: 'Edit schedule',         description: 'Modify existing schedules, dosages, or frequencies.' },
+      { code: PERMISSION_CODES.MEDICATION_DELETE_SCHEDULE,      label: 'Delete schedule',       description: 'Remove a medication schedule entirely.' },
+      { code: PERMISSION_CODES.MEDICATION_ADMINISTER,           label: 'Administer medication', description: 'Mark oral medications as given for a scheduled dose.' },
+      { code: PERMISSION_CODES.MEDICATION_ADMINISTER_INJECTION, label: 'Give injections',       description: 'Record and administer injectable medications.' },
+      { code: PERMISSION_CODES.MEDICATION_SKIP,                 label: 'Skip dose',             description: 'Log a dose as skipped with a reason.' },
+      { code: PERMISSION_CODES.MEDICATION_VIEW_HISTORY,         label: 'View history',          description: 'Access the full administration history and logs.' },
     ],
   },
   {
@@ -67,10 +66,10 @@ const PERMISSION_GROUPS: {
       </svg>
     ),
     permissions: [
-      { code: PERMISSION_CODES.CAREGIVER_VIEW,             label: 'View care team',       description: 'See who else is on the patient\'s care team.' },
-      { code: PERMISSION_CODES.CAREGIVER_INVITE,           label: 'Invite caregivers',    description: 'Send invitations to new caregivers.' },
-      { code: PERMISSION_CODES.CAREGIVER_REMOVE,           label: 'Remove caregivers',    description: 'Remove a caregiver from the patient\'s team.' },
-      { code: PERMISSION_CODES.CAREGIVER_EDIT_PERMISSIONS, label: 'Edit permissions',     description: 'Change what other caregivers are allowed to do.' },
+      { code: PERMISSION_CODES.CAREGIVER_VIEW,             label: 'View care team',    description: "See who else is on the patient's care team." },
+      { code: PERMISSION_CODES.CAREGIVER_INVITE,           label: 'Invite caregivers', description: 'Send invitations to new caregivers.' },
+      { code: PERMISSION_CODES.CAREGIVER_REMOVE,           label: 'Remove caregivers', description: "Remove a caregiver from the patient's team." },
+      { code: PERMISSION_CODES.CAREGIVER_EDIT_PERMISSIONS, label: 'Edit permissions',  description: 'Change what other caregivers are allowed to do.' },
     ],
   },
   {
@@ -84,14 +83,13 @@ const PERMISSION_GROUPS: {
       </svg>
     ),
     permissions: [
-      { code: PERMISSION_CODES.REPORT_VIEW,           label: 'View reports',    description: 'Access generated reports and summaries.' },
-      { code: PERMISSION_CODES.REPORT_EXPORT,         label: 'Export reports',  description: 'Download or share reports as PDF or CSV.' },
-      { code: PERMISSION_CODES.MEDICAL_RECORD_VITALS, label: 'Record vitals',   description: 'Log blood pressure, heart rate, weight, and other vitals.' },
+      { code: PERMISSION_CODES.REPORT_VIEW,           label: 'View reports',  description: 'Access generated reports and summaries.' },
+      { code: PERMISSION_CODES.REPORT_EXPORT,         label: 'Export reports', description: 'Download or share reports as PDF or CSV.' },
+      { code: PERMISSION_CODES.MEDICAL_RECORD_VITALS, label: 'Record vitals', description: 'Log blood pressure, heart rate, weight, and other vitals.' },
     ],
   },
 ];
 
-// ─── Toggle switch ────────────────────────────────────────────────────────────
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
@@ -101,27 +99,18 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={onChange}
       className={cn(
         'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
-        checked
-          ? 'bg-primary-500'
-          : 'bg-gray-200 dark:bg-gray-700'
+        checked ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'
       )}
     >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ease-in-out',
-          checked ? 'translate-x-4' : 'translate-x-0'
-        )}
-      />
+      <span className={cn(
+        'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ease-in-out',
+        checked ? 'translate-x-4' : 'translate-x-0'
+      )} />
     </button>
   );
 }
 
-// ─── Single permission row ────────────────────────────────────────────────────
-function PermissionRow({
-  permission,
-  checked,
-  onChange,
-}: {
+function PermissionRow({ permission, checked, onChange }: {
   permission: { code: string; label: string; description: string };
   checked: boolean;
   onChange: () => void;
@@ -137,9 +126,7 @@ function PermissionRow({
         <div className="flex items-center gap-2 mb-0.5">
           <p className={cn(
             'text-sm font-semibold leading-tight',
-            checked
-              ? 'text-primary-700 dark:text-primary-300'
-              : 'text-gray-800 dark:text-gray-200'
+            checked ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-200'
           )}>
             {permission.label}
           </p>
@@ -161,12 +148,7 @@ function PermissionRow({
   );
 }
 
-// ─── Group section ────────────────────────────────────────────────────────────
-function GroupSection({
-  group,
-  selected,
-  onToggle,
-}: {
+function GroupSection({ group, selected, onToggle }: {
   group: (typeof PERMISSION_GROUPS)[0];
   selected: Set<string>;
   onToggle: (code: string) => void;
@@ -185,12 +167,9 @@ function GroupSection({
 
   return (
     <div id={`section-${group.id}`} className="scroll-mt-6">
-      {/* Section header */}
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {group.label}
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{group.label}</h2>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-relaxed max-w-lg">
             {group.description}
           </p>
@@ -208,8 +187,6 @@ function GroupSection({
           {allGranted ? 'Revoke all' : noneGranted ? 'Grant all' : 'Grant all'}
         </button>
       </div>
-
-      {/* Permission rows */}
       <div className="space-y-1.5">
         {group.permissions.map((perm) => (
           <PermissionRow
@@ -224,7 +201,6 @@ function GroupSection({
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 export function ManagePermissions() {
   const { id }     = useParams<{ id: string }>();
   const navigate   = useNavigate();
@@ -235,7 +211,6 @@ export function ManagePermissions() {
   const [activeGroup, setActiveGroup] = useState(PERMISSION_GROUPS[0].id);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving]   = useState(false);
-  const [error, setError]         = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -253,7 +228,7 @@ export function ManagePermissions() {
         );
         setSelectedPermissions(granted);
       } catch {
-        setError('Failed to load permissions.');
+        showError('Failed to load permissions. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -261,7 +236,6 @@ export function ManagePermissions() {
     load();
   }, [selectedPatient, id]);
 
-  // Track scroll position to highlight active sidebar item
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
@@ -296,7 +270,6 @@ export function ManagePermissions() {
   const handleSave = async () => {
     if (!selectedPatient || !id) return;
     setIsSaving(true);
-    setError('');
     try {
       for (const permissionCode of Object.values(PERMISSION_CODES)) {
         await caregiverApi.grantPermission({
@@ -309,15 +282,12 @@ export function ManagePermissions() {
       success('Permissions updated successfully!');
       navigate('/caregivers');
     } catch {
-      const msg = 'Failed to update permissions';
-      showError(msg);
-      setError(msg);
+      showError('Failed to update permissions. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // ── No patient ─────────────────────────────────────────────────────────────
   if (!selectedPatient) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 text-center py-16">
@@ -334,7 +304,6 @@ export function ManagePermissions() {
     );
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -353,7 +322,6 @@ export function ManagePermissions() {
   return (
     <div className="flex flex-col h-full">
 
-      {/* ── Top bar ── */}
       <div className="flex items-center justify-between gap-4 pb-5 flex-wrap">
         <div className="flex items-center gap-4">
           <button
@@ -368,14 +336,10 @@ export function ManagePermissions() {
             <h1 className="page-title leading-tight">Manage Permissions</h1>
             <p className="page-subtitle mt-0.5">
               Access control for{' '}
-              <span className="font-semibold text-gray-900 dark:text-gray-100">
-                {selectedPatient.fullName}
-              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{selectedPatient.fullName}</span>
             </p>
           </div>
         </div>
-
-        {/* Summary chips */}
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800/50">
             <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
@@ -392,18 +356,16 @@ export function ManagePermissions() {
         </div>
       </div>
 
-      {/* ── Two-panel layout ── */}
       <div className="flex gap-6 flex-1 min-h-0">
 
-        {/* Left sidebar — sticky nav */}
         <div className="w-48 shrink-0">
           <div className="sticky top-0 space-y-0.5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-600 px-3 mb-2">
               Sections
             </p>
             {PERMISSION_GROUPS.map((group) => {
-              const granted = group.permissions.filter((p) => selectedPermissions.has(p.code)).length;
-              const total   = group.permissions.length;
+              const granted  = group.permissions.filter((p) => selectedPermissions.has(p.code)).length;
+              const total    = group.permissions.length;
               const isActive = activeGroup === group.id;
               return (
                 <button
@@ -426,7 +388,6 @@ export function ManagePermissions() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold leading-tight">{group.label}</p>
                   </div>
-                  {/* Mini progress dots */}
                   <span className={cn(
                     'text-[10px] font-bold tabular-nums',
                     granted === total
@@ -440,8 +401,6 @@ export function ManagePermissions() {
                 </button>
               );
             })}
-
-            {/* Divider + info note */}
             <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
               <p className="text-[11px] text-gray-400 dark:text-gray-600 px-3 leading-relaxed">
                 Toggled permissions override the caregiver's default role.
@@ -450,23 +409,11 @@ export function ManagePermissions() {
           </div>
         </div>
 
-        {/* Right content — scrollable */}
         <div
           ref={contentRef}
           className="flex-1 min-w-0 overflow-y-auto space-y-8 pr-1 pb-6"
           style={{ maxHeight: 'calc(100vh - 220px)' }}
         >
-          {/* Error banner */}
-          {error && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800/50">
-              <svg className="w-4 h-4 text-error-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-error-700 dark:text-error-400">{error}</p>
-            </div>
-          )}
-
           {PERMISSION_GROUPS.map((group) => (
             <GroupSection
               key={group.id}
@@ -478,25 +425,15 @@ export function ManagePermissions() {
         </div>
       </div>
 
-      {/* ── Sticky footer actions ── */}
       <div className="flex items-center justify-between gap-4 pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
         <p className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
           Changes take effect immediately after saving.
         </p>
         <div className="flex gap-2.5 ml-auto">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate('/caregivers')}
-          >
+          <Button type="button" variant="secondary" onClick={() => navigate('/caregivers')}>
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="primary"
-            isLoading={isSaving}
-            onClick={handleSave}
-          >
+          <Button type="button" variant="primary" isLoading={isSaving} onClick={handleSave}>
             Save Permissions
           </Button>
         </div>
