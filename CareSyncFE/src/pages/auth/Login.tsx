@@ -1,11 +1,10 @@
-// src/pages/auth/Login.tsx
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
+import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 const FEATURES = [
@@ -19,7 +18,7 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex flex-col items-start">
-       <img src={careSyncLogo} alt="CareSync" className="w-48 h-48 drop-shadow-md" />
+        <img src={careSyncLogo} alt="CareSync" className="w-48 h-48 drop-shadow-md" />
       </div>
 
       <div>
@@ -60,7 +59,7 @@ export function Login() {
 
   const [form, setForm] = useState({ email: '', password: '', rememberMe: false });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -69,13 +68,14 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setToast(null);
     setIsLoading(true);
     try {
       await login(form.email, form.password);
-      navigate('/dashboard');
+      setToast({ message: 'Signed in successfully. Welcome back!', type: 'success' });
+      setTimeout(() => navigate('/dashboard'), 1000);
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password. Please try again.');
+      setToast({ message: err.message || 'Invalid email or password. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +84,15 @@ export function Login() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
       <LeftPanel />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
 
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
@@ -113,15 +122,6 @@ export function Login() {
               Sign in to your caregiver account and continue caring for your loved ones
             </p>
           </div>
-
-          {error && (
-            <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
