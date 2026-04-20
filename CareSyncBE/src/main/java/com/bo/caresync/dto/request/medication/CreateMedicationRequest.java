@@ -14,10 +14,9 @@ import lombok.Setter;
 public class CreateMedicationRequest {
     private String medicationName;
     private String genericName;
-    private String medicationClass;
     private String description;
-    private String commonDosages;
-    private String sideEffects;
-    private String contraindications;
+    private String dosageForm;
+    private String strength;
+    private String manufacturer;
     private String medicationImageUrl;
 }

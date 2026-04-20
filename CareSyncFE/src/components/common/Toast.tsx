@@ -8,7 +8,7 @@ interface ToastProps {
   offsetIndex?: number;
 }
 
-export function Toast({ message, type = 'info', onClose, duration = 3000, offsetIndex = 0 }: ToastProps) {
+export function Toast({ message, type = 'info', onClose, duration = 5000, offsetIndex = 0 }: ToastProps) {
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
