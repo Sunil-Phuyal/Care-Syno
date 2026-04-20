@@ -21,11 +21,10 @@ public class MedicationDTO {
     private Long medicationId;
     private String medicationName;
     private String genericName;
-    private String medicationClass;
     private String description;
-    private String commonDosages;
-    private String sideEffects;
-    private String contraindications;
+    private String dosageForm;
+    private String strength;
+    private String manufacturer;
     private String medicationImageUrl;
     private String addedBy;
     private LocalDateTime addedAt;

@@ -98,4 +98,25 @@ public class MedicationController extends BaseController {
         List<Medication> medications = medicationService.searchMedications(query);
         return successResponse("Search results retrieved", medications);
     }
+
+    /**
+     * Update medication (Admin, Primary CG, Healthcare only)
+     * PUT /api/v1/medications/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateMedication(@PathVariable Long id,
+                                              @RequestBody UpdateMedicationRequest request) {
+        MedicationDTO medication = medicationService.updateMedication(id, request);
+        return successResponse("Medication updated successfully", medication);
+    }
+
+    /**
+     * Delete medication - soft delete (Admin, Primary CG, Healthcare only)
+     * DELETE /api/v1/medications/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteMedication(@PathVariable Long id) {
+        medicationService.deleteMedication(id);
+        return successResponse("Medication deleted successfully", null);
+    }
 }
