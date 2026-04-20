@@ -3,28 +3,32 @@
 export interface Medication {
   medicationId: number;
   medicationName: string;
-  name?: string;
   genericName?: string;
-  medicationClass?: string;
   description?: string;
-  commonDosages?: string;
-  sideEffects?: string;
-  contraindications?: string;
-  medicationImageUrl?: string;
-  strength?: string;
   dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
+  medicationImageUrl?: string;
   addedBy?: string;
   addedAt?: string;
 }
-
 export interface AddMedicationRequest {
   medicationName: string;
   genericName?: string;
-  medicationClass?: string;
   description?: string;
-  commonDosages?: string;
-  sideEffects?: string;
-  contraindications?: string;
+  dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
+  medicationImageUrl?: string;
+}
+
+export interface UpdateMedicationRequest {
+  medicationName?: string;
+  genericName?: string;
+  description?: string;
+  dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
   medicationImageUrl?: string;
 }
 
