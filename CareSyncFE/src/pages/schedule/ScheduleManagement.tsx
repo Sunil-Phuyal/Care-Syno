@@ -1,20 +1,18 @@
-// src/pages/schedule/ScheduleManagement.tsx
-// FIX: Calendar now marks real days based on schedule start/end dates
-// instead of always marking only today.
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { medicationApi } from '../../api/medication.api';
 import { usePatient } from '../../context/PatientContext';
 import { useNotification } from '../../context/NotificationContext';
 import { PermissionGate } from '../../components/common/PermissionGate';
+import { DeleteConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/common/Toast';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Spinner } from '../../components/ui/Spinner';
 import { cn } from '../../utils/cn';
-import type { Medication, MedicationSchedule } from '../../types/medication.types';
+import type { Medication, MedicationSchedule, UpdateScheduleRequest } from '../../types/medication.types';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FREQUENCY_DEFAULTS: Record<string, string[]> = {
@@ -27,6 +25,11 @@ const FREQUENCY_DEFAULTS: Record<string, string[]> = {
   CUSTOM:            ['08:00'],
 };
 
+interface ToastState {
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}
+
 function formatTime(t: any): string {
   if (!t) return '—';
   if (typeof t === 'string') return t.slice(0, 5);
@@ -37,44 +40,28 @@ function formatFrequency(f: string) {
   return f.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// ─────────────────────────────────────────────────────────────
-// FIXED Calendar: marks every day that has an active schedule
-// Previously always marked only [new Date().getDate()] which
-// was hardcoded and meaningless.
-// ─────────────────────────────────────────────────────────────
 function computeMarkedDays(schedules: MedicationSchedule[], year: number, month: number): Set<number> {
   const marked = new Set<number>();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-
     for (const schedule of schedules) {
       const start = schedule.startDate ? new Date(schedule.startDate) : null;
       const end   = schedule.endDate   ? new Date(schedule.endDate)   : null;
-
       if (start && date < start) continue;
       if (end   && date > end)   continue;
-
       if (schedule.frequency === 'WEEKLY' && start) {
         if (date.getDay() !== start.getDay()) continue;
       }
-
       if (schedule.frequency === 'AS_NEEDED') continue;
-
       marked.add(day);
       break;
     }
   }
-
   return marked;
 }
 
-function Calendar({
-  schedules,
-  selectedDay,
-  onSelect,
-}: {
+function Calendar({ schedules, selectedDay, onSelect }: {
   schedules: MedicationSchedule[];
   selectedDay: number;
   onSelect: (day: number) => void;
@@ -83,14 +70,11 @@ function Calendar({
   const today = new Date();
   const year  = current.getFullYear();
   const month = current.getMonth();
-
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDay    = new Date(year, month, 1).getDay();
   const offset      = firstDay === 0 ? 6 : firstDay - 1;
   const isThisMonth = month === today.getMonth() && year === today.getFullYear();
-
-  // Real marked days computed from actual schedules
-  const markedDays = computeMarkedDays(schedules, year, month);
+  const markedDays  = computeMarkedDays(schedules, year, month);
 
   return (
     <div className="card">
@@ -99,63 +83,38 @@ function Calendar({
           {current.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
         <div className="flex gap-1">
-          <button
-            onClick={() => setCurrent(new Date(year, month - 1, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <button onClick={() => setCurrent(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button
-            onClick={() => setCurrent(new Date(year, month + 1, 1))}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <button onClick={() => setCurrent(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       </div>
-
       <div className="grid grid-cols-7 mb-1">
         {DAYS.map((d) => (
-          <div key={d} className="text-center text-xs font-semibold text-gray-400 dark:text-gray-500 py-1">
-            {d}
-          </div>
+          <div key={d} className="text-center text-xs font-semibold text-gray-400 dark:text-gray-500 py-1">{d}</div>
         ))}
       </div>
-
       <div className="grid grid-cols-7 gap-0.5">
         {Array.from({ length: offset }).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
           const isToday    = isThisMonth && day === today.getDate();
           const isSelected = day === selectedDay && !isToday;
           const hasEvent   = markedDays.has(day);
-
           return (
-            <button
-              key={day}
-              onClick={() => onSelect(day)}
-              className={cn(
-                'relative flex flex-col items-center py-1.5 rounded-lg transition-all text-sm',
-                isToday    && 'bg-primary-500 text-white',
-                isSelected && 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-50',
-                !isToday && !isSelected && 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-              )}
-            >
+            <button key={day} onClick={() => onSelect(day)} className={cn(
+              'relative flex flex-col items-center py-1.5 rounded-lg transition-all text-sm',
+              isToday    && 'bg-primary-500 text-white',
+              isSelected && 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-50',
+              !isToday && !isSelected && 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+            )}>
               <span className="font-medium">{day}</span>
-              {hasEvent && (
-                <span className={cn(
-                  'w-1.5 h-1.5 rounded-full mt-0.5',
-                  isToday ? 'bg-white/80' : 'bg-primary-500'
-                )} />
-              )}
+              {hasEvent && <span className={cn('w-1.5 h-1.5 rounded-full mt-0.5', isToday ? 'bg-white/80' : 'bg-primary-500')} />}
             </button>
           );
         })}
       </div>
-
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
         <span className="w-2 h-2 rounded-full bg-primary-500" />
         <span className="text-xs text-gray-500 dark:text-gray-400">Has medication scheduled</span>
@@ -164,73 +123,155 @@ function Calendar({
   );
 }
 
-function ScheduleRow({
-  schedule,
-  medicationName,
-  onLog,
-  onDelete,
-}: {
+function EditScheduleModal({ schedule, medicationName, onClose, onSaved }: {
+  schedule: MedicationSchedule;
+  medicationName: string;
+  onClose: () => void;
+  onSaved: (updated: MedicationSchedule) => void;
+}) {
+  const { success, error: showError } = useNotification();
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    dosage:       schedule.dosage ?? '',
+    frequency:    schedule.frequency ?? 'ONCE_DAILY',
+    timeOfDay:    typeof schedule.timeOfDay === 'string' ? schedule.timeOfDay.slice(0, 5) : '',
+    instructions: schedule.specialInstructions ?? schedule.instructions ?? '',
+    startDate:    schedule.startDate ?? '',
+    endDate:      schedule.endDate ?? '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    setError('');
+    setIsSaving(true);
+    try {
+      const payload: UpdateScheduleRequest = {
+        dosage:       form.dosage       || undefined,
+        frequency:    form.frequency    || undefined,
+        timeOfDay:    form.timeOfDay    || undefined,
+        instructions: form.instructions || undefined,
+        startDate:    form.startDate    || undefined,
+        endDate:      form.endDate      || undefined,
+      };
+      const updated = await medicationApi.updateSchedule(schedule.scheduleId, payload);
+      success('Schedule updated successfully!');
+      onSaved(updated);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to save changes.';
+      showError(msg);
+      setError(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg w-full max-w-sm mx-4 p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit schedule</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{medicationName}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {error && <p className="text-xs text-red-500 dark:text-red-400 mb-3">{error}</p>}
+        <div className="space-y-3">
+          <Input name="dosage" label="Dosage" value={form.dosage} onChange={handleChange} placeholder="e.g. 500mg, 1 tablet" />
+          <div className="grid grid-cols-2 gap-3">
+            <Select name="frequency" label="Frequency" value={form.frequency} onChange={handleChange}>
+              <option value="ONCE_DAILY">Once daily</option>
+              <option value="TWICE_DAILY">Twice daily</option>
+              <option value="THREE_TIMES_DAILY">Three times daily</option>
+              <option value="FOUR_TIMES_DAILY">Four times daily</option>
+              <option value="AS_NEEDED">As needed</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="CUSTOM">Custom</option>
+            </Select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time</label>
+              <input type="time" name="timeOfDay" value={form.timeOfDay} onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input name="startDate" label="Start Date" type="date" value={form.startDate} onChange={handleChange} />
+            <Input name="endDate"   label="End Date"   type="date" value={form.endDate}   onChange={handleChange} />
+          </div>
+          <Textarea name="instructions" label="Instructions (optional)" value={form.instructions} onChange={handleChange} rows={2} resize="none" placeholder="e.g. Take after meals" />
+        </div>
+        <div className="flex gap-2 mt-4">
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="primary" fullWidth isLoading={isSaving} onClick={handleSave}>Save changes</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleRow({ schedule, medicationName, onLog, onEdit, onDelete }: {
   schedule: MedicationSchedule;
   medicationName: string;
   onLog: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const isActive = !schedule.endDate || new Date(schedule.endDate) >= new Date();
   return (
     <div className="flex items-center gap-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
       <div className="w-16 flex-shrink-0 text-center">
-        <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-          {formatTime(schedule.timeOfDay)}
-        </p>
+        <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">{formatTime(schedule.timeOfDay)}</p>
       </div>
       <div className="w-px h-8 bg-gray-200 dark:bg-gray-600 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">{medicationName}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {schedule.dosage} · {formatFrequency(schedule.frequency)}
-        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{schedule.dosage} · {formatFrequency(schedule.frequency)}</p>
         {(schedule.specialInstructions || schedule.instructions) && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
-            {schedule.specialInstructions ?? schedule.instructions}
-          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">{schedule.specialInstructions ?? schedule.instructions}</p>
         )}
       </div>
       <span className={cn(
         'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0',
-        isActive
-          ? 'bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+        isActive ? 'bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300'
+                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
       )}>
         {isActive ? 'Active' : 'Ended'}
       </span>
       <div className="flex gap-1.5 flex-shrink-0">
         <PermissionGate permission="medication.administer">
-          <button onClick={onLog} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors">
-            Log
-          </button>
+          <button onClick={onLog} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-primary-50 dark:bg-primary-900 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-800 transition-colors">Log</button>
+        </PermissionGate>
+        <PermissionGate permission="medication.edit_schedule">
+          <button onClick={onEdit} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Edit</button>
         </PermissionGate>
         <PermissionGate permission="medication.delete_schedule">
-          <button onClick={onDelete} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800 transition-colors">
-            Delete
-          </button>
+          <button onClick={onDelete} className="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-800 transition-colors">Delete</button>
         </PermissionGate>
       </div>
     </div>
   );
 }
 
-function CreateScheduleForm({
-  medications, patientId, onCreated, onCancel,
-}: {
+function CreateScheduleForm({ medications, patientId, onCreated, onCancel }: {
   medications: Medication[];
   patientId: number;
   onCreated: () => void;
   onCancel: () => void;
 }) {
   const { success, error: showError } = useNotification();
-  const [times, setTimes] = useState<string[]>(['08:00']);
+  const [times, setTimes]         = useState<string[]>(['08:00']);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]         = useState('');
   const [form, setForm] = useState({
     medicationId: '', dosage: '', frequency: 'ONCE_DAILY',
     instructions: '', startDate: new Date().toISOString().split('T')[0], endDate: '',
@@ -266,9 +307,7 @@ function CreateScheduleForm({
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900 dark:text-gray-50">New Schedule</h3>
         <button onClick={onCancel} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -300,21 +339,18 @@ function CreateScheduleForm({
               <div className="space-y-2">
                 {times.map((time, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input type="time" value={time} onChange={(e) => setTimes((prev) => prev.map((t, idx) => idx === i ? e.target.value : t))}
+                    <input type="time" value={time}
+                      onChange={(e) => setTimes((prev) => prev.map((t, idx) => idx === i ? e.target.value : t))}
                       className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500" />
                     {times.length > 1 && (
-                      <button type="button" onClick={() => setTimes((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                      <button type="button" onClick={() => setTimes((prev) => prev.filter((_, idx) => idx !== i))} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                       </button>
                     )}
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => setTimes((prev) => [...prev, '12:00'])}
-                className="mt-1.5 text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline">
+              <button type="button" onClick={() => setTimes((prev) => [...prev, '12:00'])} className="mt-1.5 text-xs text-primary-600 dark:text-primary-400 font-medium hover:underline">
                 + Add time
               </button>
             </div>
@@ -326,7 +362,7 @@ function CreateScheduleForm({
           <Textarea name="instructions" label="Instructions (optional)" value={form.instructions} onChange={handleChange} rows={2} resize="none" placeholder="e.g. Take after meals" />
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="secondary" fullWidth onClick={onCancel}>Cancel</Button>
-            <Button type="button" variant="primary"   fullWidth isLoading={isLoading} onClick={handleSubmit}>Create</Button>
+            <Button type="button" variant="primary" fullWidth isLoading={isLoading} onClick={handleSubmit}>Create</Button>
           </div>
         </>
       )}
@@ -337,11 +373,15 @@ function CreateScheduleForm({
 export function ScheduleManagement() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
-  const [schedules, setSchedules]     = useState<MedicationSchedule[]>([]);
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
-  const [showForm, setShowForm]       = useState(false);
+  const [schedules, setSchedules]               = useState<MedicationSchedule[]>([]);
+  const [medications, setMedications]           = useState<Medication[]>([]);
+  const [isLoading, setIsLoading]               = useState(true);
+  const [selectedDay, setSelectedDay]           = useState(new Date().getDate());
+  const [showForm, setShowForm]                 = useState(false);
+  const [editingSchedule, setEditingSchedule]   = useState<MedicationSchedule | null>(null);
+  const [scheduleToDelete, setScheduleToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting]             = useState(false);
+  const [toast, setToast]                       = useState<ToastState | null>(null);
 
   useEffect(() => {
     if (!selectedPatient) { setIsLoading(false); return; }
@@ -366,12 +406,18 @@ export function ScheduleManagement() {
     setShowForm(false);
   };
 
-  const handleDelete = async (scheduleId: number) => {
-    if (!confirm('Delete this schedule?')) return;
+  const handleDeleteConfirm = async () => {
+    if (scheduleToDelete === null) return;
+    setIsDeleting(true);
     try {
-      await medicationApi.deleteSchedule(scheduleId);
-      setSchedules((prev) => prev.filter((s) => s.scheduleId !== scheduleId));
-    } catch (err: any) { alert(err.message || 'Failed to delete.'); }
+      await medicationApi.deleteSchedule(scheduleToDelete);
+      setSchedules((prev) => prev.filter((s) => s.scheduleId !== scheduleToDelete));
+    } catch (err: any) {
+      setToast({ message: err.message || 'Failed to delete schedule. Please try again.', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+      setScheduleToDelete(null);
+    }
   };
 
   const getMedName = (medicationId: number) =>
@@ -379,14 +425,14 @@ export function ScheduleManagement() {
 
   const activeCount   = schedules.filter((s) => !s.endDate || new Date(s.endDate) >= new Date()).length;
   const inactiveCount = schedules.length - activeCount;
+  const deletingSchedule = scheduleToDelete !== null
+    ? schedules.find((s) => s.scheduleId === scheduleToDelete)
+    : null;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading schedule...</p>
-        </div>
+        <div className="text-center"><Spinner size="lg" /><p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading schedule...</p></div>
       </div>
     );
   }
@@ -402,15 +448,36 @@ export function ScheduleManagement() {
 
   return (
     <div className="space-y-6">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {editingSchedule && (
+        <EditScheduleModal
+          schedule={editingSchedule}
+          medicationName={getMedName(editingSchedule.medicationId)}
+          onClose={() => setEditingSchedule(null)}
+          onSaved={(updated) => {
+            setSchedules((prev) => prev.map((s) => s.scheduleId === updated.scheduleId ? updated : s));
+            setEditingSchedule(null);
+            setToast({ message: 'Schedule updated successfully!', type: 'success' });
+          }}
+        />
+      )}
+
+      <DeleteConfirmDialog
+        open={scheduleToDelete !== null}
+        onClose={() => setScheduleToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        itemName={deletingSchedule ? `${getMedName(deletingSchedule.medicationId)} schedule` : 'this schedule'}
+        isLoading={isDeleting}
+      />
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="page-title">Schedule</h1>
           <p className="page-subtitle">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             {' · '}
-            <span className="font-semibold text-primary-600 dark:text-primary-400">
-              {selectedPatient.fullName}
-            </span>
+            <span className="font-semibold text-primary-600 dark:text-primary-400">{selectedPatient.fullName}</span>
           </p>
         </div>
         <PermissionGate permission="medication.create_schedule">
@@ -438,13 +505,21 @@ export function ScheduleManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
-          {/* FIXED: pass schedules so calendar can compute real marked days */}
           <Calendar schedules={schedules} selectedDay={selectedDay} onSelect={setSelectedDay} />
           <div className="card space-y-2">
             <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Quick Actions</p>
-            <button onClick={() => navigate('/medications/log')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">Log medication administration</button>
-            <button onClick={() => navigate('/medications/history')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">View administration history</button>
-            <button onClick={() => navigate('/medications')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">Manage medicine catalog</button>
+            {/* medication.administer — Admin, Primary CG, Secondary CG only */}
+            <PermissionGate permission="medication.administer">
+              <button onClick={() => navigate('/medications/log')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">
+                Log medication administration
+              </button>
+            </PermissionGate>
+            <button onClick={() => navigate('/medications/history')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">
+              View administration history
+            </button>
+            <button onClick={() => navigate('/medications')} className="w-full text-left text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 py-1.5 transition-colors">
+              Manage medicine catalog
+            </button>
           </div>
         </div>
 
@@ -479,7 +554,8 @@ export function ScheduleManagement() {
                     schedule={schedule}
                     medicationName={getMedName(schedule.medicationId)}
                     onLog={() => navigate('/medications/log', { state: { scheduleId: schedule.scheduleId } })}
-                    onDelete={() => handleDelete(schedule.scheduleId)}
+                    onEdit={() => setEditingSchedule(schedule)}
+                    onDelete={() => setScheduleToDelete(schedule.scheduleId)}
                   />
                 ))}
               </div>

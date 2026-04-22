@@ -5,6 +5,7 @@ import type {
   Medication,
   MedicationSchedule,
   CreateScheduleRequest,
+  UpdateScheduleRequest,
    UpdateMedicationRequest,
   AddMedicationRequest,
   MedicationAdministration,
@@ -99,7 +100,7 @@ export const medicationApi = {
    * Update a medication schedule
    * PUT /api/v1/medications/schedules/{id}
    */
-  updateSchedule: async (id: number, data: Partial<CreateScheduleRequest>): Promise<MedicationSchedule> => {
+  updateSchedule: async (id: number, data: UpdateScheduleRequest): Promise<MedicationSchedule> => {
     const response = await api.put<ApiResponse<MedicationSchedule>>(
       `/medications/schedules/${id}`,
       data

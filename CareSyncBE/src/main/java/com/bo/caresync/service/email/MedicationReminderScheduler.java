@@ -48,7 +48,7 @@ public class MedicationReminderScheduler {
 
     private final Set<String> sentReminders = new HashSet<>();
 
-//    @Scheduled(cron = "0 * 0/5 * * *")
+    @Scheduled(cron = "0 */5 * * * *")
     public void sendMedicationReminders() {
         String methodName = "sendMedicationReminders";
         log.info("{} Starting medication reminder check...", methodName);

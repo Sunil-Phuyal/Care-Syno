@@ -276,7 +276,7 @@ export function ManagePermissions() {
           patientId:       selectedPatient.patientId,
           caregiverUserId: Number(id),
           permissionCode,
-          granted:         selectedPermissions.has(permissionCode),
+           isGranted:       selectedPermissions.has(permissionCode),
         });
       }
       success('Permissions updated successfully!');

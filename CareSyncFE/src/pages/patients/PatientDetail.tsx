@@ -4,17 +4,24 @@ import { patientApi } from '../../api/patient.api';
 import { usePermission } from '../../hooks/usePermission';
 import { PermissionGate } from '../../components/common/PermissionGate';
 import { Spinner } from '../../components/ui/Spinner';
+import { DeleteConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Toast } from '../../components/common/Toast';
 import { formatters } from '../../utils/formatters';
 import { cn } from '../../utils/cn';
 import type { Patient } from '../../types/patient.types';
 
 type Tab = 'overview' | 'medications' | 'team' | 'reports';
 
+interface ToastState {
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}
+
 const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'medications', label: 'Medications' },
-  { key: 'team', label: 'Care team' },
-  { key: 'reports', label: 'Reports' },
+  { key: 'overview',     label: 'Overview' },
+  { key: 'medications',  label: 'Medications' },
+  { key: 'team',         label: 'Care team' },
+  { key: 'reports',      label: 'Reports' },
 ];
 
 function Avatar({ name, size = 'md' }: { name: string; size?: 'md' | 'lg' }) {
@@ -71,6 +78,8 @@ export function PatientDetail() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -89,14 +98,16 @@ export function PatientDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this patient? This cannot be undone.')) return;
+    if (!id) return;
     setIsDeleting(true);
     try {
       await patientApi.deletePatient(Number(id));
       navigate('/patients');
     } catch {
-      alert('Failed to delete patient.');
+      setToast({ message: 'Failed to delete patient. Please try again.', type: 'error' });
       setIsDeleting(false);
+    } finally {
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -118,6 +129,18 @@ export function PatientDetail() {
 
   return (
     <div className="space-y-5">
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
+
+      <DeleteConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        itemName={patient.fullName}
+        isLoading={isDeleting}
+      />
+
       <button
         onClick={() => navigate('/patients')}
         className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -150,7 +173,7 @@ export function PatientDetail() {
           </PermissionGate>
           <PermissionGate permission="patient.delete">
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isDeleting}
               className="text-sm font-medium px-3 py-1.5 rounded-lg border border-error-200 dark:border-error-800 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 transition-colors disabled:opacity-50"
             >
