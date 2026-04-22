@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
+import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 const FEATURES = [
@@ -67,7 +68,7 @@ export function Register() {
     agreeToTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -76,16 +77,28 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!form.agreeToTerms) { setError('Please agree to the Terms of Service and Privacy Policy.'); return; }
+    setToast(null);
+
+    if (form.password !== form.confirmPassword) {
+      setToast({ message: 'Passwords do not match.', type: 'warning' });
+      return;
+    }
+    if (form.password.length < 6) {
+      setToast({ message: 'Password must be at least 6 characters.', type: 'warning' });
+      return;
+    }
+    if (!form.agreeToTerms) {
+      setToast({ message: 'Please agree to the Terms of Service and Privacy Policy.', type: 'warning' });
+      return;
+    }
+
     setIsLoading(true);
     try {
       await register({ fullName: form.fullName, email: form.email, password: form.password });
-      navigate('/dashboard');
+      setToast({ message: 'Account created successfully. Welcome to CareSync!', type: 'success' });
+      setTimeout(() => navigate('/dashboard'), 1000);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setToast({ message: err.message || 'Registration failed. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -95,10 +108,18 @@ export function Register() {
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
       <LeftPanel />
 
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
+
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
 
-          {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +130,6 @@ export function Register() {
             <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
           </div>
 
-          {/* Tab switcher */}
           <div className="flex mb-8 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
             <Link to="/login" className="flex-1 py-2 px-4 rounded-lg text-gray-500 dark:text-gray-400 font-medium text-sm text-center hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
               Sign In
@@ -119,7 +139,6 @@ export function Register() {
             </span>
           </div>
 
-          {/* Heading */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Create Your Account</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -127,17 +146,6 @@ export function Register() {
             </p>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-            </div>
-          )}
-
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               id="fullName"

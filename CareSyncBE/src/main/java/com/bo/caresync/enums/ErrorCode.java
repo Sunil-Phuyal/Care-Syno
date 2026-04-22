@@ -58,7 +58,7 @@ public enum ErrorCode implements IErrorCode {
 
     DUPLICATE_ENTRY(409, "Entry already exists"),
     INVALID_TOKEN(400,"Invalid token" ),
-    TOKEN_ALREADY_USED(406,"Token is already used" );
+    TOKEN_ALREADY_USED(406,"Token is already used" ), NOT_FOUND(400,"Medicine not found or has been deleted" );
 
     private final int httpStatus;
     private final String message;

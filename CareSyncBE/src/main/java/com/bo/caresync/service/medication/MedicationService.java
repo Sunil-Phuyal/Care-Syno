@@ -14,6 +14,7 @@ import com.bo.caresync.exceptions.BaseException;
 import com.bo.caresync.repository.*;
 import com.bo.caresync.service.email.EmailService;
 import com.bo.caresync.service.email.EmailTemplateService;
+import com.bo.caresync.utils.AppUtil;
 import com.bo.caresync.utils.LoginUserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,52 +73,8 @@ public class MedicationService {
     }
 
     @Transactional
-    public MedicationDTO createMedication(CreateMedicationRequest request) {
-        String methodName = "createMedication";
-
-        if (!isPrimaryCaregiver()) {
-            throw new BaseException(ErrorCode.PERMISSION_DENIED, "Only primary caregivers can add medicines");
-        }
-
-        String normalizedName = capitalizeWords(request.getMedicationName().trim());
-
-        Optional<Medication> existingOpt = medicationRepo.findByMedicationNameIgnoreCase(normalizedName);
-        if (existingOpt.isPresent()) {
-            throw new BaseException(ErrorCode.DUPLICATE_ENTRY, "Medicine '" + normalizedName + "' already exists");
-        }
-
-        Medication medication = new Medication();
-        medication.setMedicationName(normalizedName);
-        medication.setGenericName(request.getGenericName() != null ?
-                capitalizeWords(request.getGenericName().trim()) : normalizedName);
-        medication.setDescription(request.getDescription());
-        medication.setMedicationImageUrl(request.getMedicationImageUrl());
-        medication.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
-        medication.setCreatedBy(loginUserUtil.getCurrentUserEmail());
-        medication.setCreatedAt(LocalDateTime.now());
-
-        medication = medicationRepo.save(medication);
-
-        log.info("{} Created medication: {} (ID: {})", methodName, medication.getMedicationName(), medication.getMedicationId());
-
-        return MedicationDTO.builder()
-                .medicationId(medication.getMedicationId())
-                .medicationName(medication.getMedicationName())
-                .genericName(medication.getGenericName())
-                .description(medication.getDescription())
-                .medicationImageUrl(medication.getMedicationImageUrl())
-                .addedBy(medication.getCreatedBy())
-                .addedAt(medication.getCreatedAt())
-                .build();
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // SCHEDULE CRUD
-    // ─────────────────────────────────────────────────────────────
-
-    @Transactional
     public MedicationScheduleResponse createMedicationSchedule(CreateMedicationScheduleRequest request) {
-        String methodName = "createMedicationSchedule";
+        String methodName = AppUtil.getMethodName();
 
         log.debug("{} Creating medication schedule for patient {}", methodName, request.getPatientId());
         loginUserUtil.requirePermission(request.getPatientId(), "medication.create_schedule");
@@ -157,6 +114,163 @@ public class MedicationService {
         log.info("{} Created {} medication schedules for patient {}", methodName, schedules.size(), request.getPatientId());
 
         return buildScheduleResponse(schedules.get(0), medication, patient);
+    }
+
+
+    // ─── Helper: who can manage the catalog ───────────────────────────────────
+// Borrowed from medication.create_schedule permission matrix:
+// Admin, Primary CG, Healthcare → true
+// Secondary CG → false
+    private boolean isAuthorizedForCatalog() {
+        Long currentUserId = loginUserUtil.getCurrentUserId();
+
+        List<PatientCaregiver> caregiverLinks = patientCaregiverRepo
+                .findByCaregiverUserIdAndRecordStatus(currentUserId, AppConstants.RecordStatus.ACTIVE);
+
+        for (PatientCaregiver link : caregiverLinks) {
+            Role role = roleRepo.findById(link.getRoleId()).orElse(null);
+            if (role != null) {
+                String roleName = role.getRoleName();
+                if (roleName.equals(AppConstants.Role.PRIMARY_CAREGIVER) ||
+                        roleName.equals(AppConstants.Role.ADMIN) ||
+                        roleName.equals(AppConstants.Role.HEALTHCARE_PROVIDER)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void requireCatalogPermission() {
+        if (!isAuthorizedForCatalog()) {
+            throw new BaseException(ErrorCode.PERMISSION_DENIED,
+                    "You don't have permission to manage the medicine catalog.");
+        }
+    }
+    @Transactional
+    public MedicationDTO createMedication(CreateMedicationRequest request) {
+        String methodName = "createMedication";
+
+        requireCatalogPermission();
+
+        String normalizedName = capitalizeWords(request.getMedicationName().trim());
+
+        Optional<Medication> existingOpt = medicationRepo.findByMedicationNameIgnoreCase(normalizedName);
+        if (existingOpt.isPresent()) {
+            throw new BaseException(ErrorCode.DUPLICATE_ENTRY,
+                    "Medicine '" + normalizedName + "' already exists");
+        }
+
+        Medication medication = new Medication();
+        medication.setMedicationName(normalizedName);
+        medication.setGenericName(request.getGenericName() != null ?
+                capitalizeWords(request.getGenericName().trim()) : null);
+        medication.setDescription(request.getDescription());
+        medication.setDosageForm(request.getDosageForm());
+        medication.setStrength(request.getStrength());
+        medication.setManufacturer(request.getManufacturer());
+        medication.setMedicationImageUrl(request.getMedicationImageUrl());
+        medication.setRecordStatus(AppConstants.RecordStatus.ACTIVE);
+        medication.setCreatedBy(loginUserUtil.getCurrentUserEmail());
+        medication.setCreatedAt(LocalDateTime.now());
+
+        medication = medicationRepo.save(medication);
+
+        log.info("{} Created medication: {} (ID: {})",
+                methodName, medication.getMedicationName(), medication.getMedicationId());
+
+        return toDTO(medication);
+    }
+
+
+    @Transactional
+    public MedicationDTO updateMedication(Long medicationId, UpdateMedicationRequest request) {
+        String methodName = "updateMedication";
+
+        log.debug("{} Updating medication ID={}", methodName, medicationId);
+
+        requireCatalogPermission();
+
+        Medication medication = medicationRepo.findById(medicationId)
+                .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND,
+                        "Medicine not found with ID: " + medicationId));
+
+        if (medication.getRecordStatus().equals(AppConstants.RecordStatus.INACTIVE)) {
+            throw new BaseException(ErrorCode.NOT_FOUND, "Medicine not found or has been deleted");
+        }
+
+        if (request.getMedicationName() != null && !request.getMedicationName().trim().isEmpty()) {
+            String normalizedName = capitalizeWords(request.getMedicationName().trim());
+            if (!normalizedName.equalsIgnoreCase(medication.getMedicationName())) {
+                medicationRepo.findByMedicationNameIgnoreCase(normalizedName).ifPresent(existing -> {
+                    throw new BaseException(ErrorCode.DUPLICATE_ENTRY,
+                            "Medicine '" + normalizedName + "' already exists");
+                });
+            }
+            medication.setMedicationName(normalizedName);
+        }
+        if (request.getGenericName() != null)
+            medication.setGenericName(capitalizeWords(request.getGenericName().trim()));
+        if (request.getDescription() != null)
+            medication.setDescription(request.getDescription());
+        if (request.getDosageForm() != null)
+            medication.setDosageForm(request.getDosageForm());
+        if (request.getStrength() != null)
+            medication.setStrength(request.getStrength());
+        if (request.getManufacturer() != null)
+            medication.setManufacturer(request.getManufacturer());
+        if (request.getMedicationImageUrl() != null && !request.getMedicationImageUrl().isEmpty())
+            medication.setMedicationImageUrl(request.getMedicationImageUrl());
+
+        medication.setModifiedBy(loginUserUtil.getCurrentUserEmail());
+        medication.setModifiedAt(LocalDateTime.now());
+
+        medication = medicationRepo.save(medication);
+
+        log.info("{} Updated medication: {} (ID: {})",
+                methodName, medication.getMedicationName(), medicationId);
+
+        return toDTO(medication);
+    }
+    @Transactional
+    public void deleteMedication(Long medicationId) {
+        String methodName = "deleteMedication";
+
+        log.debug("{} Deleting medication ID={}", methodName, medicationId);
+
+        requireCatalogPermission();
+
+        Medication medication = medicationRepo.findById(medicationId)
+                .orElseThrow(() -> new BaseException(ErrorCode.NOT_FOUND,
+                        "Medicine not found with ID: " + medicationId));
+
+        if (medication.getRecordStatus().equals(AppConstants.RecordStatus.INACTIVE)) {
+            throw new BaseException(ErrorCode.NOT_FOUND, "Medicine already deleted");
+        }
+
+        medication.setRecordStatus(AppConstants.RecordStatus.INACTIVE);
+        medication.setModifiedBy(loginUserUtil.getCurrentUserEmail());
+        medication.setModifiedAt(LocalDateTime.now());
+
+        medicationRepo.save(medication);
+
+        log.info("{} Soft-deleted medication: {} (ID: {})",
+                methodName, medication.getMedicationName(), medicationId);
+    }
+
+    private MedicationDTO toDTO(Medication medication) {
+        return MedicationDTO.builder()
+                .medicationId(medication.getMedicationId())
+                .medicationName(medication.getMedicationName())
+                .genericName(medication.getGenericName())
+                .description(medication.getDescription())
+                .dosageForm(medication.getDosageForm())
+                .strength(medication.getStrength())
+                .manufacturer(medication.getManufacturer())
+                .medicationImageUrl(medication.getMedicationImageUrl())
+                .addedBy(medication.getCreatedBy())
+                .addedAt(medication.getCreatedAt())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -340,10 +454,6 @@ public class MedicationService {
 
         return history;
     }
-
-    // ─────────────────────────────────────────────────────────────
-    // TODAY / UPCOMING
-    // ─────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
     public List<TodayScheduleDTO> getTodaySchedules(Long patientId) {
@@ -532,7 +642,7 @@ public class MedicationService {
             }
 
             if (!caregiverEmails.isEmpty()) {
-                String subject = "⚠️ Duplicate Dose Warning - " + patient.getFullName();
+                String subject = "Duplicate Dose Warning - " + patient.getFullName();
                 String body = emailTemplateService.getDuplicateDoseWarningBody(
                         currentCaregiver.getFullName(),
                         patient.getFullName(),

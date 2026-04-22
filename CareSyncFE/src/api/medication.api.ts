@@ -5,6 +5,8 @@ import type {
   Medication,
   MedicationSchedule,
   CreateScheduleRequest,
+  UpdateScheduleRequest,
+   UpdateMedicationRequest,
   AddMedicationRequest,
   MedicationAdministration,
   LogMedicationRequest,
@@ -44,6 +46,26 @@ export const medicationApi = {
   },
 
   /**
+   * Update an existing medication in the catalog
+   * PUT /api/v1/medications/{id}
+   */
+  updateMedication: async (id: number, data: UpdateMedicationRequest): Promise<Medication> => {
+    const response = await api.put<ApiResponse<Medication>>(
+      `/medications/${id}`,
+      data
+    );
+    return response.data.apiResponseData.responseData;
+  },
+
+  /**
+   * Soft-delete a medication from the catalog
+   * DELETE /api/v1/medications/{id}
+   */
+  deleteMedication: async (id: number): Promise<void> => {
+    await api.delete(`/medications/${id}`);
+  },
+
+  /**
    * Get today's medication schedules for a patient
    * GET /api/v1/medications/schedules/today?patientId={patientId}
    */
@@ -78,7 +100,7 @@ export const medicationApi = {
    * Update a medication schedule
    * PUT /api/v1/medications/schedules/{id}
    */
-  updateSchedule: async (id: number, data: Partial<CreateScheduleRequest>): Promise<MedicationSchedule> => {
+  updateSchedule: async (id: number, data: UpdateScheduleRequest): Promise<MedicationSchedule> => {
     const response = await api.put<ApiResponse<MedicationSchedule>>(
       `/medications/schedules/${id}`,
       data

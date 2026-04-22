@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { authApi } from '../../api/auth.api';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 
 function LeftPanel() {
@@ -52,18 +53,18 @@ function LeftPanel() {
 export function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setToast(null);
     setIsLoading(true);
     try {
       await authApi.forgotPassword(email);
       setSent(true);
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      setToast({ message: err.message || 'Something went wrong. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -73,10 +74,18 @@ export function ForgotPassword() {
     <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
       <LeftPanel />
 
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
+
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
 
-          {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +97,6 @@ export function ForgotPassword() {
           </div>
 
           {sent ? (
-            // ── Success state ──
             <div className="text-center space-y-5">
               <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto">
                 <svg className="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +130,6 @@ export function ForgotPassword() {
               </Link>
             </div>
           ) : (
-            // ── Form state ──
             <>
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Reset your password</h2>
@@ -130,15 +137,6 @@ export function ForgotPassword() {
                   Enter your email and we'll send you a secure reset link.
                 </p>
               </div>
-
-              {error && (
-                <div className="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <Input

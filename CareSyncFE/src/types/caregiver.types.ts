@@ -1,7 +1,7 @@
 // src/types/caregiver.types.ts
 
 export interface Caregiver {
-  caregiverUserId: number;
+  userId: number;       
   patientId: number;
   fullName: string;
   email: string;
@@ -27,5 +27,5 @@ export interface GrantPermissionRequest {
   patientId: number;
   caregiverUserId: number;
   permissionCode: string;
-  granted: boolean;
+  isGranted: boolean;
 }

@@ -46,7 +46,7 @@ export const caregiverApi = {
       patientId:        data.patientId,
       caregiverUserId:  data.caregiverUserId,
       permissionCode:   data.permissionCode,
-      isGranted:        data.granted,
+      isGranted: data.isGranted, 
     });
   },
 

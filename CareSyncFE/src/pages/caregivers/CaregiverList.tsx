@@ -6,11 +6,11 @@ import { caregiverApi } from '../../api/caregiver.api';
 import { usePatient } from '../../context/PatientContext';
 import { useAuth } from '../../context/AuthContext';
 import { PermissionGate } from '../../components/common/PermissionGate';
+import { Toast } from '../../components/common/Toast';
 import { Spinner } from '../../components/ui/Spinner';
 import { cn } from '../../utils/cn';
 import type { Caregiver } from '../../types/caregiver.types';
 
-// ── Column widths — defined once, used in both header and rows ────────────────
 const COL = {
   member:       'flex-1 min-w-0',
   phone:        'w-40 hidden md:flex shrink-0',
@@ -19,15 +19,8 @@ const COL = {
   actions:      'w-16 shrink-0',
 };
 
-
-
-// ── Avatar ────────────────────────────────────────────────────────────────────
 function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join('');
+  const initials = name.split(' ').slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('');
   return (
     <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-xs font-semibold text-primary-700 dark:text-primary-300 shrink-0">
       {initials}
@@ -35,7 +28,6 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-// ── Role badge ────────────────────────────────────────────────────────────────
 function RoleBadge({ roleName, displayName }: { roleName: string; displayName: string }) {
   const isPrimary = roleName === 'ROLE_PRIMARY_CAREGIVER';
   return (
@@ -51,7 +43,6 @@ function RoleBadge({ roleName, displayName }: { roleName: string; displayName: s
   );
 }
 
-// ── Icon button ───────────────────────────────────────────────────────────────
 function IconButton({ onClick, title, variant = 'default', children }: {
   onClick: () => void;
   title: string;
@@ -74,7 +65,6 @@ function IconButton({ onClick, title, variant = 'default', children }: {
   );
 }
 
-// ── Caregiver row ─────────────────────────────────────────────────────────────
 function CaregiverRow({ caregiver, isCurrentUser, onRemove, onManage }: {
   caregiver: Caregiver;
   isCurrentUser: boolean;
@@ -83,55 +73,36 @@ function CaregiverRow({ caregiver, isCurrentUser, onRemove, onManage }: {
 }) {
   const isPrimary = caregiver.roleName === 'ROLE_PRIMARY_CAREGIVER';
   const isPending = caregiver.status === 'PENDING';
-
   const relationship = caregiver.relationship
     ? caregiver.relationship.charAt(0).toUpperCase() + caregiver.relationship.slice(1).toLowerCase()
     : '—';
 
   return (
     <div className="flex items-stretch hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-
-      {/* Member */}
       <div className={cn(COL.member, 'flex items-center gap-3 px-5 py-3')}>
         <Avatar name={caregiver.fullName} />
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {caregiver.fullName}
-            </p>
-            {isCurrentUser && (
-              <span className="text-xs text-primary-600 dark:text-primary-400">(You)</span>
-            )}
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{caregiver.fullName}</p>
+            {isCurrentUser && <span className="text-xs text-primary-600 dark:text-primary-400">(You)</span>}
             {isPending && (
               <span className="text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/30 px-1.5 py-0.5 rounded">
                 Pending
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
-            {caregiver.email}
-          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">{caregiver.email}</p>
         </div>
       </div>
-
-      {/* Phone */}
       <div className={cn(COL.phone, 'items-center px-5 py-3')}>
-        <p className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
-          {caregiver.phoneNumber ?? '—'}
-        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{caregiver.phoneNumber ?? '—'}</p>
       </div>
-
-      {/* Relationship */}
       <div className={cn(COL.relationship, 'items-center px-5 py-3')}>
         <p className="text-sm text-gray-500 dark:text-gray-400">{relationship}</p>
       </div>
-
-      {/* Role */}
       <div className={cn(COL.role, 'items-center px-5 py-3')}>
         <RoleBadge roleName={caregiver.roleName} displayName={caregiver.roleDisplayName} />
       </div>
-
-      {/* Actions */}
       <div className={cn(COL.actions, 'flex items-center gap-0.5 justify-end px-3 py-3')}>
         <PermissionGate permission="caregiver.edit_permissions">
           <IconButton onClick={onManage} title="Manage permissions">
@@ -141,7 +112,6 @@ function CaregiverRow({ caregiver, isCurrentUser, onRemove, onManage }: {
             </svg>
           </IconButton>
         </PermissionGate>
-
         {!isCurrentUser && !isPrimary && (
           <PermissionGate permission="caregiver.remove">
             <IconButton onClick={onRemove} title="Remove caregiver" variant="danger">
@@ -157,7 +127,6 @@ function CaregiverRow({ caregiver, isCurrentUser, onRemove, onManage }: {
   );
 }
 
-// ── Confirm remove modal ──────────────────────────────────────────────────────
 function ConfirmModal({ name, onConfirm, onCancel, isLoading }: {
   name: string;
   onConfirm: () => void;
@@ -195,17 +164,16 @@ function ConfirmModal({ name, onConfirm, onCancel, isLoading }: {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
 export function CaregiverList() {
   const navigate = useNavigate();
   const { selectedPatient } = usePatient();
   const { user } = useAuth();
 
-  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
-  const [isLoading, setIsLoading]   = useState(true);
-  const [error, setError]           = useState('');
-  const [removeTarget, setRemoveTarget] = useState<Caregiver | null>(null);
-  const [isRemoving, setIsRemoving]     = useState(false);
+  const [caregivers, setCaregivers]       = useState<Caregiver[]>([]);
+  const [isLoading, setIsLoading]         = useState(true);
+  const [removeTarget, setRemoveTarget]   = useState<Caregiver | null>(null);
+  const [isRemoving, setIsRemoving]       = useState(false);
+  const [toast, setToast]                 = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!selectedPatient) return;
@@ -215,30 +183,30 @@ export function CaregiverList() {
   const loadCaregivers = async () => {
     if (!selectedPatient) return;
     setIsLoading(true);
-    setError('');
     try {
       const data = await caregiverApi.getPatientCaregivers(selectedPatient.patientId);
       setCaregivers(data);
     } catch {
-      setError('Failed to load care team.');
+      setToast({ message: 'Failed to load care team. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleConfirmRemove = async () => {
-    if (!selectedPatient || !removeTarget) return;
-    setIsRemoving(true);
-    try {
-      await caregiverApi.removeCaregiver(selectedPatient.patientId, removeTarget.caregiverUserId);
-      setRemoveTarget(null);
-      await loadCaregivers();
-    } catch {
-      alert('Failed to remove caregiver. Please try again.');
-    } finally {
-      setIsRemoving(false);
-    }
-  };
+  if (!selectedPatient || !removeTarget) return;
+  setIsRemoving(true);
+  try {
+    await caregiverApi.removeCaregiver(selectedPatient.patientId, removeTarget.userId); 
+    setRemoveTarget(null);
+    await loadCaregivers();
+    setToast({ message: `${removeTarget.fullName} has been removed from the care team.`, type: 'success' });
+  } catch {
+    setToast({ message: 'Failed to remove caregiver. Please try again.', type: 'error' });
+  } finally {
+    setIsRemoving(false);
+  }
+};
 
   if (!selectedPatient) {
     return (
@@ -275,9 +243,17 @@ export function CaregiverList() {
         />
       )}
 
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
+
       <div className="space-y-5">
 
-        {/* ── Header ── */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="page-title">Care Team</h1>
@@ -296,21 +272,8 @@ export function CaregiverList() {
           </PermissionGate>
         </div>
 
-        {/* ── Error ── */}
-        {error && (
-          <div className="flex items-center gap-3 p-4 bg-error-50 dark:bg-error-900/30 border border-error-200 dark:border-error-800 rounded-xl text-sm text-error-700 dark:text-error-400">
-            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {error}
-          </div>
-        )}
-
-        {/* ── Stats strip ── */}
         <div className="card p-0 overflow-hidden">
           <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-700">
-
             <div className="px-6 py-4 flex items-center gap-4">
               <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,7 +286,6 @@ export function CaregiverList() {
                 <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">{caregivers.length}</p>
               </div>
             </div>
-
             <div className="px-6 py-4 flex items-center gap-4">
               <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,7 +300,6 @@ export function CaregiverList() {
                 </p>
               </div>
             </div>
-
             <div className="px-6 py-4 flex items-center gap-4">
               <div className="w-9 h-9 rounded-lg bg-primary-50 dark:bg-primary-900/40 flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,11 +312,9 @@ export function CaregiverList() {
                 <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">{others.length}</p>
               </div>
             </div>
-
           </div>
         </div>
 
-        {/* ── Table ── */}
         {caregivers.length === 0 ? (
           <div className="card text-center py-16">
             <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
@@ -376,8 +335,6 @@ export function CaregiverList() {
           </div>
         ) : (
           <div className="card overflow-hidden p-0">
-
-            {/* ── Table header ── */}
             <div className="flex items-stretch border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <p className={cn(COL.member,       'flex items-center px-5 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider')}>Member</p>
               <p className={cn(COL.phone,        'items-center px-5 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:flex')}>Phone</p>
@@ -385,18 +342,16 @@ export function CaregiverList() {
               <p className={cn(COL.role,         'items-center px-5 py-2.5 text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:flex')}>Role</p>
               <div className={COL.actions} />
             </div>
-
-            {/* ── Rows ── */}
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {sorted.map((caregiver) => (
-                <CaregiverRow
-                  key={caregiver.caregiverUserId}
-                  caregiver={caregiver}
-                  isCurrentUser={caregiver.caregiverUserId === user?.userId}
-                  onRemove={() => setRemoveTarget(caregiver)}
-                  onManage={() => navigate(`/caregivers/${caregiver.caregiverUserId}/permissions`)}
-                />
-              ))}
+  <CaregiverRow
+    key={caregiver.userId}                                                         
+    caregiver={caregiver}
+    isCurrentUser={caregiver.userId === user?.userId}                             
+    onRemove={() => setRemoveTarget(caregiver)}
+    onManage={() => navigate(`/caregivers/${caregiver.userId}/permissions`)}        
+  />
+))}
             </div>
           </div>
         )}

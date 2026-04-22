@@ -3,28 +3,32 @@
 export interface Medication {
   medicationId: number;
   medicationName: string;
-  name?: string;
   genericName?: string;
-  medicationClass?: string;
   description?: string;
-  commonDosages?: string;
-  sideEffects?: string;
-  contraindications?: string;
-  medicationImageUrl?: string;
-  strength?: string;
   dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
+  medicationImageUrl?: string;
   addedBy?: string;
   addedAt?: string;
 }
-
 export interface AddMedicationRequest {
   medicationName: string;
   genericName?: string;
-  medicationClass?: string;
   description?: string;
-  commonDosages?: string;
-  sideEffects?: string;
-  contraindications?: string;
+  dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
+  medicationImageUrl?: string;
+}
+
+export interface UpdateMedicationRequest {
+  medicationName?: string;
+  genericName?: string;
+  description?: string;
+  dosageForm?: string;
+  strength?: string;
+  manufacturer?: string;
   medicationImageUrl?: string;
 }
 
@@ -53,6 +57,17 @@ export interface CreateScheduleRequest {
   instructions?: string;
   specialInstructions?: string;
   startDate: string;
+  endDate?: string;
+  prescriptionImageUrl?: string;
+  medicationPhotoUrl?: string;
+}
+
+export interface UpdateScheduleRequest {
+  dosage?: string;
+  frequency?: string;
+  timeOfDay?: string;        // "HH:mm" e.g. "08:00"
+  instructions?: string;
+  startDate?: string;
   endDate?: string;
   prescriptionImageUrl?: string;
   medicationPhotoUrl?: string;
@@ -105,17 +120,13 @@ export interface TodayScheduleDTO {
   administeredAt?: string | null;
 }
 
-// ── NEW ──────────────────────────────────────────────────────
-// Matches backend UpcomingMedicationDTO from MedicationService
-// getUpcomingMedications() — medications due in the next 2 hours
-// that have NOT been administered yet.
 export interface UpcomingMedicationDTO {
   scheduleId: number;
   medicationId: number;
   medicationName: string;
   dosage: string;
   instructions?: string;
-  scheduledTime: string;      // ISO string from LocalDateTime
-  minutesUntilDue: number;    // negative = overdue
+  scheduledTime: string;      
+  minutesUntilDue: number;   
   isOverdue: boolean;
 }
