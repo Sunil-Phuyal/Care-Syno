@@ -194,19 +194,19 @@ export function CaregiverList() {
   };
 
   const handleConfirmRemove = async () => {
-    if (!selectedPatient || !removeTarget) return;
-    setIsRemoving(true);
-    try {
-      await caregiverApi.removeCaregiver(selectedPatient.patientId, removeTarget.caregiverUserId);
-      setRemoveTarget(null);
-      await loadCaregivers();
-      setToast({ message: `${removeTarget.fullName} has been removed from the care team.`, type: 'success' });
-    } catch {
-      setToast({ message: 'Failed to remove caregiver. Please try again.', type: 'error' });
-    } finally {
-      setIsRemoving(false);
-    }
-  };
+  if (!selectedPatient || !removeTarget) return;
+  setIsRemoving(true);
+  try {
+    await caregiverApi.removeCaregiver(selectedPatient.patientId, removeTarget.userId); 
+    setRemoveTarget(null);
+    await loadCaregivers();
+    setToast({ message: `${removeTarget.fullName} has been removed from the care team.`, type: 'success' });
+  } catch {
+    setToast({ message: 'Failed to remove caregiver. Please try again.', type: 'error' });
+  } finally {
+    setIsRemoving(false);
+  }
+};
 
   if (!selectedPatient) {
     return (
@@ -344,14 +344,14 @@ export function CaregiverList() {
             </div>
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {sorted.map((caregiver) => (
-                <CaregiverRow
-                  key={caregiver.caregiverUserId}
-                  caregiver={caregiver}
-                  isCurrentUser={caregiver.caregiverUserId === user?.userId}
-                  onRemove={() => setRemoveTarget(caregiver)}
-                  onManage={() => navigate(`/caregivers/${caregiver.caregiverUserId}/permissions`)}
-                />
-              ))}
+  <CaregiverRow
+    key={caregiver.userId}                                                         
+    caregiver={caregiver}
+    isCurrentUser={caregiver.userId === user?.userId}                             
+    onRemove={() => setRemoveTarget(caregiver)}
+    onManage={() => navigate(`/caregivers/${caregiver.userId}/permissions`)}        
+  />
+))}
             </div>
           </div>
         )}

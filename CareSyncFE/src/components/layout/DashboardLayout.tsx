@@ -6,7 +6,7 @@ import { usePatient } from '../../context/PatientContext';
 import { useAlerts } from '../../context/AlertContext';
 import { useNotificationScheduler } from '../../hooks/useNotificationScheduler';
 import { LogoutConfirmDialog } from '../ui/ConfirmDialog';
-import { ThemeToggle } from '../ui/ThemeToggle';
+// import { ThemeToggle } from '../ui/ThemeToggle';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 import { cn } from '../../utils/cn';
 
@@ -359,7 +359,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {/* Right side actions */}
           <div className="flex items-center gap-1">
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
 
             <button
               className="relative p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

@@ -122,14 +122,6 @@ public class PermissionService {
         return hasRolePermission;
     }
 
-    /**
-     * Get all permissions for a user on a specific patient
-     * This is used by frontend to determine what UI elements to show
-     *
-     * @param userId    User ID
-     * @param patientId Patient ID
-     * @return PermissionResponse with all 18 permissions
-     */
     @Transactional(readOnly = true)
     public PermissionResponse getUserPermissionsForPatient(Long userId, Long patientId) {
         String methodName = AppUtil.getMethodName();

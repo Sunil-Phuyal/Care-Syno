@@ -5,13 +5,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 /**
  * @author Sunil Phuyal
  * @version v1.0
  * @project CareSyncBE
- * @since 2/7/2026, 12:16 PM,
+ * @since 2/7/2026, 12:16 PM
  **/
 @Service
 public class EmailTemplateService {
@@ -21,148 +20,123 @@ public class EmailTemplateService {
 
     public String getWelcomeEmailBody(String fullName, String email) {
         return String.format("""
-            Dear %s,
-            
-            Welcome to CareSync!
-            
-            Your account has been created successfully. You can now manage medications and coordinate care for your loved ones.
-            
-            Your login credentials:
-            Email: %s
-            
-            Get started: %s/login
-            
-            If you have any questions, feel free to contact our support team.
-            
-            Best regards,
-            The CareSync Team
-            """, fullName, email, frontendUrl);
+                Dear %s,
+
+                Thank you for joining CareSync. Your account has been created and you can now start\s
+                managing medications and coordinating care for your loved ones.
+
+                You can sign in using the email address associated with your account: %s
+
+                To get started, visit: %s/login
+
+                If you have any questions or need assistance, please do not hesitate to reach out to\s
+                our support team.
+
+                Regards,
+                The CareSync Team
+                """, fullName, email, frontendUrl);
     }
 
     public String getCaregiverInvitationBody(String inviterName, String patientName,
                                              String email, String inviteLink) {
         return String.format("""
-        Hello,
-        
-        %s has invited you to join the care team for %s on CareSync.
-        
-        Your account has been created with this email: %s
-        
-        Click the link below to set your password and activate your account:
-        %s
-        
-        This link will expire in 24 hours.
-        
-        Once activated, you will be able to:
-        - View medication schedules
-        - Log medication administration
-        - Track adherence
-        - Coordinate with other caregivers
-        
-        If you did not expect this invitation, please ignore this email.
-        
-        Best regards,
-        The CareSync Team
-        """, inviterName, patientName, email, inviteLink);
+                Hello,
+
+                %s has added you to the care team for %s on CareSync.
+
+                An account has been created for you using this email address: %s
+
+                To set your password and activate your account, please follow the link below:
+                %s
+
+                This link will expire in 24 hours. Once your account is active, you will be able to\s
+                view medication schedules, log administrations, track adherence, and coordinate with\s
+                other caregivers on the team.
+
+                If you were not expecting this invitation, you can safely ignore this email.
+
+                Regards,
+                The CareSync Team
+                """, inviterName, patientName, email, inviteLink);
     }
 
-    /**
-     * Caregiver added to existing user email template
-     */
     public String getCaregiverAddedBody(String caregiverName,
                                         String inviterName,
                                         String patientName) {
+        return String.format("""
+                Dear %s,
 
-        StringBuilder body = new StringBuilder();
-        body.append("Dear ").append(caregiverName).append(",\n\n");
+                %s has added you to the care team for %s on CareSync. You now have access to this\s
+                patient's information and can assist in managing their care.
 
-        body.append("🤝 ADDED TO CARE TEAM\n\n");
+                You can sign in to your account at: %s/login
 
-        body.append(inviterName).append(" has added you to the care team for ")
-                .append(patientName).append(".\n\n");
+                Regards,
+                The CareSync Team
 
-        body.append("You can now access this patient's information and help manage their care.\n\n");
-
-        body.append("Login to CareSync:\n");
-        body.append(frontendUrl).append("/login\n\n");
-
-        body.append("Best regards,\n");
-        body.append("The CareSync Team\n\n");
-        body.append("---\n");
-        body.append("This is an automated notification. Please do not reply to this email.");
-
-        return body.toString();
+                ---
+                This is an automated notification. Please do not reply to this email.
+                """, caregiverName, inviterName, patientName, frontendUrl);
     }
 
     public String getMedicationLoggedBody(String caregiverName, String patientName,
                                           String medicationName, String dosage, String time) {
         return String.format("""
-            Medication Administration Alert
-            
-            %s has logged a medication for %s:
-            
-            Medication: %s
-            Dosage: %s
-            Time: %s
-            
-            View full details: %s/patients
-            
-            This is an automated notification from CareSync.
-            
-            Best regards,
-            The CareSync Team
-            """, caregiverName, patientName, medicationName, dosage, time, frontendUrl);
+                Hello,
+
+                This is a notification that %s has logged a medication for %s.
+
+                Medication: %s
+                Dosage: %s
+                Time administered: %s
+
+                You can view the full details by signing in at: %s/patients
+
+                Regards,
+                The CareSync Team
+                """, caregiverName, patientName, medicationName, dosage, time, frontendUrl);
     }
 
     public String getPermissionGrantedBody(String granterName, String patientName,
                                            String permissionName, String expiresAt) {
         String expiryText = expiresAt != null
-                ? String.format("This permission expires on: %s", expiresAt)
-                : "This permission is permanent.";
+                ? "This permission is set to expire on " + expiresAt + "."
+                : "This permission has no expiration date.";
 
         return String.format("""
-            Permission Update
-            
-            %s has granted you a new permission for %s:
-            
-            Permission: %s
-            %s
-            
-            You can now perform this action. View details: %s/patients
-            
-            Best regards,
-            The CareSync Team
-            """, granterName, patientName, permissionName, expiryText, frontendUrl);
+                Hello,
+
+                %s has granted you the following permission for %s: %s.
+
+                %s
+
+                You can review and manage permissions by signing in at: %s/patients
+
+                Regards,
+                The CareSync Team
+                """, granterName, patientName, permissionName, expiryText, frontendUrl);
     }
 
     public String getDuplicateDoseWarningBody(String caregiverName, String patientName,
                                               String medicationName, String previousTime,
                                               String previousCaregiver) {
         return String.format("""
-            ⚠️ DUPLICATE DOSE WARNING ⚠️
-            
-            Potential duplicate medication administration detected!
-            
-            Patient: %s
-            Medication: %s
-            
-            Recent administration:
-            - Given by: %s
-            - Time: %s
-            
-            Current attempt:
-            - Attempting to administer: %s
-            - Time: Just now
-            
-            Please verify before administering to avoid double-dosing.
-            
-            View medication history: %s/patients
-            
-            This is an automated safety alert from CareSync.
-            
-            Best regards,
-            The CareSync Team
-            """, patientName, medicationName, previousCaregiver, previousTime,
+                Hello,
+
+                A potential duplicate medication administration has been detected for %s.
+
+                The medication %s was already administered by %s at %s. %s is now attempting to\s
+                administer the same medication.
+
+                Please verify with the care team before proceeding to avoid an accidental double dose.
+
+                You can review the full medication history at: %s/patients
+
+                This is an automated safety alert from CareSync. Please do not reply to this email.
+
+                Regards,
+                The CareSync Team
+                """, patientName, medicationName, previousCaregiver, previousTime,
                 caregiverName, frontendUrl);
     }
 
@@ -170,43 +144,36 @@ public class EmailTemplateService {
                                             String medicationName, String dosage,
                                             String scheduledTime) {
         return String.format("""
-            Medication Reminder
-            
-            Hello %s,
-            
-            This is a reminder for %s's upcoming medication:
-            
-            Medication: %s
-            Dosage: %s
-            Scheduled Time: %s
-            
-            Log administration: %s/medications/log
-            
-            This is an automated reminder from CareSync.
-            
-            Best regards,
-            The CareSync Team
-            """, caregiverName, patientName, medicationName, dosage, scheduledTime, frontendUrl);
+                Hello %s,
+
+                This is a reminder that %s is due to receive a medication at the scheduled time.
+
+                Medication: %s
+                Dosage: %s
+                Scheduled time: %s
+
+                Once administered, please log it at: %s/medications/log
+
+                Regards,
+                The CareSync Team
+                """, caregiverName, patientName, medicationName, dosage, scheduledTime, frontendUrl);
     }
 
     public String getPasswordResetBody(String fullName, String resetToken) {
         return String.format("""
-            Password Reset Request
-            
-            Dear %s,
-            
-            We received a request to reset your password for your CareSync account.
-            
-            Click the link below to reset your password:
-            %s/reset-password?token=%s
-            
-            This link will expire in 1 hour.
-            
-            If you didn't request this, please ignore this email.
-            
-            Best regards,
-            The CareSync Team
-            """, fullName, frontendUrl, resetToken);
+                Dear %s,
+
+                We received a request to reset the password for your CareSync account.
+
+                You can reset your password by visiting the link below:
+                %s/reset-password?token=%s
+
+                This link will expire in 1 hour. If you did not request a password reset, you can\s
+                safely ignore this email and your password will remain unchanged.
+
+                Regards,
+                The CareSync Team
+                """, fullName, frontendUrl, resetToken);
     }
 
     public String getMedicationReminderBody(
@@ -217,7 +184,7 @@ public class EmailTemplateService {
             LocalDateTime scheduledTime,
             int minutesUntilDue,
             String instructions,
-            String windowKey  // ← ADD THIS: "30MIN", "5MIN", or "NOW"
+            String windowKey
     ) {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
         String timeStr = scheduledTime.format(timeFormatter);
@@ -225,107 +192,82 @@ public class EmailTemplateService {
         StringBuilder body = new StringBuilder();
         body.append("Dear ").append(caregiverName).append(",\n\n");
 
-        // ── Header changes based on which window fired ──
         switch (windowKey) {
-            case "30MIN" -> {
-                body.append("⏰ UPCOMING MEDICATION REMINDER\n\n");
-                body.append(patientName)
-                        .append(" has a medication due in approximately 30 minutes.\n\n");
-            }
-            case "5MIN" -> {
-                body.append("⚡ MEDICATION DUE VERY SOON\n\n");
-                body.append(patientName)
-                        .append(" needs their medication in about 5 minutes. Please prepare now.\n\n");
-            }
-            case "NOW" -> {
-                body.append("🔴 TIME TO GIVE MEDICATION NOW\n\n");
-                body.append("It is time to administer ")
-                        .append(patientName)
-                        .append("'s medication immediately.\n\n");
-            }
-            default -> {
-                body.append("⏰ MEDICATION REMINDER\n\n");
-                body.append(patientName)
-                        .append(" has a medication due in ")
-                        .append(minutesUntilDue)
-                        .append(" minutes.\n\n");
-            }
+            case "30MIN" -> body.append(patientName)
+                    .append(" has a medication scheduled in approximately 30 minutes.\n\n");
+            case "5MIN" -> body.append(patientName)
+                    .append("'s medication is due in about 5 minutes. Please prepare now.\n\n");
+            case "NOW" -> body.append("It is time to administer ")
+                    .append(patientName)
+                    .append("'s medication. Please do so as soon as possible.\n\n");
+            default -> body.append(patientName)
+                    .append(" has a medication due in ")
+                    .append(minutesUntilDue)
+                    .append(" minutes.\n\n");
         }
 
-        // ── Medication details block (unchanged) ──
-        body.append("Medication Details:\n");
-        body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-        body.append("Patient:          ").append(patientName).append("\n");
-        body.append("Medication:       ").append(medicationName).append("\n");
-        body.append("Dosage:           ").append(dosage).append("\n");
-        body.append("Scheduled Time:   ").append(timeStr).append("\n");
+        body.append("Patient:         ").append(patientName).append("\n");
+        body.append("Medication:      ").append(medicationName).append("\n");
+        body.append("Dosage:          ").append(dosage).append("\n");
+        body.append("Scheduled time:  ").append(timeStr).append("\n");
 
-        if (instructions != null && !instructions.isEmpty()) {
-            body.append("Instructions:     ").append(instructions).append("\n");
+        if (instructions != null && !instructions.isBlank()) {
+            body.append("Instructions:    ").append(instructions).append("\n");
         }
 
-        body.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+        body.append("\n");
 
-        // ── Call to action changes based on urgency ──
-        if ("NOW".equals(windowKey)) {
-            body.append("⚠️  Please administer the medication immediately and log it in CareSync.\n\n");
-        } else if ("5MIN".equals(windowKey)) {
-            body.append("Please get the medication ready now and log it once administered.\n\n");
-        } else {
-            body.append("Please ensure the medication is administered as scheduled.\n\n");
+        switch (windowKey) {
+            case "NOW" -> body.append("Please administer the medication now and log it in CareSync.\n\n");
+            case "5MIN" -> body.append("Please prepare the medication and log it once administered.\n\n");
+            default -> body.append("Please ensure the medication is administered as scheduled.\n\n");
         }
 
-        body.append("Log the administration here:\n");
-        body.append(frontendUrl).append("/medications/log\n\n");
-
-        body.append("Best regards,\n");
+        body.append("Log the administration here: ").append(frontendUrl).append("/medications/log\n\n");
+        body.append("Regards,\n");
         body.append("The CareSync Team\n\n");
         body.append("---\n");
         body.append("This is an automated reminder. Please do not reply to this email.");
 
         return body.toString();
     }
+
     public String getPasswordChangedBody(String fullName) {
+        return String.format("""
+                Dear %s,
 
-        StringBuilder body = new StringBuilder();
-        body.append("Dear ").append(fullName).append(",\n\n");
+                Your CareSync account password has been changed successfully.
 
-        body.append("PASSWORD CHANGED SUCCESSFULLY\n\n");
+                If you did not make this change, please contact our support team right away, as your\s
+                account may have been accessed without your permission.
 
-        body.append("Your CareSync account password has been changed successfully.\n\n");
+                As a general reminder, avoid sharing your password with anyone and consider using a\s
+                strong, unique password that you update periodically.
 
-        body.append("If you did not make this change, please contact our support team immediately.\n\n");
+                You can sign in at: %s/login
 
-        body.append("For security:\n");
-        body.append("• Never share your password with anyone\n");
-        body.append("• Use a strong, unique password\n");
-        body.append("• Change your password regularly\n\n");
+                Regards,
+                The CareSync Team
 
-        body.append("Login at: ").append(frontendUrl).append("/login\n\n");
-
-        body.append("Best regards,\n");
-        body.append("The CareSync Team\n\n");
-        body.append("---\n");
-        body.append("This is an automated notification. Please do not reply to this email.");
-
-        return body.toString();
+                ---
+                This is an automated notification. Please do not reply to this email.
+                """, fullName, frontendUrl);
     }
 
     public String getForgotPasswordEmailBody(String fullName, String resetLink, long expirationHours) {
-        return """
-            Hi %s,
-            
-            We received a request to reset your CareSync password.
-            
-            Click the link below to reset your password:
-            %s
-            
-            This link will expire in %d hour(s).
-            
-            If you did not request a password reset, please ignore this email.
-            Your password will remain unchanged.
-            
-            - CareSync Team
-            """.formatted(fullName, resetLink, expirationHours);
+        return String.format("""
+                Hi %s,
+
+                We received a request to reset the password for your CareSync account. You can do so\s
+                by clicking the link below:
+
+                %s
+
+                This link will expire in %d hour(s). If you did not request a password reset, you\s
+                can ignore this email. Your password will not be changed.
+
+                Regards,
+                The CareSync Team
+                """, fullName, resetLink, expirationHours);
     }
 }

@@ -6,9 +6,8 @@ import { medicationApi } from '../../api/medication.api';
 import { usePatient } from '../../context/PatientContext';
 import { PermissionGate } from '../../components/common/PermissionGate';
 import { Spinner } from '../../components/ui/Spinner';
-import { formatters } from '../../utils/formatters';
 import { cn } from '../../utils/cn';
-import type { Medication, MedicationSchedule, TodayScheduleDTO } from '../../types/medication.types';
+import type { Medication, MedicationSchedule, TodayScheduleDTO, UpdateScheduleRequest } from '../../types/medication.types';
 
 // ── Today status pill ─────────────────────────────────────────────────────────
 function TodayStatus({ record }: { record: TodayScheduleDTO | undefined }) {
@@ -43,9 +42,193 @@ function TodayStatus({ record }: { record: TodayScheduleDTO | undefined }) {
   );
 }
 
-// ── Column layout — one place to change widths ────────────────────────────────
-// medication is capped so it doesn't eat all free space
+// ── Column layout ─────────────────────────────────────────────────────────────
 const COLS = 'grid-cols-[minmax(0,280px)_72px_148px_100px_120px]';
+
+// ── Edit schedule modal ───────────────────────────────────────────────────────
+function EditScheduleModal({
+  schedule,
+  medicationName,
+  onClose,
+  onSaved,
+}: {
+  schedule: MedicationSchedule;
+  medicationName: string;
+  onClose: () => void;
+  onSaved: (updated: MedicationSchedule) => void;
+}) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    dosage:       schedule.dosage ?? '',
+    frequency:    schedule.frequency ?? 'ONCE_DAILY',
+    timeOfDay:    typeof schedule.timeOfDay === 'string'
+                    ? schedule.timeOfDay.slice(0, 5)
+                    : '',
+    instructions: schedule.specialInstructions ?? schedule.instructions ?? '',
+    startDate:    schedule.startDate ?? '',
+    endDate:      schedule.endDate ?? '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    setError('');
+    setIsSaving(true);
+    try {
+      const payload: UpdateScheduleRequest = {
+        dosage:       form.dosage       || undefined,
+        frequency:    form.frequency    || undefined,
+        timeOfDay:    form.timeOfDay    || undefined,
+        instructions: form.instructions || undefined,
+        startDate:    form.startDate    || undefined,
+        endDate:      form.endDate      || undefined,
+      };
+      const updated = await medicationApi.updateSchedule(schedule.scheduleId, payload);
+      onSaved(updated);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save changes.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg w-full max-w-sm mx-4 p-5">
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit schedule</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{medicationName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-500 dark:text-red-400 mb-3">{error}</p>
+        )}
+
+        <div className="space-y-3">
+          {/* Dosage */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Dosage</label>
+            <input
+              name="dosage"
+              value={form.dosage}
+              onChange={handleChange}
+              placeholder="e.g. 500mg, 1 tablet"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+
+          {/* Frequency + Time */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Frequency</label>
+              <select
+                name="frequency"
+                value={form.frequency}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="ONCE_DAILY">Once daily</option>
+                <option value="TWICE_DAILY">Twice daily</option>
+                <option value="THREE_TIMES_DAILY">Three times daily</option>
+                <option value="FOUR_TIMES_DAILY">Four times daily</option>
+                <option value="AS_NEEDED">As needed</option>
+                <option value="WEEKLY">Weekly</option>
+                <option value="CUSTOM">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Time</label>
+              <input
+                type="time"
+                name="timeOfDay"
+                value={form.timeOfDay}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Start / End date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Start date</label>
+              <input
+                type="date"
+                name="startDate"
+                value={form.startDate}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">End date</label>
+              <input
+                type="date"
+                name="endDate"
+                value={form.endDate}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Instructions */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+              Instructions <span className="font-normal">(optional)</span>
+            </label>
+            <textarea
+              name="instructions"
+              value={form.instructions}
+              onChange={handleChange}
+              rows={2}
+              placeholder="e.g. Take after meals"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex-1 py-2 text-sm rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors disabled:opacity-60"
+          >
+            {isSaving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Single row ────────────────────────────────────────────────────────────────
 function ScheduleRow({
@@ -53,12 +236,14 @@ function ScheduleRow({
   medicationName,
   todayRecord,
   onLog,
+  onEdit,
   onDelete,
 }: {
   schedule: MedicationSchedule;
   medicationName: string;
   todayRecord: TodayScheduleDTO | undefined;
   onLog: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const prescriptionUrl = schedule.prescriptionImageUrl ?? schedule.medicationPhotoUrl;
@@ -111,7 +296,7 @@ function ScheduleRow({
       {/* Actions */}
       <div className="flex items-center justify-end gap-1">
 
-        {/* Prescription link — icon button with tooltip */}
+        {/* Prescription link */}
         {prescriptionUrl && (
           <a
             href={prescriptionUrl}
@@ -138,6 +323,19 @@ function ScheduleRow({
             )}
           >
             {todayRecord?.isAdministered ? 'Log again' : 'Log now'}
+          </button>
+        </PermissionGate>
+
+        <PermissionGate permission="medication.edit_schedule">
+          <button
+            onClick={onEdit}
+            title="Edit schedule"
+            className="p-1.5 rounded-lg text-gray-300 dark:text-gray-700 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
           </button>
         </PermissionGate>
 
@@ -197,6 +395,7 @@ export function MedicationSchedules() {
   const [todaySchedules, setTodaySchedules] = useState<TodayScheduleDTO[]>([]);
   const [isLoading, setIsLoading]           = useState(true);
   const [error, setError]                   = useState('');
+  const [editingSchedule, setEditingSchedule] = useState<MedicationSchedule | null>(null);
 
   useEffect(() => {
     if (!selectedPatient) return;
@@ -265,6 +464,21 @@ export function MedicationSchedules() {
 
   return (
     <div className="space-y-4">
+
+      {/* Edit modal */}
+      {editingSchedule && (
+        <EditScheduleModal
+          schedule={editingSchedule}
+          medicationName={getMedicationName(editingSchedule.medicationId)}
+          onClose={() => setEditingSchedule(null)}
+          onSaved={(updated) => {
+            setSchedules((prev) =>
+              prev.map((s) => s.scheduleId === updated.scheduleId ? updated : s)
+            );
+            setEditingSchedule(null);
+          }}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -352,6 +566,7 @@ export function MedicationSchedules() {
                 medicationName={getMedicationName(schedule.medicationId)}
                 todayRecord={getTodayRecord(schedule.scheduleId)}
                 onLog={() => navigate('/medications/log', { state: { scheduleId: schedule.scheduleId } })}
+                onEdit={() => setEditingSchedule(schedule)}
                 onDelete={() => handleDelete(schedule.scheduleId)}
               />
             ))}
