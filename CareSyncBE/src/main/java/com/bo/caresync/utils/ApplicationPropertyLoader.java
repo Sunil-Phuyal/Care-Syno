@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class ApplicationPropertyLoader {
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationPropertyLoader.class);
-    private static final String PROPERTIES_FILE = "/application.properties";
+    private static final String PROPERTIES_FILE = "/application-local.properties";
     private static final Map<String, String> propertiesCache = new ConcurrentHashMap<>();
     private static volatile boolean isLoaded = false;
 
@@ -33,7 +33,7 @@ public class ApplicationPropertyLoader {
         Properties prop = new Properties();
         try (InputStream inputStream = ApplicationPropertyLoader.class.getResourceAsStream(PROPERTIES_FILE)) {
             if (inputStream == null) {
-                log.error("application.properties file not found on classpath");
+                log.error("application-local.properties file not found on classpath");
                 isLoaded = true;
                 return;
             }
@@ -46,13 +46,13 @@ public class ApplicationPropertyLoader {
                             ))
             );
             isLoaded = true;
-            log.info("Successfully loaded {} properties from application.properties", propertiesCache.size());
+            log.info("Successfully loaded {} properties from application-local.properties", propertiesCache.size());
 
         } catch (IOException e) {
-            log.error("IOException occurred while reading application.properties", e);
+            log.error("IOException occurred while reading application-local.properties", e);
             isLoaded = true;
         } catch (Exception e) {
-            log.error("Exception occurred while reading application.properties", e);
+            log.error("Exception occurred while reading application-local.properties", e);
             isLoaded = true;
         }
     }

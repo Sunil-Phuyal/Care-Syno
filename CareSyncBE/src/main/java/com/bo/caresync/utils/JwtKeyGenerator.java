@@ -24,8 +24,8 @@ public class JwtKeyGenerator {
             System.out.println("=".repeat(80));
             System.out.println(base64Key);
             System.out.println("=".repeat(80));
-            System.out.println("Copy this value to your application.properties:");
-            System.out.println("jwt.secret=REMOVED
+            System.out.println("Copy this value to your application-local.properties:");
+            System.out.println("jwt.secret=" + base64Key);
             System.out.println("=".repeat(80));
         } catch (NoSuchAlgorithmException e) {
             System.err.println("Error generating key: " + e.getMessage());
