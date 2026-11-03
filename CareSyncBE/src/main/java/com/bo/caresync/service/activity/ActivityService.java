@@ -118,19 +118,19 @@ public class ActivityService {
         if (admin.getStatus() != null) {
             switch (admin.getStatus()) {
                 case "ADMINISTERED":
-                    icon = "✅";
+                    icon = "";
                     color = "success";
                     break;
                 case "SKIPPED":
-                    icon = "⏭️";
+                    icon = "⏭";
                     color = "warning";
                     break;
                 case "MISSED":
-                    icon = "❌";
+                    icon = "";
                     color = "error";
                     break;
                 case "REFUSED":
-                    icon = "🚫";
+                    icon = "";
                     color = "error";
                     break;
             }
