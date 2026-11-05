@@ -1,0 +1,25 @@
+# VCS and IDE
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.iml
+
+# Build output
+target/
+
+# Secrets and local config: must never enter an image
+.env
+.env.*
+**/application-local.properties
+**/application-dev.properties
+
+# Not needed in the image
+HELP.md
+*.md
+Dockerfile
+.dockerignore
+mvnw
+mvnw.cmd
+.mvn
