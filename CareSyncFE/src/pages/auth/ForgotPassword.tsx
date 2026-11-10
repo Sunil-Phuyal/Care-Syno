@@ -10,8 +10,8 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
-        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+        <img src={careSyncLogo} alt="CareSyno" className="w-10 h-10" />
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
       </div>
 
       <div>
@@ -93,7 +93,7 @@ export function ForgotPassword() {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
           </div>
 
           {sent ? (

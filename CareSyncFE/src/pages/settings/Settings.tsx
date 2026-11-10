@@ -290,7 +290,7 @@ function PreferencesTab() {
         <div>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50">Appearance</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Choose how CareSync looks for you
+            Choose how CareSyno looks for you
           </p>
         </div>
 

@@ -44,7 +44,7 @@ export function NotificationSettings() {
           Notifications
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Control how and when CareSync alerts you about medications.
+          Control how and when CareSyno alerts you about medications.
         </p>
       </div>
 

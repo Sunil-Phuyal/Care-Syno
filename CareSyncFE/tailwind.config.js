@@ -71,7 +71,8 @@ export default {
           900: '#7F1D1D',
         },
       },
-      fontFamily: {
+            fontFamily: {
+        display: ['"Bricolage Grotesque"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       fontSize: {

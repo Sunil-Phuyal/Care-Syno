@@ -34,6 +34,7 @@ import { ManagePermissions }    from './pages/caregivers/ManagePermissions';
 import { AdherenceReport }      from './pages/reports/AdherenceReport';
 import { PatientSummary }       from './pages/reports/PatientSummary';
 import { Alerts }               from './pages/alerts/Alerts';
+import { Landing }              from './pages/Landing';
 
 function App() {
   return (
@@ -51,7 +52,8 @@ function App() {
                 */}
                 <AlertProvider>
                   <Routes>
-                    {/* Public routes */}
+                                        {/* Public routes */}
+                    <Route path="/"                element={<Landing />} />
                     <Route path="/login"           element={<Login />} />
                     <Route path="/register"        element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />

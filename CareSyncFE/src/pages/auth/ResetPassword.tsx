@@ -10,14 +10,14 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
-        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+        <img src={careSyncLogo} alt="CareSyno" className="w-10 h-10" />
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
       </div>
 
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">Reset Your Password</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
-          Choose a strong new password to keep your CareSync account and your family's healthcare data safe and secure.
+          Choose a strong new password to keep your CareSyno account and your family's healthcare data safe and secure.
         </p>
         <ul className="space-y-4">
           {[
@@ -115,7 +115,7 @@ export function ResetPassword() {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
           </div>
 
           {done ? (
@@ -140,7 +140,7 @@ export function ResetPassword() {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Set new password</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Choose a strong password for your CareSync account
+                  Choose a strong password for your CareSyno account
                 </p>
               </div>
 
