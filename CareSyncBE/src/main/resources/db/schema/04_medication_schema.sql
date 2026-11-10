@@ -2,7 +2,7 @@
 -- MODULE: MEDICATION MANAGEMENT
 -- Purpose: Medication schedules and administration tracking
 -- Author: Sunil Phuyal
--- Version: 1.0
+-- Version: 1.1 (aligned with the JPA entities)
 -- ============================================================
 
 SET search_path TO medication;
@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS medication.medications (
                                                       CACHE 1
                                                       NO CYCLE
 ) NOT NULL PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,
+    medication_name VARCHAR(200) NOT NULL,
+    generic_name VARCHAR(200),
+    manufacturer VARCHAR(200),
     dosage_form VARCHAR(50),
     strength VARCHAR(50),
     description TEXT,
@@ -94,13 +96,10 @@ CREATE TABLE IF NOT EXISTS medication.medication_administrations (
     patient_id INT8 NOT NULL,
     medication_id INT8 NOT NULL,
     schedule_id INT8,
-    caregiver_user_id INT8,
-    scheduled_time TIMESTAMP,
-    actual_time TIMESTAMP NOT NULL,
-    dosage_given VARCHAR(50) NOT NULL,
+    administered_at TIMESTAMP NOT NULL,
+    administered_by INT8,
     status VARCHAR(20) NOT NULL,
     notes TEXT,
-    side_effects TEXT,
 
     -- Audit fields
     created_by VARCHAR(100),
@@ -116,20 +115,20 @@ CREATE TABLE IF NOT EXISTS medication.medication_administrations (
     REFERENCES medication.medications(medication_id) ON DELETE RESTRICT,
     CONSTRAINT fk_ma_schedule FOREIGN KEY (schedule_id)
     REFERENCES medication.medication_schedules(schedule_id) ON DELETE SET NULL,
-    CONSTRAINT fk_ma_caregiver FOREIGN KEY (caregiver_user_id)
+    CONSTRAINT fk_ma_administered_by FOREIGN KEY (administered_by)
     REFERENCES onboarding.users(user_id) ON DELETE SET NULL
     );
 
 COMMENT ON TABLE medication.medication_administrations IS 'Complete medication administration log';
 COMMENT ON COLUMN medication.medication_administrations.status IS 'ADMINISTERED, SKIPPED, MISSED, REFUSED';
-COMMENT ON COLUMN medication.medication_administrations.caregiver_user_id IS 'SET NULL on delete to preserve history';
+COMMENT ON COLUMN medication.medication_administrations.administered_by IS 'User who gave the dose. SET NULL on delete to preserve history';
 
 -- ============================================================
 -- INDEXES (MEDICATION MODULE)
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_ms_patient ON medication.medication_schedules(patient_id) WHERE record_status = 'Y';
-CREATE INDEX IF NOT EXISTS idx_ma_patient ON medication.medication_administrations(patient_id, actual_time);
-CREATE INDEX IF NOT EXISTS idx_ma_duplicate_check ON medication.medication_administrations(patient_id, medication_id, actual_time);
+CREATE INDEX IF NOT EXISTS idx_ma_patient ON medication.medication_administrations(patient_id, administered_at);
+CREATE INDEX IF NOT EXISTS idx_ma_duplicate_check ON medication.medication_administrations(patient_id, medication_id, administered_at);
 
 -- ============================================
 -- MEDICATION IMAGE INTEGRATION
@@ -138,8 +137,8 @@ CREATE INDEX IF NOT EXISTS idx_ma_duplicate_check ON medication.medication_admin
 
 -- Add prescription and medication photo to schedules
 ALTER TABLE medication.medication_schedules
-    ADD COLUMN prescription_image_url VARCHAR(500),
-ADD COLUMN medication_photo_url VARCHAR(500);
+    ADD COLUMN IF NOT EXISTS prescription_image_url VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS medication_photo_url VARCHAR(500);
 
 -- Add comment for clarity
 COMMENT ON COLUMN medication.medication_schedules.prescription_image_url
@@ -150,14 +149,14 @@ IS 'URL to actual medication photo (pill/bottle) uploaded via /api/v1/uploads/im
 
 -- Add proof image to administration logs
 ALTER TABLE medication.medication_administrations
-    ADD COLUMN proof_image_url VARCHAR(500);
+    ADD COLUMN IF NOT EXISTS proof_image_url VARCHAR(500);
 
 COMMENT ON COLUMN medication.medication_administrations.proof_image_url
 IS 'URL to proof photo of taking medication uploaded via /api/v1/uploads/image';
 
 -- Optional: Add image to master medication catalog
 ALTER TABLE medication.medications
-    ADD COLUMN medication_image_url VARCHAR(500);
+    ADD COLUMN IF NOT EXISTS medication_image_url VARCHAR(500);
 
 COMMENT ON COLUMN medication.medications.medication_image_url
 IS 'URL to generic medication image (pill/tablet photo)';
