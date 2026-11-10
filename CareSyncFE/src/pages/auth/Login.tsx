@@ -45,8 +45,8 @@ function LeftPanel() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant & Secure</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security for your family's healthcare data</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Private & Secure</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Only the people you invite can see your family's health information</p>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 // Public home page for CareSyno. Logged-in users are sent straight to the dashboard.
 
 import { Link, Navigate } from 'react-router-dom';
-import { Check, Clock, Mail, ClipboardList, Users, FileText, Pill } from 'lucide-react';
+import { Bell, Check, ChevronDown, ClipboardList, Clock, FileText, Globe, HeartHandshake, Home, Mail, Pill, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { storage } from '../utils/storage';
 import careSyncLogo from '../assets/careSyncLogo.svg?url';
@@ -33,7 +33,7 @@ const DOSES: Dose[] = [
 
 function DayTimeline() {
   return (
-    <figure className="w-full max-w-md">
+    <figure className="relative w-full max-w-md">
       <div className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between bg-primary-700 px-5 py-4 text-white dark:bg-primary-800">
           <div>
@@ -93,11 +93,19 @@ function DayTimeline() {
           Reminder emailed to Sita and Ram
         </div>
       </div>
+      <div className="-mt-3 ml-8 hidden w-fit items-center gap-3 rounded-xl border border-warning-200 bg-white px-4 py-3 shadow-lg dark:border-warning-700 dark:bg-gray-800 lg:relative lg:z-10 lg:flex">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300">
+          <Bell className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Atorvastatin at 8:00 PM</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Reminder sent to 2 caregivers</p>
+        </div>
+      </div>
       <figcaption className="mt-3 text-xs text-gray-500 dark:text-gray-400">Example schedule with sample data.</figcaption>
     </figure>
   );
 }
-
 /* ------------------------------------------------------------------ */
 /* Permissions visual                                                  */
 /* ------------------------------------------------------------------ */
@@ -177,6 +185,43 @@ const FEATURES = [
   },
 ];
 
+const SCENARIOS = [
+  {
+    icon: Home,
+    title: 'You live with them',
+    text: 'Enter the morning and evening doses once. Whoever is at home that day sees what is due and marks it done.',
+  },
+  {
+    icon: Globe,
+    title: 'You live far away',
+    text: 'A son or daughter working abroad can see that the afternoon tablet was given, without phoning to check.',
+  },
+  {
+    icon: HeartHandshake,
+    title: 'You rely on a helper',
+    text: 'Give a nurse or neighbour access to record doses only, and keep changes to the schedule to yourself.',
+  },
+];
+
+const FAQ = [
+  {
+    q: 'Who can see my family\u2019s information?',
+    a: 'Only you and the caregivers you invite. Each caregiver gets just the permissions you choose for them.',
+  },
+  {
+    q: 'Does a caregiver need to install anything?',
+    a: 'No. They get an email invitation, set a password, and sign in from any browser, including a phone.',
+  },
+  {
+    q: 'Will I get reminders if the page is closed?',
+    a: 'Yes. Reminder emails go out whether or not the app is open. Browser notifications are optional and can be switched on in settings.',
+  },
+  {
+    q: 'Does CareSyno give medical advice?',
+    a: 'No. It records and reminds what a doctor or pharmacist has prescribed. Always follow the prescription and ask a professional if you are unsure.',
+  },
+];
+
 const STEPS = [
   { title: 'Add the person you care for', text: 'Create your account and add their profile.' },
   { title: 'Enter their medicines and times', text: 'Set the dose times once. CareSyno tracks the rest of the day.' },
@@ -207,7 +252,7 @@ export function Landing() {
       </a>
 
       {/* Top bar */}
-      <header className="border-b border-gray-100 dark:border-gray-800">
+      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/85 backdrop-blur dark:border-gray-800 dark:bg-gray-900/85">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
           <Link to="/" className={`flex items-center gap-2.5 rounded-lg ${FOCUS}`}>
             <img src={careSyncLogo} alt="" className="h-9 w-9" />
@@ -226,6 +271,12 @@ export function Landing() {
               className={`hidden rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white sm:inline-block ${FOCUS}`}
             >
               How it works
+            </a>
+            <a
+              href="#faq"
+              className={`hidden rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white md:inline-block ${FOCUS}`}
+            >
+              FAQ
             </a>
             {hasSession ? (
               <Link to="/dashboard" className={`${BTN_PRIMARY} !px-4 !py-2`}>
@@ -250,8 +301,10 @@ export function Landing() {
 
       <main id="main">
         {/* Hero */}
-        <section className="bg-primary-50 dark:bg-gray-800/40">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:py-24">
+        <section className="relative overflow-hidden bg-primary-50 dark:bg-gray-800/40">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-96 w-96 rounded-full bg-primary-200/60 blur-3xl dark:bg-primary-800/25" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-warning-100/70 blur-3xl dark:bg-warning-900/10" />
+          <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:py-24">
             <div>
               <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-primary-950 dark:text-gray-50 sm:text-5xl lg:text-[3.5rem]">
                 Everyone who helps care for them, on the same schedule.
@@ -260,14 +313,22 @@ export function Landing() {
                 CareSyno keeps medicine times, given doses and caregiver access in one place, so nobody has to
                 phone around to ask whether the evening tablet was taken.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/register" className={BTN_PRIMARY}>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link to="/register" className={`${BTN_PRIMARY} w-full sm:w-auto`}>
                   Create an account
                 </Link>
-                <Link to="/login" className={BTN_SECONDARY}>
+                <Link to="/login" className={`${BTN_SECONDARY} w-full sm:w-auto`}>
                   Sign in
                 </Link>
               </div>
+              <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
+                {['Email reminders', 'Caregiver permissions', 'Works on any phone'].map((t) => (
+                  <li key={t} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-primary-600 dark:text-primary-400" strokeWidth={3} aria-hidden="true" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div className="flex justify-center lg:justify-end">
@@ -276,8 +337,26 @@ export function Landing() {
           </div>
         </section>
 
+        {/* Who it is for */}
+        <section>
+          <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+            <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              Built for how families really share care
+            </h2>
+            <div className="mt-10 grid gap-8 md:grid-cols-3">
+              {SCENARIOS.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="border-t-2 border-primary-600 pt-5 dark:border-primary-500">
+                  <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" aria-hidden="true" />
+                  <h3 className="mt-3 font-display text-lg font-semibold">{title}</h3>
+                  <p className="mt-2 leading-relaxed text-gray-600 dark:text-gray-400">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Features */}
-        <section id="features" className="scroll-mt-4">
+        <section id="features" className="scroll-mt-16 bg-primary-50/70 dark:bg-gray-800/30">
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16 lg:py-24">
             <div className="lg:sticky lg:top-8 lg:self-start">
               <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -306,7 +385,7 @@ export function Landing() {
         </section>
 
         {/* Permissions */}
-        <section className="bg-primary-50 dark:bg-gray-800/40">
+        <section>
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-2 lg:gap-16 lg:py-24">
             <div>
               <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -322,7 +401,7 @@ export function Landing() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="scroll-mt-4">
+        <section id="how-it-works" className="scroll-mt-16 bg-primary-50/70 dark:bg-gray-800/30">
           <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
             <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Set up in three steps</h2>
             <ol className="mt-10 grid gap-8 md:grid-cols-3">
@@ -341,6 +420,24 @@ export function Landing() {
           </div>
         </section>
 
+        {/* FAQ */}
+        <section id="faq" className="scroll-mt-16">
+          <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16 lg:py-24">
+            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Common questions</h2>
+            <div className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+              {FAQ.map((f) => (
+                <details key={f.q} className="group py-5">
+                  <summary className={`flex cursor-pointer list-none items-center justify-between gap-4 rounded font-semibold [&::-webkit-details-marker]:hidden ${FOCUS}`}>
+                    {f.q}
+                    <ChevronDown className="h-5 w-5 flex-shrink-0 text-gray-500 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <p className="mt-3 leading-relaxed text-gray-600 dark:text-gray-400">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Closing call to action */}
         <section className="bg-primary-800 dark:bg-primary-900">
           <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center">
@@ -350,7 +447,7 @@ export function Landing() {
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-800"
+                className={`inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-semibold text-primary-800 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary-800`}
               >
                 Create an account
               </Link>
@@ -372,6 +469,11 @@ export function Landing() {
             <span className="font-display font-semibold text-gray-800 dark:text-gray-200">CareSyno</span>
             <span>&copy; 2026</span>
           </div>
+          <nav aria-label="Footer" className="flex gap-5">
+            <Link to="/login" className="hover:text-gray-800 dark:hover:text-gray-200">Sign in</Link>
+            <Link to="/register" className="hover:text-gray-800 dark:hover:text-gray-200">Create account</Link>
+            <a href="#faq" className="hover:text-gray-800 dark:hover:text-gray-200">FAQ</a>
+          </nav>
           <p className="max-w-md">
             If the site has been idle, the first page can take about a minute to respond while the server wakes up.
           </p>

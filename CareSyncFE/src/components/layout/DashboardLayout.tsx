@@ -281,8 +281,8 @@ function SidebarContent({ onNavigate }: { onNavigate: (path: string) => void }) 
             </svg>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Your data is secure</p>
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-50">Private & Secure</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Shared only with your care team</p>
           </div>
         </div>
       </div>
