@@ -1,8 +1,10 @@
 // src/pages/Landing.tsx
 // Public home page for CareSyno. Logged-in users are sent straight to the dashboard.
 
+import { useEffect, useLayoutEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Bell, Check, ChevronDown, ClipboardList, Clock, FileText, Globe, HeartHandshake, Home, Mail, Pill, Users } from 'lucide-react';
+import { Check, ChevronDown, ClipboardList, FileText, Globe, HeartHandshake, Home, Mail, Pill, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { storage } from '../utils/storage';
 import careSyncLogo from '../assets/careSyncLogo.svg?url';
@@ -10,103 +12,184 @@ import careSyncLogo from '../assets/careSyncLogo.svg?url';
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900';
 
-const BTN_PRIMARY = `inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-700 active:bg-primary-800 ${FOCUS}`;
+const BTN_PRIMARY = `inline-flex items-center justify-center rounded-lg bg-primary-600 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-md active:translate-y-0 active:bg-primary-800 motion-reduce:hover:translate-y-0 ${FOCUS}`;
 const BTN_SECONDARY = `inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 ${FOCUS}`;
 
 /* ------------------------------------------------------------------ */
-/* Hero visual: one day of medicines for an example patient            */
+/* Motion: everything plays once, nothing loops                        */
 /* ------------------------------------------------------------------ */
 
-type Dose = {
-  time: string;
-  medicine: string;
-  detail: string;
-  status: 'given' | 'due';
-  note: string;
-};
+const PAGE_CSS = `
+  @keyframes cs-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cs-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes cs-ring { from { stroke-dashoffset: 251.3; } to { stroke-dashoffset: 35.2; } }
+  @keyframes cs-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .cs-up { animation: cs-up .8s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
+  .cs-ring { animation: cs-ring 1.4s cubic-bezier(.3,.7,.2,1) .6s both; }
+  .cs-bar { transform-origin: bottom; animation: cs-bar .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d, 0ms); }
+  [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; transition-delay: var(--d, 0ms); }
+  [data-reveal].is-in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .cs-up, .cs-bar { animation-name: cs-fade; }
+    [data-reveal] { transform: none; }
+  }
+`;
 
-const DOSES: Dose[] = [
-  { time: '8:00 AM', medicine: 'Metformin', detail: '500 mg, with breakfast', status: 'given', note: 'Given by Sita at 8:04' },
-  { time: '1:00 PM', medicine: 'Amlodipine', detail: '5 mg', status: 'given', note: 'Given by Ram at 1:02' },
-  { time: '8:00 PM', medicine: 'Atorvastatin', detail: '20 mg, after dinner', status: 'due', note: 'Due in 25 minutes' },
+const REVEAL_TARGETS = [
+  'main > section:not(:first-child) > div',
+  'main > section:not(:first-child) ul > li',
+  'main > section:not(:first-child) ol > li',
+  'main > section:not(:first-child) details',
+  'main > section:not(:first-child) .border-t-2',
+].join(',');
+
+// Sections below the hero fade in once as they scroll into view.
+function useReveal() {
+  useLayoutEffect(() => {
+    if (!('IntersectionObserver' in window)) return;
+    const els = Array.from(document.querySelectorAll<HTMLElement>(REVEAL_TARGETS));
+    els.forEach((el) => {
+      const index = el.parentElement ? Array.from(el.parentElement.children).indexOf(el) : 0;
+      el.setAttribute('data-reveal', '');
+      el.style.setProperty('--d', `${(index % 6) * 90}ms`);
+    });
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-in');
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
+function useCountUp(target: number, delay = 600, duration = 1400) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    let start = 0;
+    const tick = (t: number) => {
+      if (!start) start = t;
+      const p = Math.min((t - start) / duration, 1);
+      setN(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    const timer = setTimeout(() => { raf = requestAnimationFrame(tick); }, delay);
+    return () => { clearTimeout(timer); cancelAnimationFrame(raf); };
+  }, [target, delay, duration]);
+  return n;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hero visual: a small care dashboard with sample data                */
+/* ------------------------------------------------------------------ */
+
+// Doses given per day this week, out of 3. The last bar is today, still in progress.
+const WEEK = [
+  { day: 'M', given: 3 }, { day: 'T', given: 3 }, { day: 'W', given: 2 }, { day: 'T', given: 3 },
+  { day: 'F', given: 3 }, { day: 'S', given: 2 }, { day: 'S', given: 2 },
 ];
 
-function DayTimeline() {
+const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties;
+
+function CareSnapshot() {
+  const pct = useCountUp(86);
+
   return (
     <figure className="relative w-full max-w-md">
-      <div className="overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center justify-between bg-primary-700 px-5 py-4 text-white dark:bg-primary-800">
+      <div
+        className="cs-up overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+        style={delay(250)}
+      >
+        {/* Person and care team */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 font-display font-bold text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+              A
+            </span>
+            <div>
+              <p className="font-display font-semibold leading-tight">Aama, 72</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">This week</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary-600 text-xs font-semibold text-white dark:border-gray-800">S</span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-warning-500 text-xs font-semibold text-white dark:border-gray-800">R</span>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">2 caregivers</span>
+          </div>
+        </div>
+
+        {/* Adherence ring */}
+        <div className="flex items-center gap-5 px-5 py-5">
+          <div className="relative h-24 w-24 flex-shrink-0">
+            <svg viewBox="0 0 100 100" className="h-24 w-24 -rotate-90" aria-hidden="true">
+              <circle cx="50" cy="50" r="40" fill="none" strokeWidth="10" className="stroke-primary-100 dark:stroke-gray-700" />
+              <circle
+                cx="50" cy="50" r="40" fill="none" strokeWidth="10" strokeLinecap="round"
+                strokeDasharray="251.3" strokeDashoffset="35.2"
+                className="cs-ring stroke-primary-600 dark:stroke-primary-400"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center font-display text-2xl font-bold tabular-nums">
+              {pct}%
+            </span>
+          </div>
           <div>
-            <p className="text-xs text-primary-100">Today&rsquo;s medicines</p>
-            <p className="font-display text-lg font-semibold leading-tight">Aama, 72</p>
-          </div>
-          <div className="text-right">
-            <p className="font-display text-2xl font-semibold leading-none">2 of 3</p>
-            <p className="mt-1 text-xs text-primary-100">doses given</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Doses given on time</p>
+            <p className="font-display text-xl font-semibold">18 of 21</p>
           </div>
         </div>
 
-        <ol className="relative px-5 py-5">
-          <span
-            aria-hidden="true"
-            className="absolute bottom-9 left-[2.15rem] top-9 w-px bg-primary-200 dark:bg-gray-600"
-          />
-          {DOSES.map((d) => (
-            <li key={d.time} className="relative flex gap-4 pb-6 last:pb-0">
-              <span className="relative z-10 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center">
-                {d.status === 'given' ? (
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-white">
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
-                  </span>
-                ) : (
-                  <span className="relative flex h-6 w-6 items-center justify-center">
-                    <span className="absolute h-6 w-6 rounded-full bg-warning-400 opacity-50 motion-safe:animate-ping" />
-                    <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-warning-500 text-white">
-                      <Clock className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
-                    </span>
-                  </span>
-                )}
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-semibold text-gray-900 dark:text-gray-50">{d.medicine}</p>
-                  <p className="flex-shrink-0 text-xs tabular-nums text-gray-500 dark:text-gray-400">{d.time}</p>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{d.detail}</p>
-                <p
-                  className={
-                    d.status === 'due'
-                      ? 'mt-1 text-xs font-semibold text-warning-700 dark:text-warning-400'
-                      : 'mt-1 text-xs text-primary-700 dark:text-primary-400'
-                  }
-                >
-                  {d.note}
-                </p>
+        {/* Week bars */}
+        <div className="px-5 pb-5">
+          <div className="flex h-14 items-end gap-2">
+            {WEEK.map((w, i) => (
+              <div key={i} className="flex h-full flex-1 items-end rounded bg-primary-50 dark:bg-gray-700/50">
+                <div
+                  className={`cs-bar w-full rounded ${i === WEEK.length - 1 ? 'bg-primary-300 dark:bg-primary-700' : 'bg-primary-500'}`}
+                  style={{ ...delay(700 + i * 70), height: `${(w.given / 3) * 100}%` }}
+                />
               </div>
-            </li>
-          ))}
-        </ol>
+            ))}
+          </div>
+          <div className="mt-1.5 flex gap-2 text-center text-xs text-gray-500 dark:text-gray-400">
+            {WEEK.map((w, i) => (
+              <span key={i} className="flex-1">{w.day}</span>
+            ))}
+          </div>
+        </div>
 
-        <div className="flex items-center gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
-          <Mail className="h-4 w-4 flex-shrink-0 text-primary-600 dark:text-primary-400" aria-hidden="true" />
-          Reminder emailed to Sita and Ram
+        {/* Next dose */}
+        <div className="flex items-center gap-3 border-t border-gray-100 bg-gray-50 px-5 pb-6 pt-4 dark:border-gray-700 dark:bg-gray-900/40">
+          <span className="h-3 w-3 flex-shrink-0 rounded-full bg-warning-500" />
+          <div>
+            <p className="text-sm font-semibold">Next: Atorvastatin 20 mg</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">8:00 PM, due in 25 minutes</p>
+          </div>
         </div>
       </div>
-      <div className="-mt-3 ml-8 hidden w-fit items-center gap-3 rounded-xl border border-warning-200 bg-white px-4 py-3 shadow-lg dark:border-warning-700 dark:bg-gray-800 lg:relative lg:z-10 lg:flex">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-warning-100 text-warning-700 dark:bg-warning-900/50 dark:text-warning-300">
-          <Bell className="h-4 w-4" aria-hidden="true" />
+
+      <div
+        className="cs-up relative z-10 -mt-4 ml-8 flex w-fit items-center gap-3 rounded-xl border border-primary-100 bg-white px-4 py-3 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        style={delay(1500)}
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+          <Mail className="h-4 w-4" aria-hidden="true" />
         </span>
-        <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Atorvastatin at 8:00 PM</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Reminder sent to 2 caregivers</p>
-        </div>
+        <p className="text-sm font-medium">Reminder emailed to Sita and Ram</p>
       </div>
-      <figcaption className="mt-3 text-xs text-gray-500 dark:text-gray-400">Example schedule with sample data.</figcaption>
+      <figcaption className="mt-3 text-xs text-gray-500 dark:text-gray-400">Example dashboard with sample data.</figcaption>
     </figure>
   );
-}
-/* ------------------------------------------------------------------ */
+}/* ------------------------------------------------------------------ */
 /* Permissions visual                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -234,6 +317,7 @@ const STEPS = [
 
 export function Landing() {
   const { isAuthenticated } = useAuth();
+  useReveal();
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -244,6 +328,7 @@ export function Landing() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-50">
+      <style>{PAGE_CSS}</style>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-gray-900 focus:shadow-lg"
@@ -306,14 +391,14 @@ export function Landing() {
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-warning-100/70 blur-3xl dark:bg-warning-900/10" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:py-24">
             <div>
-              <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight text-primary-950 dark:text-gray-50 sm:text-5xl lg:text-[3.5rem]">
+              <h1 className="cs-up font-display text-4xl font-bold leading-[1.08] tracking-tight text-primary-950 dark:text-gray-50 sm:text-5xl lg:text-[3.5rem]">
                 Everyone who helps care for them, on the same schedule.
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+              <p className="cs-up mt-6 max-w-xl text-lg leading-relaxed text-gray-700 dark:text-gray-300" style={delay(120)}>
                 CareSyno keeps medicine times, given doses and caregiver access in one place, so nobody has to
                 phone around to ask whether the evening tablet was taken.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="cs-up mt-8 flex flex-col gap-3 sm:flex-row" style={delay(240)}>
                 <Link to="/register" className={`${BTN_PRIMARY} w-full sm:w-auto`}>
                   Create an account
                 </Link>
@@ -321,7 +406,7 @@ export function Landing() {
                   Sign in
                 </Link>
               </div>
-              <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
+              <ul className="cs-up mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-700 dark:text-gray-300" style={delay(360)}>
                 {['Email reminders', 'Caregiver permissions', 'Works on any phone'].map((t) => (
                   <li key={t} className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-primary-600 dark:text-primary-400" strokeWidth={3} aria-hidden="true" />
@@ -332,12 +417,10 @@ export function Landing() {
             </div>
 
             <div className="flex justify-center lg:justify-end">
-              <DayTimeline />
+              <CareSnapshot />
             </div>
           </div>
-        </section>
-
-        {/* Who it is for */}
+        </section>        {/* Who it is for */}
         <section>
           <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
             <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
