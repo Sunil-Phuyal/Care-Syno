@@ -57,7 +57,7 @@ function getPageInfo(pathname: string) {
   const match = Object.keys(PAGE_INFO)
     .filter((key) => pathname.startsWith(key))
     .sort((a, b) => b.length - a.length)[0];
-  return PAGE_INFO[match] ?? { title: 'CareSync', subtitle: 'Your care coordination platform' };
+  return PAGE_INFO[match] ?? { title: 'CareSyno', subtitle: 'Your care coordination platform' };
 }
 
 function LogoIcon({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
@@ -65,7 +65,7 @@ function LogoIcon({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
     <div className={cn('flex items-center justify-center flex-shrink-0', size === 'lg' ? 'w-14 h-14' : 'w-8 h-8')}>
       <img
         src={careSyncLogo}
-        alt="CareSync"
+        alt="CareSyno"
         className={size === 'lg' ? 'w-14 h-14' : 'w-8 h-8'}
       />
     </div>
@@ -225,7 +225,7 @@ function SidebarContent({ onNavigate }: { onNavigate: (path: string) => void }) 
       <div className="px-5 py-4 border-b border-primary-100 dark:border-primary-900/40">
         <Link to="/dashboard" onClick={() => onNavigate('/dashboard')} className="flex items-center gap-3">
           <LogoIcon size="sm" />
-          <span className="text-base font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+          <span className="text-base font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
         </Link>
       </div>
 
@@ -281,8 +281,8 @@ function SidebarContent({ onNavigate }: { onNavigate: (path: string) => void }) 
             </svg>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Your data is secure</p>
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-50">Private & Secure</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Shared only with your care team</p>
           </div>
         </div>
       </div>
@@ -349,7 +349,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {/* Mobile logo */}
           <div className="flex items-center gap-2 lg:hidden">
             <LogoIcon size="sm" />
-            <span className="font-bold text-sm text-gray-900 dark:text-gray-50">CareSync</span>
+            <span className="font-bold text-sm text-gray-900 dark:text-gray-50">CareSyno</span>
           </div>
 
           {/* ── PATIENT SWITCHER — center of header ── */}

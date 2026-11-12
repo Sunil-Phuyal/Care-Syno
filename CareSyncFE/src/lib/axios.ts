@@ -4,13 +4,17 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../utils/constants';
 import { storage } from '../utils/storage';
 
+// Free hosting puts the API to sleep when it is idle. Waking it up can take a few minutes,
+// so the timeout is generous. warmUpApi() usually wakes it before the user logs in.
+const REQUEST_TIMEOUT_MS = 240000;
+
 // Create axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: REQUEST_TIMEOUT_MS,
 });
 
 // Request interceptor - Add JWT token to every request

@@ -9,24 +9,30 @@ interface ThemeContextType {
   theme: ThemePreference;           // what the user selected
   resolvedTheme: ResolvedTheme;     // what's actually applied
   setTheme: (t: ThemePreference) => void;
-  toggleTheme: () => void;          // keep for backward compat
+  toggleTheme: () => void;
 }
 
 export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'caresync-theme';
+// v2: ignores values saved by the old code, which defaulted everyone to 'system'
+const STORAGE_KEY = 'caresync-theme-v2';
 
 function getSystemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as ThemePreference | null;
+function readSaved(): ThemePreference {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
-    return 'system';
-  });
+  } catch {
+    /* storage unavailable */
+  }
+  return 'light'; // default: always light, regardless of OS theme
+}
 
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<ThemePreference>(readSaved);
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme);
 
   const resolvedTheme: ResolvedTheme = theme === 'system' ? systemTheme : theme;
@@ -34,10 +40,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Apply dark class to <html>
   useEffect(() => {
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
-    localStorage.setItem(STORAGE_KEY, theme);
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      /* ignore */
+    }
   }, [theme, resolvedTheme]);
 
-  // Track OS changes for 'system' mode
+  // Track OS changes (only matters when the user explicitly chose 'system')
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) =>
@@ -48,9 +58,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (t: ThemePreference) => setThemeState(t);
   const toggleTheme = () =>
-    setThemeState((prev) =>
-      prev === 'light' ? 'dark' : prev === 'dark' ? 'light' : 'light'
-    );
+    setThemeState(resolvedTheme === 'dark' ? 'light' : 'dark');
 
   return (
     <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>

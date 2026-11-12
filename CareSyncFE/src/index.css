@@ -5,7 +5,8 @@
 /* BASE */
 @layer base {
   * { @apply border-gray-200 dark:border-gray-700; }
-  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; color-scheme: light; }
+  html.dark { color-scheme: dark; }
 
   body {
     @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50;

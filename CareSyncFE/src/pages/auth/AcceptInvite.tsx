@@ -9,14 +9,14 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex items-center gap-3">
-        <img src={careSyncLogo} alt="CareSync" className="w-10 h-10" />
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+        <img src={careSyncLogo} alt="CareSyno" className="w-10 h-10" />
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
       </div>
 
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">You're Invited</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
-          A family member has added you to their care team on CareSync. Set your password below to join and start coordinating care together.
+          A family member has added you to their care team on CareSyno. Set your password below to join and start coordinating care together.
         </p>
         <ul className="space-y-4">
           {[
@@ -41,8 +41,8 @@ function LeftPanel() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant & Secure</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security for your family's healthcare data</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Private & Secure</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Only the people you invite can see your family's health information</p>
         </div>
       </div>
     </div>
@@ -92,7 +92,7 @@ export function AcceptInvite() {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
           </div>
 
           {done ? (
@@ -105,7 +105,7 @@ export function AcceptInvite() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Account activated!</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                  Your CareSync account is ready. You can now sign in and start caring for your loved ones.
+                  Your CareSyno account is ready. You can now sign in and start caring for your loved ones.
                 </p>
               </div>
               <Button variant="primary" fullWidth onClick={() => navigate('/login')}>Go to Sign In</Button>
@@ -115,7 +115,7 @@ export function AcceptInvite() {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Accept Invitation</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Set your password to activate your CareSync account and join your care team
+                  Set your password to activate your CareSyno account and join your care team
                 </p>
               </div>
 
@@ -124,7 +124,7 @@ export function AcceptInvite() {
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                  You've been invited to join a care team on CareSync. Set your password below to activate your account.
+                  You've been invited to join a care team on CareSyno. Set your password below to activate your account.
                 </p>
               </div>
 

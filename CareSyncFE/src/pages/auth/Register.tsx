@@ -20,12 +20,12 @@ function LeftPanel() {
   return (
     <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
       <div className="flex flex-col items-start gap-5">
-        <img src={careSyncLogo} alt="CareSync" className="w-20 h-20" />
-        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+        <img src={careSyncLogo} alt="CareSyno" className="w-20 h-20" />
+        <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
       </div>
 
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">Care Sync</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50 mb-3">CareSyno</h1>
         <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
           Connect, coordinate, and care for your loved ones together with our
           comprehensive family caregiving platform designed for modern healthcare needs.
@@ -48,8 +48,8 @@ function LeftPanel() {
           </svg>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">HIPAA Compliant & Secure</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security for your family's healthcare data</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-50">Private & Secure</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Only the people you invite can see your family's health information</p>
         </div>
       </div>
     </div>
@@ -95,7 +95,7 @@ export function Register() {
     setIsLoading(true);
     try {
       await register({ fullName: form.fullName, email: form.email, password: form.password });
-      setToast({ message: 'Account created successfully. Welcome to CareSync!', type: 'success' });
+      setToast({ message: 'Account created successfully. Welcome to CareSyno!', type: 'success' });
       setTimeout(() => navigate('/dashboard'), 1000);
     } catch (err: any) {
       setToast({ message: err.message || 'Registration failed. Please try again.', type: 'error' });
@@ -127,7 +127,7 @@ export function Register() {
                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSync</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
           </div>
 
           <div className="flex mb-8 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">

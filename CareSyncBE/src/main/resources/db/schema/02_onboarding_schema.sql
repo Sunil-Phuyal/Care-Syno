@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS onboarding.users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     modified_by VARCHAR(100),
     modified_at TIMESTAMP,
-    record_status CHAR(1) DEFAULT 'Y' NOT NULL CHECK (record_status IN ('Y', 'N'))
+    record_status CHAR(1) DEFAULT 'Y' NOT NULL CHECK (record_status IN ('A', 'I', 'P', 'Y'))
     );
 
 COMMENT ON TABLE onboarding.users IS 'All registered users (caregivers, admins, healthcare providers)';
