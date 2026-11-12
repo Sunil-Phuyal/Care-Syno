@@ -21,6 +21,45 @@
   ::-webkit-scrollbar { @apply w-1.5 h-1.5; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-gray-700 rounded-full; }
+
+  /* Autofill: keep filled fields looking like normal inputs */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: #09090b;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    caret-color: #09090b;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  /* On focus, keep the teal focus ring (it is drawn with box-shadow) */
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #09090b;
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset, 0 0 0 2px #14b8a6;
+    box-shadow: 0 0 0 1000px #ffffff inset, 0 0 0 2px #14b8a6;
+    caret-color: #09090b;
+  }
+
+  html.dark input:-webkit-autofill,
+  html.dark input:-webkit-autofill:hover,
+  html.dark input:-webkit-autofill:active,
+  html.dark textarea:-webkit-autofill,
+  html.dark select:-webkit-autofill {
+    -webkit-text-fill-color: #f4f4f5;
+    -webkit-box-shadow: 0 0 0 1000px #111111 inset;
+    caret-color: #f4f4f5;
+  }
+  html.dark input:-webkit-autofill:focus,
+  html.dark textarea:-webkit-autofill:focus,
+  html.dark select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #f4f4f5;
+    -webkit-box-shadow: 0 0 0 1000px #111111 inset, 0 0 0 2px #2dd4bf;
+    box-shadow: 0 0 0 1000px #111111 inset, 0 0 0 2px #2dd4bf;
+    caret-color: #f4f4f5;
+  }
 }
 
 /* COMPONENTS */
