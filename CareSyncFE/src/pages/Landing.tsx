@@ -36,7 +36,7 @@ const PAGE_CSS = `
 `;
 
 const REVEAL_TARGETS = [
-  'main > section:not(:first-child) > div',
+  'main > section:not(:first-child) > div:not([aria-hidden])',
   'main > section:not(:first-child) ul > li',
   'main > section:not(:first-child) ol > li',
   'main > section:not(:first-child) details',
@@ -439,7 +439,9 @@ export function Landing() {
         </section>
 
         {/* Features */}
-        <section id="features" className="scroll-mt-16 bg-primary-50/70 dark:bg-gray-800/30">
+        <section id="features" className="relative isolate scroll-mt-16 overflow-clip bg-primary-50 dark:bg-gray-800/40">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-28 -z-10 h-96 w-96 rounded-full bg-primary-200/60 blur-3xl dark:bg-primary-800/25" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-24 -z-10 h-80 w-80 rounded-full bg-warning-100/70 blur-3xl dark:bg-warning-900/10" />
           <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16 lg:py-24">
             <div className="lg:sticky lg:top-8 lg:self-start">
               <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -484,7 +486,9 @@ export function Landing() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="scroll-mt-16 bg-primary-50/70 dark:bg-gray-800/30">
+        <section id="how-it-works" className="relative isolate scroll-mt-16 overflow-clip bg-primary-50 dark:bg-gray-800/40">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 -z-10 h-96 w-96 rounded-full bg-primary-200/60 blur-3xl dark:bg-primary-800/25" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -left-24 -z-10 h-80 w-80 rounded-full bg-warning-100/70 blur-3xl dark:bg-warning-900/10" />
           <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-24">
             <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Set up in three steps</h2>
             <ol className="mt-10 grid gap-8 md:grid-cols-3">

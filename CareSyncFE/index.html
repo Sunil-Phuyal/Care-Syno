@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- Apply saved theme before first paint (no flash). Default is light.
+         Dark only if the user saved 'dark', or saved 'system' and the OS is dark. -->
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('caresync-theme-v2');
+          var dark =
+            t === 'dark' ||
+            (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+
     <title>CareSyno | Shared caregiving for families</title>
     <meta
       name="description"
@@ -43,7 +58,7 @@
     />
     <meta name="twitter:image" content="https://care-syno.vercel.app/og-image.png" />
 
-       <!-- Google Search Console verification -->
+    <!-- Google Search Console verification -->
     <meta name="google-site-verification" content="FF9icFFUl80rslUbXgoujaukB5y7xjQ8GI9K8NTja_k" />
 
     <!-- Tells search engines the site's name. "CareSync" is the earlier spelling. -->
