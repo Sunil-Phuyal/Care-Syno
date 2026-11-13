@@ -9,6 +9,7 @@ import { LogoutConfirmDialog } from '../ui/ConfirmDialog';
 // import { ThemeToggle } from '../ui/ThemeToggle';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
 import { cn } from '../../utils/cn';
+import { GlowBlobs } from '../ui/GlowBlobs';
 
 const NAV_ITEMS = [
   {
@@ -310,7 +311,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="relative isolate min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      <GlowBlobs fixed />
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-full w-64 bg-primary-50 dark:bg-gray-950 border-r border-primary-100 dark:border-gray-700 z-30">
         <SidebarContent onNavigate={handleNavigate} />

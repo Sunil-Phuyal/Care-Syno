@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
+import { GlowBlobs } from '../../components/ui/GlowBlobs';
 
 const FEATURES = [
   'Schedule and coordinate care tasks seamlessly across your family network',
@@ -18,7 +19,8 @@ const FEATURES = [
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
+    <div className="relative isolate overflow-clip hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
+      <GlowBlobs />
       <div className="flex flex-col items-start gap-5">
         <img src={careSyncLogo} alt="CareSyno" className="w-20 h-20" />
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>
@@ -105,7 +107,8 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
+    <div className="relative isolate overflow-clip min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
+      <GlowBlobs />
       <LeftPanel />
 
       {toast && (
