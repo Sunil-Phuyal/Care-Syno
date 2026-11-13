@@ -73,8 +73,7 @@ export function ForgotPassword() {
   };
 
   return (
-    <div className="relative isolate overflow-clip min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
-      <GlowBlobs />
+    <div className="min-h-screen bg-white dark:bg-gray-900 grid lg:grid-cols-2">
       <LeftPanel />
 
       {toast && (

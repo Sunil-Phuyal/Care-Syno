@@ -311,10 +311,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="relative isolate min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <GlowBlobs fixed />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-full w-64 bg-primary-50 dark:bg-gray-950 border-r border-primary-100 dark:border-gray-700 z-30">
+      <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-full w-64 isolate overflow-clip bg-primary-50 dark:bg-gray-950 border-r border-primary-100 dark:border-gray-700 z-30">
+        <GlowBlobs small />
         <SidebarContent onNavigate={handleNavigate} />
       </aside>
 
@@ -326,11 +326,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile sidebar */}
       <aside className={cn(
         'fixed top-0 left-0 h-full w-64 z-50 flex flex-col lg:hidden',
-        'bg-primary-50 dark:bg-gray-950',
+        'isolate overflow-clip bg-primary-50 dark:bg-gray-950',
         'border-r border-primary-100 dark:border-gray-700',
         'transition-transform duration-300 ease-in-out',
         isMobileOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
+        <GlowBlobs small />
         <SidebarContent onNavigate={handleNavigate} />
       </aside>
 
