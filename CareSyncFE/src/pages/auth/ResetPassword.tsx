@@ -5,10 +5,12 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Toast } from '../../components/common/Toast';
 import careSyncLogo from '../../assets/careSyncLogo.svg?url';
+import { GlowBlobs } from '../../components/ui/GlowBlobs';
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
+    <div className="relative isolate overflow-clip hidden lg:flex flex-col justify-between bg-primary-50 dark:bg-gray-800 p-10 xl:p-14">
+      <GlowBlobs />
       <div className="flex items-center gap-3">
         <img src={careSyncLogo} alt="CareSyno" className="w-10 h-10" />
         <span className="text-lg font-bold text-gray-900 dark:text-gray-50">CareSyno</span>

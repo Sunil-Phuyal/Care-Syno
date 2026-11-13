@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { GlowBlobs } from '../components/ui/GlowBlobs';
 
 export function NotFound() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="relative isolate overflow-clip min-h-screen flex items-center justify-center bg-gray-50">
+      <GlowBlobs />
       <div className="text-center">
         <h1 className="text-9xl font-bold text-primary-600">404</h1>
         <p className="text-2xl font-semibold text-gray-900 mt-4">Page not found</p>
